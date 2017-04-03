@@ -202,18 +202,18 @@ public class TheActivity extends android.app.Activity {
             gotUserRotation = true;
         } catch (Settings.SettingNotFoundException e) {}
         String message = "";
-        message += ("getRequestedOrientation() = " + TheService.orientationConstantToString(getRequestedOrientation()));
+        message += ("  getRequestedOrientation() = " + TheService.orientationConstantToString(getRequestedOrientation()));
         message += "\n\n";
-        message += (gotAccelerometerRotation ? "Settings.System.ACCELEROMETER_ROTATION: "+accelerometerRotation : "[no Settings.System.ACCELEROMETER_ROTATION]");
+        message += (gotAccelerometerRotation ? "  Settings.System.ACCELEROMETER_ROTATION: "+accelerometerRotation : "[no Settings.System.ACCELEROMETER_ROTATION]");
         message += "\n\n";
-        message += (gotUserRotation ? "Settings.System.USER_ROTATION: "+TheService.surfaceRotationConstantToString(userRotation) : "[no Settings.System.USER_ROTATION]");
+        message += (gotUserRotation ? "  Settings.System.USER_ROTATION: "+TheService.surfaceRotationConstantToString(userRotation) : "[no Settings.System.USER_ROTATION]");
         message += "\n\n";
-        message += ("getResources().getConfiguration().orientation = " + TheService.orientationConstantToString(getResources().getConfiguration().orientation));
+        message += ("  getResources().getConfiguration().orientation = " + TheService.orientationConstantToString(getResources().getConfiguration().orientation));
         message += "\n\n";
-        message += ("getWindowManager().getDefaultDisplay().getRotation() = " + TheService.surfaceRotationConstantToString(getWindowManager().getDefaultDisplay().getRotation()));
+        message += ("  getWindowManager().getDefaultDisplay().getRotation() = " + TheService.surfaceRotationConstantToString(getWindowManager().getDefaultDisplay().getRotation()));
         message += "\n\n";
         mNumUpdates++;
-        message += ""+mNumUpdates+" update"+(mNumUpdates==1?"":"s");
+        message += "  "+mNumUpdates+" update"+(mNumUpdates==1?"":"s");
         thePolledStatusTextView.setText(message);
     }
 

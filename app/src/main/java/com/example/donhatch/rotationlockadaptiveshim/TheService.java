@@ -33,14 +33,14 @@ public class TheService extends Service {
 
 
     // There are two different namespaces here:
-    //   https://developer.android.com/reference/android/R.attr.html#screenOrientation
-    //   R.attr, "the screen orientation attribute".
-    //     ActivityInfo.SCREEN_ORIENTATION_BEHIND, etc.
+    //   1. https://developer.android.com/reference/android/R.attr.html#screenOrientation
+    //      R.attr, "the screen orientation attribute".
+    //      ActivityInfo.SCREEN_ORIENTATION_BEHIND, etc.
     //
-    //   https://developer.android.com/reference/android/content/pm/ActivityInfo.html#screenOrientation
-    //   setRequestedOrientation(), getRequestedOrientation(), Activity.screenOrientation
-    //     behind, etc.
-    // but the values are the same!?  Weird.
+    //   2. https://developer.android.com/reference/android/content/pm/ActivityInfo.html#screenOrientation
+    //      setRequestedOrientation(), getRequestedOrientation(), Activity.screenOrientation
+    //      behind, etc.
+    // But the values are the same!?  Weird.
     public static String orientationConstantToString(int orientationConstant) {
       switch (orientationConstant) {
         case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_BEHIND: return "SCREEN_ORIENTATION_BEHIND";
@@ -135,8 +135,8 @@ public class TheService extends Service {
                             distanceFromClosestCompassPoint = Math.abs(distanceFromClosestCompassPoint - 360);
                         if (mVerboseLevel >= 2) System.out.println("          old mClosestCompassPoint = " + mClosestCompassPoint);
                         if (mVerboseLevel >= 2) System.out.println("          distanceFromClosestCompassPoint = " + distanceFromClosestCompassPoint);
-                        //int hysteresis = 15;
-                        int hysteresis = 5;
+                        int hysteresis = 15;
+                        //int hysteresis = 5;
                         if (distanceFromClosestCompassPoint >= 45+hysteresis) {
                             if (mVerboseLevel == 1) System.out.println("        in onOrientationChanged(degrees="+degrees+")");
                             int newClosestCompassPoint = degrees < 45 ? 0 : degrees < 135 ? 90 : degrees < 225 ? 180 : degrees < 315 ? 270 : 0;

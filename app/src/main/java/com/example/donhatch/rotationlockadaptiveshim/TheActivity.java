@@ -14,7 +14,7 @@ public class TheActivity extends android.app.Activity {
         @Override
         public void run() {
             System.out.println("                in monitor run");
-            updateStatusTextField();
+            updatePolledStatusTextView();
             mHandler.postDelayed(this, 1*1000);
             System.out.println("                out monitor run");
         };
@@ -31,14 +31,87 @@ public class TheActivity extends android.app.Activity {
         System.out.println("    in onCreate");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        android.widget.Switch theServiceSwitch = (android.widget.Switch)findViewById(R.id.theServiceSwitch);
         android.widget.Switch theMonitorSwitch = (android.widget.Switch)findViewById(R.id.theMonitorSwitch);
+        android.widget.Switch theServiceSwitch = (android.widget.Switch)findViewById(R.id.theServiceSwitch);
+
+        if (true) {
+            // http://stackoverflow.com/questions/16150113/android-auto-rotate-configuration-on-change-listener?noredirect=1&lq=1
+            {
+                android.database.ContentObserver accelerometerRotationObserver = new android.database.ContentObserver(new android.os.Handler()) {
+                    // Per https://developer.android.com/reference/android/database/ContentObserver.html :
+                    // Delegate to ensure correct operation on older versions of the framework
+                    // that didn't have the onChange(boolean, Uri) method. (XXX do I need to worry about this? is framework runtime, or my compiletime?)
+                    @Override
+                    public void onChange(boolean selfChange) {
+                        System.out.println("            in accelerometerRotationObserver onChange(selfChange="+selfChange+")");
+                        onChange(selfChange, null);
+                        System.out.println("            out accelerometerRotationObserver onChange(selfChange="+selfChange+")");
+                    }
+                    @Override
+                    public void onChange(boolean selfChange, android.net.Uri uri) {
+                        System.out.println("            in accelerometerRotationObserver onChange(selfChange="+selfChange+", uri="+uri+")");
+                        try {
+                            System.out.println("              Settings.System.ACCELEROMETER_ROTATION: "+Settings.System.getInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION));
+                        } catch (Settings.SettingNotFoundException e) {
+                            System.out.println("              Settings.System.ACCELEROMETER_ROTATION setting not found!?");
+                        }
+                        try {
+                            System.out.println("              (Settings.System.USER_ROTATION: "+TheService.surfaceRotationConstantToString(Settings.System.getInt(getContentResolver(), Settings.System.USER_ROTATION))+")");
+
+                        } catch (Settings.SettingNotFoundException e) {
+                            System.out.println("              (Settings.System.USER_ROTATION setting not found!?)");
+                        }
+                        updateAccelerometerRotationTextView();
+                        System.out.println("            out accelerometerRotationObserver onChange(selfChange="+selfChange+", uri="+uri+")");
+                    }
+                };
+                android.net.Uri uri = Settings.System.getUriFor(Settings.System.ACCELEROMETER_ROTATION);
+                System.out.println("      uri = "+uri);
+                getContentResolver().registerContentObserver(uri, false, accelerometerRotationObserver);
+            }
+            {
+                android.database.ContentObserver userRotationObserver = new android.database.ContentObserver(new android.os.Handler()) {
+                    // Per https://developer.android.com/reference/android/database/ContentObserver.html :
+                    // Delegate to ensure correct operation on older versions of the framework
+                    // that didn't have the onChange(boolean, Uri) method. (XXX do I need to worry about this? is framework runtime, or my compiletime?)
+                    @Override
+                    public void onChange(boolean selfChange) {
+                        System.out.println("            in userRotationObserver onChange(selfChange="+selfChange+")");
+                        onChange(selfChange, null);
+                        System.out.println("            out userRotationObserver onChange(selfChange="+selfChange+")");
+                    }
+                    @Override
+                    public void onChange(boolean selfChange, android.net.Uri uri) {
+                        System.out.println("            in userRotationObserver onChange(selfChange="+selfChange+", uri="+uri+")");
+                        try {
+                            System.out.println("              (Settings.System.ACCELEROMETER_ROTATION: "+Settings.System.getInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION)+")");
+
+                        } catch (Settings.SettingNotFoundException e) {
+                            System.out.println("              (Settings.System.ACCELEROMETER_ROTATION setting not found!?)");
+                        }
+                        try {
+                            System.out.println("              Settings.System.USER_ROTATION: "+TheService.surfaceRotationConstantToString(Settings.System.getInt(getContentResolver(), Settings.System.USER_ROTATION)));
+
+                        } catch (Settings.SettingNotFoundException e) {
+                            System.out.println("              Settings.System.USER_ROTATION setting not found!?");
+                        }
+                        updateUserRotationTextView();
+                        System.out.println("            out userRotationObserver onChange(selfChange="+selfChange+", uri="+uri+")");
+                    }
+                };
+                android.net.Uri uri = Settings.System.getUriFor(Settings.System.USER_ROTATION);
+                System.out.println("      uri = "+uri);
+                getContentResolver().registerContentObserver(uri, false, userRotationObserver);
+            }
+        }
         if (true) {
             theMonitorSwitch.setOnCheckedChangeListener(new android.widget.CompoundButton.OnCheckedChangeListener() {
                 public void onCheckedChanged(android.widget.CompoundButton buttonView, boolean isChecked) {
                     System.out.println("            in theMonitorSwitch onCheckedChanged(isChecked=" + isChecked + ")");
                     mHandler.removeCallbacks(mRunnable); // ok if it wasn't scheduled
                     if (isChecked) {
+                        // Presumably the activity is between onResume and onPause when this happens,
+                        // so it's correct to start the periodic callback here.
                         mHandler.postDelayed(mRunnable, 0); // immediately
                     }
                     System.out.println("            out theMonitorSwitch onCheckedChanged(isChecked=" + isChecked + ")");
@@ -107,8 +180,28 @@ public class TheActivity extends android.app.Activity {
         System.out.println("    out onCreate");
     }
 
-    private void updateStatusTextField() {
-        android.widget.TextView theTextView = (android.widget.TextView)findViewById(R.id.theTextView);
+    private void updateAccelerometerRotationTextView() {
+        android.widget.TextView theAccelerometerRotationTextView = (android.widget.TextView)findViewById(R.id.theAccelerometerRotationTextView); // XXX TODO: make this a member
+        try {
+            int accelerometerRotation = Settings.System.getInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION);
+            theAccelerometerRotationTextView.setText("    Settings.System.ACCELEROMETER_ROTATION: "+accelerometerRotation);
+
+        } catch (Settings.SettingNotFoundException e) {
+            theAccelerometerRotationTextView.setText("    Settings.System.ACCELEROMETER_ROTATION setting not found!?");
+        }
+    }
+    private void updateUserRotationTextView() {
+        android.widget.TextView theUserRotationTextView = (android.widget.TextView)findViewById(R.id.theUserRotationTextView); // XXX TODO: make this a member
+        try {
+            int userRotation = Settings.System.getInt(getContentResolver(), Settings.System.USER_ROTATION);
+            theUserRotationTextView.setText("    Settings.System.USER_ROTATION: "+TheService.surfaceRotationConstantToString(userRotation));
+
+        } catch (Settings.SettingNotFoundException e) {
+            theUserRotationTextView.setText("    Settings.System.USER_ROTATION setting not found!?");
+        }
+    }
+    private void updatePolledStatusTextView() {
+        android.widget.TextView thePolledStatusTextView = (android.widget.TextView)findViewById(R.id.thePolledStatusTextView); // XXX TODO: make this a member
         int accelerometerRotation = -1;
         boolean gotAccelerometerRotation = false;
         int userRotation = -1;
@@ -124,9 +217,9 @@ public class TheActivity extends android.app.Activity {
         String message = "";
         message += ("getRequestedOrientation() = " + TheService.orientationConstantToString(getRequestedOrientation()));
         message += "\n\n";
-        message += (gotAccelerometerRotation ? "Settings.System.ACCELEROMETER_ROTATION = "+accelerometerRotation : "[no Settings.System.ACCELEROMETER_ROTATION]");
+        message += (gotAccelerometerRotation ? "Settings.System.ACCELEROMETER_ROTATION: "+accelerometerRotation : "[no Settings.System.ACCELEROMETER_ROTATION]");
         message += "\n\n";
-        message += (gotUserRotation ? "Settings.System.USER_ROTATION = "+TheService.surfaceRotationConstantToString(userRotation) : "[no Settings.System.USER_ROTATION]");
+        message += (gotUserRotation ? "Settings.System.USER_ROTATION: "+TheService.surfaceRotationConstantToString(userRotation) : "[no Settings.System.USER_ROTATION]");
         message += "\n\n";
         message += ("getResources().getConfiguration().orientation = " + TheService.orientationConstantToString(getResources().getConfiguration().orientation));
         message += "\n\n";
@@ -134,7 +227,7 @@ public class TheActivity extends android.app.Activity {
         message += "\n\n";
         mNumUpdates++;
         message += ""+mNumUpdates+" update"+(mNumUpdates==1?"":"s");
-        theTextView.setText(message);
+        thePolledStatusTextView.setText(message);
     }
 
     @Override
@@ -143,7 +236,7 @@ public class TheActivity extends android.app.Activity {
         super.onStart();
         android.widget.Switch theServiceSwitch = (android.widget.Switch)findViewById(R.id.theServiceSwitch);
 
-        updateStatusTextField();
+        updatePolledStatusTextView();
 
         boolean serviceIsRunning = TheService.theRunningService != null;
         System.out.println("          calling theServiceSwitch.setChecked("+serviceIsRunning+")");
@@ -173,36 +266,10 @@ public class TheActivity extends android.app.Activity {
             mHandler.postDelayed(mRunnable, 1*1000);
         }
 
-        if (false) {
-            // Test whether event loop keeps going after activity closed.  Yes, it does.
-            getMainLooper().dump(new android.util.Printer() {
-                @Override
-                public void println(String s) {
-                    System.out.println("- "+s);
-                }
-            }, "foo: ");
-            System.out.println("          setting something to go off in 10 seconds");
-            android.os.Handler handler = new android.os.Handler();
-            handler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    System.out.println("          in delayed run");
-                    getMainLooper().dump(new android.util.Printer() {
-                        @Override
-                        public void println(String s) {
-                            System.out.println("- "+s);
-                        }
-                    }, "foo: ");
-                    System.out.println("          out delayed run");
-                }
-            }, 10*1000);
-            getMainLooper().dump(new android.util.Printer() {
-                @Override
-                public void println(String s) {
-                    System.out.println("- "+s);
-                }
-            }, "foo: ");
-        }
+        // TODO: uninstall listener on onPause, reinstall on onResume
+        updateAccelerometerRotationTextView();
+        updateUserRotationTextView();
+
         System.out.println("            out onResume");
     }
 

@@ -187,6 +187,10 @@ public class TheActivity extends android.app.Activity {
             theUserRotationTextView.setText("  Settings.System.USER_ROTATION setting not found!?");
         }
     }
+    private void updateConfigurationOrientationTextView() {
+        android.widget.TextView theConfigurationOrientationTextView = (android.widget.TextView)findViewById(R.id.theConfigurationOrientationTextView); // XXX TODO: make this a member
+        theConfigurationOrientationTextView.setText("  getResources().getConfiguration().orientation = " + TheService.orientationConstantToString(getResources().getConfiguration().orientation));
+    }
     private void updatePolledStatusTextView() {
         android.widget.TextView thePolledStatusTextView = (android.widget.TextView)findViewById(R.id.thePolledStatusTextView); // XXX TODO: make this a member
         int accelerometerRotation = -1;
@@ -202,7 +206,7 @@ public class TheActivity extends android.app.Activity {
             gotUserRotation = true;
         } catch (Settings.SettingNotFoundException e) {}
         String message = "";
-        message += ("  getRequestedOrientation() = " + TheService.orientationConstantToString(getRequestedOrientation()));
+        message += ("  getRequestedOrientation() = " + TheService.screenOrientationConstantToString(getRequestedOrientation()));
         message += "\n\n";
         message += (gotAccelerometerRotation ? "  Settings.System.ACCELEROMETER_ROTATION: "+accelerometerRotation : "[no Settings.System.ACCELEROMETER_ROTATION]");
         message += "\n\n";
@@ -264,6 +268,7 @@ public class TheActivity extends android.app.Activity {
 
         updateAccelerometerRotationTextView();
         updateUserRotationTextView();
+        updateConfigurationOrientationTextView();
         updatePolledStatusTextView();
 
         System.out.println("            out onResume");
@@ -301,7 +306,10 @@ public class TheActivity extends android.app.Activity {
     public void onConfigurationChanged(android.content.res.Configuration newConfig) {
         System.out.println("in onConfigurationChanged");
         super.onConfigurationChanged(newConfig);
+        System.out.println("  newConfig = "+newConfig);
+        System.out.println("  newConfig.orientation = "+TheService.orientationConstantToString(newConfig.orientation));
         //setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        updateConfigurationOrientationTextView();
         System.out.println("out onConfigurationChanged");
     }
 }

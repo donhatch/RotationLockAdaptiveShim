@@ -35,8 +35,15 @@ tools:context=".TheActivity" >
         android:text="user rotation"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_above="@+id/theMonitorSwitch"
+        android:layout_above="@+id/theConfigurationOrientationTextView"
         android:id="@+id/theUserRotationTextView" />
+
+    <TextView
+        android:text="configuration orientation"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/theMonitorSwitch"
+        android:id="@+id/theConfigurationOrientationTextView" />
 
     <Switch
         android:text="Poll values once per second while ui is showing "

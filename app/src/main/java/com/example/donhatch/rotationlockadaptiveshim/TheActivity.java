@@ -1,10 +1,24 @@
 package com.example.donhatch.rotationlockadaptiveshim;
 
+import android.provider.Settings;
+
 public class TheActivity extends android.app.Activity {
 
     // We set this temporarily while setting the checkbox from the program,
     // so that the onCheckedChanged listener can tell that's what happened.
     private boolean mSettingCheckedFromProgram = false;
+    private long mNumUpdates = 0;
+
+    private android.os.Handler mHandler = new android.os.Handler();
+    private Runnable mRunnable = new Runnable() {
+        @Override
+        public void run() {
+            System.out.println("                in monitor run");
+            updateStatusTextField();
+            mHandler.postDelayed(this, 1*1000);
+            System.out.println("                out monitor run");
+        };
+    };
 
     public TheActivity() {
         System.out.println("in TheActivity ctor");
@@ -17,11 +31,24 @@ public class TheActivity extends android.app.Activity {
         System.out.println("    in onCreate");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        android.widget.Switch theSwitch = (android.widget.Switch)findViewById(R.id.theSwitch);
+        android.widget.Switch theServiceSwitch = (android.widget.Switch)findViewById(R.id.theServiceSwitch);
+        android.widget.Switch theMonitorSwitch = (android.widget.Switch)findViewById(R.id.theMonitorSwitch);
         if (true) {
-            theSwitch.setOnCheckedChangeListener(new android.widget.CompoundButton.OnCheckedChangeListener() {
+            theMonitorSwitch.setOnCheckedChangeListener(new android.widget.CompoundButton.OnCheckedChangeListener() {
                 public void onCheckedChanged(android.widget.CompoundButton buttonView, boolean isChecked) {
-                    System.out.println("            in onCheckedChanged(isChecked=" + isChecked + ")");
+                    System.out.println("            in theMonitorSwitch onCheckedChanged(isChecked=" + isChecked + ")");
+                    mHandler.removeCallbacks(mRunnable); // ok if it wasn't scheduled
+                    if (isChecked) {
+                        mHandler.postDelayed(mRunnable, 0); // immediately
+                    }
+                    System.out.println("            out theMonitorSwitch onCheckedChanged(isChecked=" + isChecked + ")");
+                }
+            });
+        }
+        if (true) {
+            theServiceSwitch.setOnCheckedChangeListener(new android.widget.CompoundButton.OnCheckedChangeListener() {
+                public void onCheckedChanged(android.widget.CompoundButton buttonView, boolean isChecked) {
+                    System.out.println("            in theServiceSwitch onCheckedChanged(isChecked=" + isChecked + ")");
                     if (mSettingCheckedFromProgram) {
                         System.out.println("              (from program; not doing anything)");
                     } else {
@@ -59,7 +86,7 @@ public class TheActivity extends android.app.Activity {
                             buttonView.setText("Service is off "); // we assume stopService is reliable
                         }
                     }
-                    System.out.println("            out onCheckedChanged(isChecked=" + isChecked + ")");
+                    System.out.println("            out theServiceSwitch onCheckedChanged(isChecked=" + isChecked + ")");
                 }
             });
         }
@@ -80,25 +107,58 @@ public class TheActivity extends android.app.Activity {
         System.out.println("    out onCreate");
     }
 
+    private void updateStatusTextField() {
+        android.widget.TextView theTextView = (android.widget.TextView)findViewById(R.id.theTextView);
+        int accelerometerRotation = -1;
+        boolean gotAccelerometerRotation = false;
+        int userRotation = -1;
+        boolean gotUserRotation = false;
+        try {
+            accelerometerRotation = Settings.System.getInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION);
+            gotAccelerometerRotation = true;
+        } catch (Settings.SettingNotFoundException e) {}
+        try {
+            userRotation = Settings.System.getInt(getContentResolver(), Settings.System.USER_ROTATION);
+            gotUserRotation = true;
+        } catch (Settings.SettingNotFoundException e) {}
+        String message = "";
+        message += ("getRequestedOrientation() = " + TheService.orientationConstantToString(getRequestedOrientation()));
+        message += "\n\n";
+        message += (gotAccelerometerRotation ? "Settings.System.ACCELEROMETER_ROTATION = "+accelerometerRotation : "[no Settings.System.ACCELEROMETER_ROTATION]");
+        message += "\n\n";
+        message += (gotUserRotation ? "Settings.System.USER_ROTATION = "+TheService.surfaceRotationConstantToString(userRotation) : "[no Settings.System.USER_ROTATION]");
+        message += "\n\n";
+        message += ("getResources().getConfiguration().orientation = " + TheService.orientationConstantToString(getResources().getConfiguration().orientation));
+        message += "\n\n";
+        message += ("getWindowManager().getDefaultDisplay().getRotation() = " + TheService.surfaceRotationConstantToString(getWindowManager().getDefaultDisplay().getRotation()));
+        message += "\n\n";
+        mNumUpdates++;
+        message += ""+mNumUpdates+" update"+(mNumUpdates==1?"":"s");
+        theTextView.setText(message);
+    }
+
     @Override
     protected void onStart() {
         System.out.println("        in onStart");
         super.onStart();
-        android.widget.Switch theSwitch = (android.widget.Switch)findViewById(R.id.theSwitch);
+        android.widget.Switch theServiceSwitch = (android.widget.Switch)findViewById(R.id.theServiceSwitch);
+
+        updateStatusTextField();
+
         boolean serviceIsRunning = TheService.theRunningService != null;
-        System.out.println("          calling theSwitch.setChecked("+serviceIsRunning+")");
+        System.out.println("          calling theServiceSwitch.setChecked("+serviceIsRunning+")");
         mSettingCheckedFromProgram = true;
-        theSwitch.setChecked(serviceIsRunning);
+        theServiceSwitch.setChecked(serviceIsRunning);
         mSettingCheckedFromProgram = false;
-        System.out.println("          returned from theSwitch.setChecked("+serviceIsRunning+")");
+        System.out.println("          returned from theServiceSwitch.setChecked("+serviceIsRunning+")");
         // That invoked the listener which set the label to "Service is on" or "Service is off";
         // overwrite it with something that says "initially".
         if (serviceIsRunning) {
             System.out.println("          setting text to \"Service is initially on  \"");
-            theSwitch.setText("Service is initially on  ");
+            theServiceSwitch.setText("Service is initially on  ");
         } else {
             System.out.println("          setting text to \"Service is initially off \"");
-            theSwitch.setText("Service is initially off ");
+            theServiceSwitch.setText("Service is initially off ");
         }
         System.out.println("        out onStart");
     }
@@ -107,6 +167,11 @@ public class TheActivity extends android.app.Activity {
     protected void onResume() {
         System.out.println("            in onResume");
         super.onResume();
+
+        android.widget.Switch theMonitorSwitch = (android.widget.Switch)findViewById(R.id.theMonitorSwitch);
+        if (theMonitorSwitch.isChecked()) {
+            mHandler.postDelayed(mRunnable, 1*1000);
+        }
 
         if (false) {
             // Test whether event loop keeps going after activity closed.  Yes, it does.
@@ -144,6 +209,7 @@ public class TheActivity extends android.app.Activity {
     @Override
     protected void onPause() {
         System.out.println("            in onPause");
+        mHandler.removeCallbacks(mRunnable); // ok if it wasn't scheduled
         super.onPause();
         System.out.println("            out onPause");
     }

@@ -20,7 +20,8 @@ public class TheService extends Service {
     private android.view.OrientationEventListener
             mOrientationEventListener;
 
-    private static String surfaceRotationConstantToString(int surfaceRotationConstant) {
+    // Used as value of System.Settings.USER_ROTATION
+    public static String surfaceRotationConstantToString(int surfaceRotationConstant) {
       switch (surfaceRotationConstant) {
         case android.view.Surface.ROTATION_0: return "ROTATION_0";
         case android.view.Surface.ROTATION_90: return "ROTATION_90";
@@ -29,6 +30,39 @@ public class TheService extends Service {
         default: return "[unknown surface rotation constant "+surfaceRotationConstant+"]";
       }
     }
+
+
+    // There are two different namespaces here:
+    //   https://developer.android.com/reference/android/R.attr.html#screenOrientation
+    //   R.attr, "the screen orientation attribute".
+    //     ActivityInfo.SCREEN_ORIENTATION_BEHIND, etc.
+    //
+    //   https://developer.android.com/reference/android/content/pm/ActivityInfo.html#screenOrientation
+    //   setRequestedOrientation(), getRequestedOrientation(), Activity.screenOrientation
+    //     behind, etc.
+    // but the values are the same!?  Weird.
+    public static String orientationConstantToString(int orientationConstant) {
+      switch (orientationConstant) {
+        case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_BEHIND: return "SCREEN_ORIENTATION_BEHIND";
+        case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR: return "SCREEN_ORIENTATION_FULL_SENSOR";
+        case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_FULL_USER: return "SCREEN_ORIENTATION_FULL_USER";
+        case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE: return "SCREEN_ORIENTATION_LANDSCAPE";
+        case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LOCKED: return "SCREEN_ORIENTATION_LOCKED";
+        case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_NOSENSOR: return "SCREEN_ORIENTATION_NOSENSOR";
+        case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT: return "SCREEN_ORIENTATION_PORTRAIT";
+        case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE: return "SCREEN_ORIENTATION_REVERSE_LANDSCAPE";
+        case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT: return "SCREEN_ORIENTATION_REVERSE_PORTRAIT";
+        case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR: return "SCREEN_ORIENTATION_SENSOR";
+        case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE: return "SCREEN_ORIENTATION_SENSOR_LANDSCAPE";
+        case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT: return "SCREEN_ORIENTATION_SENSOR_PORTRAIT";
+        case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED: return "SCREEN_ORIENTATION_UNSPECIFIED";
+        case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_USER: return "SCREEN_ORIENTATION_USER";
+        case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_USER_LANDSCAPE: return "SCREEN_ORIENTATION_USER_LANDSCAPE";
+        case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_USER_PORTRAIT: return "SCREEN_ORIENTATION_USER_PORTRAIT";
+        default: return "[unknown orientation constant "+orientationConstant+"]";
+      }
+    }
+
     private void CHECK(boolean condition) {
         if (!condition) {
             throw new AssertionError("CHECK failed");
@@ -105,7 +139,8 @@ public class TheService extends Service {
                         int hysteresis = 5;
                         if (distanceFromClosestCompassPoint >= 45+hysteresis) {
                             if (mVerboseLevel == 1) System.out.println("        in onOrientationChanged(degrees="+degrees+")");
-                            mClosestCompassPoint = degrees < 45 ? 0 : degrees < 135 ? 90 : degrees < 225 ? 180 : degrees < 315 ? 270 : 0;
+                            int newClosestCompassPoint = degrees < 45 ? 0 : degrees < 135 ? 90 : degrees < 225 ? 180 : degrees < 315 ? 270 : 0;
+                            mClosestCompassPoint = newClosestCompassPoint;
                             int oldUSER_ROTATION = -1;
                             int oldACCELEROMETER_ROTATION = -1;
                             try {
@@ -142,15 +177,22 @@ public class TheService extends Service {
                                 // ACCELEROMETER_ROTATION: "Control whether the accelerometer will be used to change screen orientation.
                                 // If 0, it will not be used unless explicitly requested by the application;
                                 // if 1, it will be used by default unless explicitly disabled by the application."
-                                // (where "explicitly disabled by the application" presumably means an application has called, um, what? did I delete it?)
+                                // (where "explicitly disabled by the application" presumably means an application has called something like
+                                // setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT))
                                 // So the players are:
                                 //      - accelerometer's idea of the device's physical orientation
                                 //      - ACCELEROMETER_ROTATION (in settings): whether system should keep screen rotation in sync with device's physical orientation
                                 //      - USER_ROTATION setting (default screen rotation when no other policy applies,
                                 //          i.e. when ACCELEROMETER_ROTATION is zero and no on-screen Activity expresses a preference)
                                 // So the following is the algorithm for the screen rotation:
-                                //      1. if an on-screen Activithy expresses a preference, use it (XXX what if more than one does?)
-                                //      2. else if ACCELEROMETER_ROTATION is 1, 
+                                //      1. if an on-screen Activity expressed a preference
+                                //              by setRequestedOrientation I think?
+                                //              Q: what if more than one does?
+                                //              PA: maybe it uses the "topmost" one in some sense?
+                                //      2. else if system setting ACCELEROMETER_ROTATION is 1, keep screen orientation in sync with device's physical orientation
+                                //      3. else use system setting USER_ROTATION
+                                // XXX what is android:configChanges="orientation|keyboardHidden" and the onConfigurationChanged event?
+
                                 int newUSER_ROTATION = -1;
                                 if (mClosestCompassPoint == 0) {
                                     newUSER_ROTATION = android.view.Surface.ROTATION_0;

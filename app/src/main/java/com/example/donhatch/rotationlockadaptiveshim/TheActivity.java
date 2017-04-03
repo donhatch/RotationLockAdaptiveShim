@@ -171,20 +171,20 @@ public class TheActivity extends android.app.Activity {
         android.widget.TextView theAccelerometerRotationTextView = (android.widget.TextView)findViewById(R.id.theAccelerometerRotationTextView); // XXX TODO: make this a member
         try {
             int accelerometerRotation = Settings.System.getInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION);
-            theAccelerometerRotationTextView.setText("    Settings.System.ACCELEROMETER_ROTATION: "+accelerometerRotation);
+            theAccelerometerRotationTextView.setText("  Settings.System.ACCELEROMETER_ROTATION: "+accelerometerRotation);
 
         } catch (Settings.SettingNotFoundException e) {
-            theAccelerometerRotationTextView.setText("    Settings.System.ACCELEROMETER_ROTATION setting not found!?");
+            theAccelerometerRotationTextView.setText("  Settings.System.ACCELEROMETER_ROTATION setting not found!?");
         }
     }
     private void updateUserRotationTextView() {
         android.widget.TextView theUserRotationTextView = (android.widget.TextView)findViewById(R.id.theUserRotationTextView); // XXX TODO: make this a member
         try {
             int userRotation = Settings.System.getInt(getContentResolver(), Settings.System.USER_ROTATION);
-            theUserRotationTextView.setText("    Settings.System.USER_ROTATION: "+TheService.surfaceRotationConstantToString(userRotation));
+            theUserRotationTextView.setText("  Settings.System.USER_ROTATION: "+TheService.surfaceRotationConstantToString(userRotation));
 
         } catch (Settings.SettingNotFoundException e) {
-            theUserRotationTextView.setText("    Settings.System.USER_ROTATION setting not found!?");
+            theUserRotationTextView.setText("  Settings.System.USER_ROTATION setting not found!?");
         }
     }
     private void updatePolledStatusTextView() {

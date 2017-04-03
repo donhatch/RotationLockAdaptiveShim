@@ -39,7 +39,7 @@ tools:context=".TheActivity" >
         android:id="@+id/theUserRotationTextView" />
 
     <Switch
-        android:text="Poll values every second while ui is showing "
+        android:text="Poll values once per second while ui is showing "
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_above="@+id/thePolledValuesHeader"
@@ -57,7 +57,6 @@ tools:context=".TheActivity" >
         android:text="polled status"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
         android:layout_alignParentBottom="true"
         android:id="@+id/thePolledStatusTextView" />
 </RelativeLayout>

@@ -13,10 +13,10 @@ public class TheActivity extends android.app.Activity {
     private Runnable mRunnable = new Runnable() {
         @Override
         public void run() {
-            System.out.println("                in monitor run");
+            System.out.println("                in once-per-second poll, should only be when ui is visible");
             updatePolledStatusTextView();
             mHandler.postDelayed(this, 1*1000);
-            System.out.println("                out monitor run");
+            System.out.println("                out once-per-second poll, should only be when ui is visible");
         };
     };
 
@@ -223,8 +223,6 @@ public class TheActivity extends android.app.Activity {
         super.onStart();
         android.widget.Switch theServiceSwitch = (android.widget.Switch)findViewById(R.id.theServiceSwitch);
 
-        updatePolledStatusTextView();
-
         boolean serviceIsRunning = TheService.theRunningService != null;
         System.out.println("          calling theServiceSwitch.setChecked("+serviceIsRunning+")");
         mSettingCheckedFromProgram = true;
@@ -248,11 +246,6 @@ public class TheActivity extends android.app.Activity {
         System.out.println("            in onResume");
         super.onResume();
 
-        android.widget.Switch theMonitorSwitch = (android.widget.Switch)findViewById(R.id.theMonitorSwitch);
-        if (theMonitorSwitch.isChecked()) {
-            mHandler.postDelayed(mRunnable, 1*1000);
-        }
-
         {
             android.net.Uri uri = Settings.System.getUriFor(Settings.System.ACCELEROMETER_ROTATION);
             System.out.println("      uri = "+uri);
@@ -264,8 +257,14 @@ public class TheActivity extends android.app.Activity {
             getContentResolver().registerContentObserver(uri, false, mUserRotationObserver);
         }
 
+        android.widget.Switch theMonitorSwitch = (android.widget.Switch)findViewById(R.id.theMonitorSwitch);
+        if (theMonitorSwitch.isChecked()) {
+            mHandler.postDelayed(mRunnable, 1*1000);
+        }
+
         updateAccelerometerRotationTextView();
         updateUserRotationTextView();
+        updatePolledStatusTextView();
 
         System.out.println("            out onResume");
     }

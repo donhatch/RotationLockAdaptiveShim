@@ -488,6 +488,8 @@ public class TheService extends Service {
         {
             // Note that some phones accelerometers work in standby mode (screen off), some don't:
             //     http://www.saltwebsites.com/2012/android-accelerometers-screen-off
+            // For the ones that do, we want to stop listening to the accelerometer when the screen is off,
+            // to conserve battery.
             // https://thinkandroid.wordpress.com/2010/01/24/handling-screen-off-and-screen-on-intents/
             System.out.println("android.content.Intent.ACTION_SCREEN_OFF = "+android.content.Intent.ACTION_SCREEN_OFF);
             System.out.println("android.content.Intent.ACTION_SCREEN_ON = "+android.content.Intent.ACTION_SCREEN_ON);
@@ -499,27 +501,28 @@ public class TheService extends Service {
             registerReceiver(new BroadcastReceiver() {
                 @Override
                 public void onReceive(Context context, Intent intent) {
+                    if (mVerboseLevel >= 1) System.out.println("        in onReceive(intent.getAction()="+intent.getAction()+")");
                     if (intent.getAction().equals(Intent.ACTION_SCREEN_OFF)) {
-                        if (mVerboseLevel >= 1) System.out.println("        in onReceive ACTION_SCREEN_OFF");
+                        if (mVerboseLevel >= 1) System.out.println("          ACTION_SCREEN_OFF: disabling orientation event listener");
                         mOrientationEventListener.disable();
                     } else if (intent.getAction().equals(Intent.ACTION_SCREEN_ON)) {
-                        if (mVerboseLevel >= 1) System.out.println("        in onReceive ACTION_SCREEN_ON");
                         // same thing we do on create (dup code)
                         if (mOrientationEventListener.canDetectOrientation() == true) {
-                            if (mVerboseLevel >= 1) System.out.println("                          can detect orientation, enabling orientation event listener");
+                            if (mVerboseLevel >= 1) System.out.println("          ACTION_SCREEN_ON and can detect orientation, enabling orientation event listener");
                             mOrientationEventListener.enable();
                         } else {
-                            if (mVerboseLevel >= 1) System.out.println("                          cannot detect orientation, disabling orientation event listener");
+                            if (mVerboseLevel >= 1) System.out.println("          ACTION_SCREEN_ON but cannot detect orientation, disabling orientation event listener");
                             mOrientationEventListener.disable();
                         }
                     } else if (intent.getAction().equals(Intent.ACTION_USER_PRESENT)) {
-                        if (mVerboseLevel >= 1) System.out.println("        in onReceive ACTION_USER_PRESENT");
+                        if (mVerboseLevel >= 1) System.out.println("          ACTION_USER_PRESENT");
                         // XXX TODO: figure out whether there's something meaningful to do here
                     } else {
                         // This shouldn't happen
-                        if (mVerboseLevel >= 1) System.out.println("        in onReceive "+intent.getAction()+" (this shouldn't happen)");
+                        System.out.println("          received unexpected broadcast: "+intent.getAction()+" (this shouldn't happen)");
                         CHECK(false);
                     }
+                    if (mVerboseLevel >= 1) System.out.println("        out onReceive(intent.getAction()="+intent.getAction()+")");
                 };
             }, intentFilter);
         }

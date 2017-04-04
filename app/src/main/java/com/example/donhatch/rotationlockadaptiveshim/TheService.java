@@ -19,7 +19,7 @@ public class TheService extends Service {
     public boolean mDegreesIsValid = false;
     public static int mStaticDegrees = -1; // most recent value passed to onOrientationChanged listener of any TheService instance.  Avoids having to think about when service isn't running.
     public static boolean mStaticDegreesIsValid = false;
-    private int mClosestCompassPoint = -1;
+    public int mClosestCompassPoint = -1;
     private android.view.OrientationEventListener mOrientationEventListener;
 
     private android.database.ContentObserver mAccelerometerRotationObserver = new android.database.ContentObserver(new android.os.Handler()) {
@@ -60,6 +60,7 @@ public class TheService extends Service {
 
     public static boolean mStaticWhackAMole = false; // TODO: make this a shared preference? the activity sets this
     public static boolean mStaticAutoRotate = false; // TODO: make this a shared preference? the activity sets this
+    public static boolean mStaticPromptFirst = false; // TODO: make this a shared preference? the activity sets this
 
     // Used as value of System.Settings.USER_ROTATION
     public static String surfaceRotationConstantToString(int surfaceRotationConstant) {
@@ -201,85 +202,20 @@ public class TheService extends Service {
                     if (closestCompassPointChanging) {
                         if (mVerboseLevel == 1) System.out.println("        in onOrientationChanged(degrees="+degrees+")"); // upgrade verbosity threshold from 2 to 1
                         int newClosestCompassPoint = degrees < 45 ? 0 : degrees < 135 ? 90 : degrees < 225 ? 180 : degrees < 315 ? 270 : 0;
-
                         mClosestCompassPoint = newClosestCompassPoint;
-                        int oldUSER_ROTATION = -1;
-                        int oldACCELEROMETER_ROTATION = -1;
-                        try {
-                            oldUSER_ROTATION = Settings.System.getInt(getContentResolver(), Settings.System.USER_ROTATION);
-                        } catch (Settings.SettingNotFoundException e) {
-                            if (mVerboseLevel >= 1) System.out.println("          Settings.System.USER_ROTATION was not found!?");
-                        }
-                        try {
-                            oldACCELEROMETER_ROTATION = Settings.System.getInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION);
-                        } catch (Settings.SettingNotFoundException e) {
-                            if (mVerboseLevel >= 1) System.out.println("          Settings.System.ACCELEROMETER_ROTATION was not found!?");
-                        }
                         // From http://stackoverflow.com/questions/14587085/how-can-i-globally-force-screen-orientation-in-android#answer-26895627
                         // Requires WRITE_SETTINGS permission.
                         // and also now it requires the canWrite dance (at beginning of Activity).
                         // It's possible we don't have permissions now, even though we checked on Activity start.
                         // e.g. the user may have never granted them, or granted them and then revoked them later.
                         // So, we have to protect these calls.
-                        try {
-                            if (mStaticAutoRotate) {
-                                if (oldACCELEROMETER_ROTATION != 0) {
-                                  // In case this got turned on for some reason.
-                                  // TODO: maybe this isn't needed any more now that we have the whack-a-mole listner?  I think this will *probably* never happen.  Maybe it depends on what order listener callbacks are invoked in?
-                                  // XXX actually need to do this much sooner! so that system won't get to it first.  (I think?  Not sure what I was saying)
-                                  if (mVerboseLevel >= 1) System.out.println("          changing Settings.System.ACCELEROMETER_ROTATION from " + oldACCELEROMETER_ROTATION + " to 0 !!!!!!!!!!");
-                                  Settings.System.putInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0);
-                                } else {
-                                  if (mVerboseLevel >= 1) System.out.println("          Settings.System.ACCELEROMETER_ROTATION was 0 as expected");
-                                }
-
-                                //setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT); // this is how an app requests it for itself. not sure how to relate with it.
-
-                                // Per https://developer.android.com/reference/android/provider/Settings.System.html:
-                                // USER_ROTATION: "Default screen rotation when no other policy applies.  When ACCELEROMETER_ROTATION is zero
-                                // and no on-screen Activity expresses a preference, this rotation value will be used."
-                                // ACCELEROMETER_ROTATION: "Control whether the accelerometer will be used to change screen orientation.
-                                // If 0, it will not be used unless explicitly requested by the application;
-                                // if 1, it will be used by default unless explicitly disabled by the application."
-                                // (where "explicitly disabled by the application" presumably means an application has called something like
-                                // setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT))
-                                // So the players are:
-                                //      - accelerometer's idea of the device's physical orientation
-                                //      - ACCELEROMETER_ROTATION (in settings): whether system should keep screen rotation in sync with device's physical orientation
-                                //      - USER_ROTATION setting (default screen rotation when no other policy applies,
-                                //          i.e. when ACCELEROMETER_ROTATION is zero and no on-screen Activity expresses a preference)
-                                // So the following is the algorithm for the screen rotation:
-                                //      1. if an on-screen Activity expressed a preference
-                                //              by setRequestedOrientation I think?
-                                //              Q: what if more than one does?
-                                //              PA: maybe it uses the "topmost" one in some sense?
-                                //      2. else if system setting ACCELEROMETER_ROTATION is 1, keep screen orientation in sync with device's physical orientation
-                                //      3. else use system setting USER_ROTATION
-                                // XXX what is android:configChanges="orientation|keyboardHidden" and the onConfigurationChanged event?
-
-                                int newUSER_ROTATION = -1;
-                                if (mClosestCompassPoint == 0) {
-                                    newUSER_ROTATION = android.view.Surface.ROTATION_0;
-                                } else if (mClosestCompassPoint == 90) {
-                                    newUSER_ROTATION = android.view.Surface.ROTATION_270;
-                                } else if (mClosestCompassPoint == 180) {
-                                    newUSER_ROTATION = android.view.Surface.ROTATION_180;
-                                } else if (mClosestCompassPoint == 270) {
-                                    newUSER_ROTATION = android.view.Surface.ROTATION_90;
-                                }
-                                CHECK(newUSER_ROTATION != -1); // logical assertion
-                                if (mVerboseLevel >= 1) System.out.println("          changing Settings.System.USER_ROTATION from " + surfaceRotationConstantToString(oldUSER_ROTATION) + " to " + surfaceRotationConstantToString(newUSER_ROTATION));
-                                Settings.System.putInt(getContentResolver(), Settings.System.USER_ROTATION, newUSER_ROTATION);
+                        if (mStaticAutoRotate) {
+                            if (mStaticPromptFirst) {
+                            } else {
+                                if (mVerboseLevel >= 1) System.out.println("          calling doTheAutoRotateThing");
+                                doTheAutoRotateThingNow();
+                                if (mVerboseLevel >= 1) System.out.println("          returned from doTheAutoRotateThing");
                             }
-                        } catch (SecurityException e) {
-                            if (mVerboseLevel >= 1) System.out.println("          Oh no, can't set system settings-- were permissions revoked?");
-                            Toast.makeText(TheService.this, " Oh no, can't set system settings-- were permissions revoked?\nHere, please grant the permission.", Toast.LENGTH_SHORT).show();
-                            Intent grantIntent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
-                            grantIntent.setData(android.net.Uri.parse("package:"+getPackageName()));
-                            if (mVerboseLevel >= 1) System.out.println("              grantIntent = "+grantIntent);
-                            if (mVerboseLevel >= 1) System.out.println("              calling startActivity with ACTION_MANAGE_WRITE_SETTINGS");
-                            startActivity(grantIntent);
-                            if (mVerboseLevel >= 1) System.out.println("              returned from startActivity with ACTION_MANAGE_WRITE_SETTINGS");
                         }
                         if (mVerboseLevel >= 1) System.out.println("          new mClosestCompassPoint = " + mClosestCompassPoint);
                         if (mVerboseLevel == 1) System.out.println("        out onOrientationChanged(degrees="+degrees+")"); // upgrade verbosity threshold from 2 to 1
@@ -425,4 +361,81 @@ public class TheService extends Service {
         // XXX race? what if user is in the process of turning it on??
         if (mVerboseLevel >= 1) System.out.println("                        out TheService.onDestroy");
     }
+
+    // Syncs system USER_ROTATION to mClosestCompassPoint.
+    // Also whacks ACCELEROMETER_ROTATION if set (but it shouldn't be).
+    public void doTheAutoRotateThingNow() {
+        if (mVerboseLevel >= 1) System.out.println("            in doTheAutoRotateThingNow");
+        int oldACCELEROMETER_ROTATION = -1;
+        int oldUSER_ROTATION = -1;
+        try {
+            oldACCELEROMETER_ROTATION = Settings.System.getInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION);
+        } catch (Settings.SettingNotFoundException e) {
+            if (mVerboseLevel >= 1) System.out.println("          Settings.System.ACCELEROMETER_ROTATION was not found!?");
+        }
+        try {
+            oldUSER_ROTATION = Settings.System.getInt(getContentResolver(), Settings.System.USER_ROTATION);
+        } catch (Settings.SettingNotFoundException e) {
+            if (mVerboseLevel >= 1) System.out.println("          Settings.System.USER_ROTATION was not found!?");
+        }
+        if (oldACCELEROMETER_ROTATION != 0) {
+          // In case this got turned on for some reason.
+          // TODO: maybe this isn't needed any more now that we have the whack-a-mole listener?  I think this will *probably* never happen.  Maybe it depends on what order listener callbacks are invoked in?
+          // XXX actually need to do this much sooner! so that system won't get to it first.  (I think?  Not sure what I was saying)
+          if (mVerboseLevel >= 1) System.out.println("          changing Settings.System.ACCELEROMETER_ROTATION from " + oldACCELEROMETER_ROTATION + " to 0 !!!!!!!!!!");
+          Settings.System.putInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0);
+        } else {
+          if (mVerboseLevel >= 1) System.out.println("          Settings.System.ACCELEROMETER_ROTATION was 0 as expected");
+        }
+
+        //setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT); // this is how an app requests it for itself. not sure how to relate with it.
+
+        // Per https://developer.android.com/reference/android/provider/Settings.System.html:
+        // USER_ROTATION: "Default screen rotation when no other policy applies.  When ACCELEROMETER_ROTATION is zero
+        // and no on-screen Activity expresses a preference, this rotation value will be used."
+        // ACCELEROMETER_ROTATION: "Control whether the accelerometer will be used to change screen orientation.
+        // If 0, it will not be used unless explicitly requested by the application;
+        // if 1, it will be used by default unless explicitly disabled by the application."
+        // (where "explicitly disabled by the application" presumably means an application has called something like
+        // setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT))
+        // So the players are:
+        //      - accelerometer's idea of the device's physical orientation
+        //      - ACCELEROMETER_ROTATION (in settings): whether system should keep screen rotation in sync with device's physical orientation
+        //      - USER_ROTATION setting (default screen rotation when no other policy applies,
+        //          i.e. when ACCELEROMETER_ROTATION is zero and no on-screen Activity expresses a preference)
+        // So the following is the algorithm for the screen rotation:
+        //      1. if an on-screen Activity expressed a preference
+        //              by setRequestedOrientation I think?
+        //              Q: what if more than one does?
+        //              PA: maybe it uses the "topmost" one in some sense?
+        //      2. else if system setting ACCELEROMETER_ROTATION is 1, keep screen orientation in sync with device's physical orientation
+        //      3. else use system setting USER_ROTATION
+        // XXX what is android:configChanges="orientation|keyboardHidden" and the onConfigurationChanged event?
+
+        int newUSER_ROTATION = -1;
+        if (mClosestCompassPoint == 0) {
+            newUSER_ROTATION = android.view.Surface.ROTATION_0;
+        } else if (mClosestCompassPoint == 90) {
+            newUSER_ROTATION = android.view.Surface.ROTATION_270;
+        } else if (mClosestCompassPoint == 180) {
+            newUSER_ROTATION = android.view.Surface.ROTATION_180;
+        } else if (mClosestCompassPoint == 270) {
+            newUSER_ROTATION = android.view.Surface.ROTATION_90;
+        }
+        CHECK(newUSER_ROTATION != -1); // logical assertion
+        try {
+        if (mVerboseLevel >= 1) System.out.println("          changing Settings.System.USER_ROTATION from " + surfaceRotationConstantToString(oldUSER_ROTATION) + " to " + surfaceRotationConstantToString(newUSER_ROTATION));
+        Settings.System.putInt(getContentResolver(), Settings.System.USER_ROTATION, newUSER_ROTATION);
+        } catch (SecurityException e) {
+            if (mVerboseLevel >= 1) System.out.println("          Oh no, can't set system settings-- were permissions revoked?");
+            Toast.makeText(TheService.this, " Oh no, can't set system settings-- were permissions revoked?\nHere, please grant the permission.", Toast.LENGTH_SHORT).show();
+            Intent grantIntent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
+            grantIntent.setData(android.net.Uri.parse("package:"+getPackageName()));
+            if (mVerboseLevel >= 1) System.out.println("              grantIntent = "+grantIntent);
+            if (mVerboseLevel >= 1) System.out.println("              calling startActivity with ACTION_MANAGE_WRITE_SETTINGS");
+            startActivity(grantIntent);
+            if (mVerboseLevel >= 1) System.out.println("              returned from startActivity with ACTION_MANAGE_WRITE_SETTINGS");
+        }
+        if (mVerboseLevel >= 1) System.out.println("            out doTheAutoRotateThingNow");
+    }  // doTheAutoRotateThingNow
 }

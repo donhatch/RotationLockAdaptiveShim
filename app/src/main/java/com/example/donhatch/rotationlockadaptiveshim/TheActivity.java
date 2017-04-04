@@ -142,6 +142,12 @@ public class TheActivity extends android.app.Activity {
                         // TODO: do this through the service somehow?
                         // TODO: need to catch SecurityException!
                         Settings.System.putInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0);
+                        if (TheService.theRunningService != null) {
+                          // XXX just nuke everything without thinking too much.  TODO: think about it better
+                          TheService.theRunningService.mDegreesIsValid = false;
+                          TheService.theRunningService.mStaticDegreesIsValid = false;
+                          TheService.theRunningService.mClosestCompassPoint = -1;
+                        }
                     }
                     // TODO: make it update immediately?
                     System.out.println("            out theAutoRotateSwitch onCheckedChanged(isChecked=" + isChecked + ")");

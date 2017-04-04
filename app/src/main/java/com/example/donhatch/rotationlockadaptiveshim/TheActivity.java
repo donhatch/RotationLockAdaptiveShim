@@ -113,7 +113,6 @@ public class TheActivity extends android.app.Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         android.widget.Switch theServiceSwitch = (android.widget.Switch)findViewById(R.id.theServiceSwitch);
-        android.widget.Button theForceStopButton = (android.widget.Button)findViewById(R.id.theForceStopButton);
         android.widget.Button theAppSettingsButton = (android.widget.Button)findViewById(R.id.theAppSettingsButton);
         android.widget.Switch theWhackAMoleSwitch = (android.widget.Switch)findViewById(R.id.theWhackAMoleSwitch);
         android.widget.Switch theAutoRotateSwitch = (android.widget.Switch)findViewById(R.id.theAutoRotateSwitch);
@@ -146,16 +145,8 @@ public class TheActivity extends android.app.Activity {
             });
         }
         if (true) {
-            theForceStopButton.setOnClickListener(new android.view.View.OnClickListener() {
-                @Override
-                public void onClick(android.view.View v) {
-                    System.out.println("            in theForceStopButton onClick");
-                    // http://android.stackexchange.com/questions/33801/what-does-the-force-stop-button-mean#answer-48167
-                    System.out.println("            out theForceStopButton onClick");
-                }
-            });
-        }
-        if (true) {
+            // I had a "force stop" button, but it's almost as easy to just let the user get to it through the "app settings" button, it's 2 clicks.  Force stop is probably hard to implement.
+            // http://android.stackexchange.com/questions/33801/what-does-the-force-stop-button-mean#answer-48167
             theAppSettingsButton.setOnClickListener(new android.view.View.OnClickListener() {
                 @Override
                 public void onClick(android.view.View v) {

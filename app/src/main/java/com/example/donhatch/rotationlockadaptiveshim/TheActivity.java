@@ -1,5 +1,7 @@
 package com.example.donhatch.rotationlockadaptiveshim;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.provider.Settings;
 
 public class TheActivity extends android.app.Activity {
@@ -111,6 +113,8 @@ public class TheActivity extends android.app.Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         android.widget.Switch theServiceSwitch = (android.widget.Switch)findViewById(R.id.theServiceSwitch);
+        android.widget.Button theForceStopButton = (android.widget.Button)findViewById(R.id.theForceStopButton);
+        android.widget.Button theAppSettingsButton = (android.widget.Button)findViewById(R.id.theAppSettingsButton);
         android.widget.Switch theWhackAMoleSwitch = (android.widget.Switch)findViewById(R.id.theWhackAMoleSwitch);
         android.widget.Switch theAutoRotateSwitch = (android.widget.Switch)findViewById(R.id.theAutoRotateSwitch);
         android.widget.Switch thePromptFirstSwitch = (android.widget.Switch)findViewById(R.id.thePromptFirstSwitch);
@@ -138,6 +142,30 @@ public class TheActivity extends android.app.Activity {
                         }
                     }
                     System.out.println("            out theWhackAMoleSwitch onCheckedChanged(isChecked=" + isChecked + ")");
+                }
+            });
+        }
+        if (true) {
+            theForceStopButton.setOnClickListener(new android.view.View.OnClickListener() {
+                @Override
+                public void onClick(android.view.View v) {
+                    System.out.println("            in theForceStopButton onClick");
+                    // http://android.stackexchange.com/questions/33801/what-does-the-force-stop-button-mean#answer-48167
+                    System.out.println("            out theForceStopButton onClick");
+                }
+            });
+        }
+        if (true) {
+            theAppSettingsButton.setOnClickListener(new android.view.View.OnClickListener() {
+                @Override
+                public void onClick(android.view.View v) {
+                    System.out.println("            in theAppSettingsButton onClick");
+                    startActivityForResult(
+                        new android.content.Intent(
+                            android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                            Uri.parse("package:"+getPackageName())),
+                        0);
+                    System.out.println("            out theAppSettingsButton onClick");
                 }
             });
         }
@@ -365,14 +393,11 @@ public class TheActivity extends android.app.Activity {
         String message = "";
         message += ("  getRequestedOrientation() = " + TheService.screenOrientationConstantToString(getRequestedOrientation()));
         message += "\n";
-        message += "\n";
         message += (gotAccelerometerRotation ? "  Settings.System.ACCELEROMETER_ROTATION: "+accelerometerRotation : "[no Settings.System.ACCELEROMETER_ROTATION]");
         message += "\n";
         message += (gotUserRotation ? "  Settings.System.USER_ROTATION: "+TheService.surfaceRotationConstantToString(userRotation) : "[no Settings.System.USER_ROTATION]");
         message += "\n";
-        message += "\n";
         message += ("  getResources().getConfiguration().orientation = " + TheService.orientationConstantToString(getResources().getConfiguration().orientation));
-        message += "\n";
         message += "\n";
         message += ("  getWindowManager().getDefaultDisplay().getRotation() = " + TheService.surfaceRotationConstantToString(getWindowManager().getDefaultDisplay().getRotation()));
         thePolledStatusTextView.setText(message);
@@ -397,11 +422,11 @@ public class TheActivity extends android.app.Activity {
         // That invoked the listener which set the label to "Service is on" or "Service is off";
         // overwrite it with something that says "initially".
         if (serviceIsRunning) {
-            System.out.println("          setting text to \"Service is initially on  \"");
-            theServiceSwitch.setText("Service is initially on  ");
+            System.out.println("          setting text to \"Service is initially on\"");
+            theServiceSwitch.setText("Service is initially on");
         } else {
-            System.out.println("          setting text to \"Service is initially off \"");
-            theServiceSwitch.setText("Service is initially off ");
+            System.out.println("          setting text to \"Service is initially off\"");
+            theServiceSwitch.setText("Service is initially off");
         }
         System.out.println("        out onStart");
     }

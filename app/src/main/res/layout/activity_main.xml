@@ -14,13 +14,28 @@ tools:context=".TheActivity" >
         android:text="Service is off "
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_above="@+id/theWhackAMoleSwitch"
         android:id="@+id/theServiceSwitch" />
+
+    <Button
+        android:text="Force Stop"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toLeftOf="@+id/theAppSettingsButton"
+        android:id="@+id/theForceStopButton" />
+
+    <Button
+        android:text="App Settings"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:id="@+id/theAppSettingsButton" />
 
     <Switch
         android:text="  Service should whack-a-mole system autorotate "
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/theServiceSwitch"
+        android:layout_below="@+id/theForceStopButton"
         android:id="@+id/theWhackAMoleSwitch" />
 
     <Switch
@@ -94,4 +109,5 @@ tools:context=".TheActivity" >
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:id="@+id/thePolledStatusTextView" />
+
 </RelativeLayout>

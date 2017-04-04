@@ -34,6 +34,7 @@ public class TheService extends Service {
     public static boolean mStaticDegreesIsValid = false;
     public static int mStaticClosestCompassPoint = -1; // means invalid
     private android.view.OrientationEventListener mOrientationEventListener;
+    private Runnable mCleanupDialog = null;
 
     private android.database.ContentObserver mAccelerometerRotationObserver = new android.database.ContentObserver(new android.os.Handler()) {
         // Per https://developer.android.com/reference/android/database/ContentObserver.html (probably not necessary though)
@@ -225,8 +226,10 @@ public class TheService extends Service {
                         if (mStaticAutoRotate) {
                             if (mStaticPromptFirst) {
 
-                                // TODO: cancel previous, if any
-
+                                if (mCleanupDialog != null) {
+                                    mCleanupDialog.run();
+                                    mCleanupDialog = null;
+                                }
 
                                 if (true) {
                                     // https://developer.android.com/guide/topics/ui/dialogs.html
@@ -240,12 +243,26 @@ public class TheService extends Service {
                                         .setTitle("Rotate the screen?")
                                         .setMessage("3...")
                                         //.setNeutralButton("MAYBE", null)
-                                        .setNegativeButton("No", null)
+                                        .setNegativeButton("No", new DialogInterface.OnClickListener() {
+                                            @Override
+                                            public void onClick(DialogInterface dialog, int id) {
+                                                if (mVerboseLevel == 1) System.out.println("            in alertDialog negative button onClick");
+                                                // XXX is this evidence for why it's good to always delay?
+                                                CHECK(mCleanupDialog != null);
+                                                mCleanupDialog.run();
+                                                mCleanupDialog = null;
+                                                if (mVerboseLevel == 1) System.out.println("            out alertDialog negative button onClick");
+                                            };
+                                        })
                                         // shameless hack to get it somewhat centered
                                         .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
                                             @Override
                                             public void onClick(DialogInterface dialog, int id) {
                                                 if (mVerboseLevel == 1) System.out.println("            in alertDialog positive button onClick");
+                                                // XXX is this evidence for why it's good to always delay?
+                                                CHECK(mCleanupDialog != null);
+                                                mCleanupDialog.run();
+                                                mCleanupDialog = null;
                                                 doTheAutoRotateThingNow();
                                                 if (mVerboseLevel == 1) System.out.println("            out alertDialog positive button onClick");
                                             };
@@ -265,14 +282,28 @@ public class TheService extends Service {
                                         CHECK(false);
                                     }
                                     // Make it expire in 3 seconds.
-                                    new Handler().postDelayed(new Runnable() {
+                                    final Handler handler = new Handler();
+                                    final Runnable runnable = new Runnable() {
                                         @Override
                                         public void run() {
                                             if (mVerboseLevel == 1) System.out.println("            in run: prompt expired; canceling alert dialog");
                                             alertDialog.cancel();
+                                            mCleanupDialog = null;
                                             if (mVerboseLevel == 1) System.out.println("            out run: prompt expired; cancelled alert dialog");
                                         }
-                                    }, 3*1000);
+                                    };
+                                    handler.postDelayed(runnable, 3*1000);
+
+                                    CHECK(mCleanupDialog == null);
+                                    mCleanupDialog = new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            if (mVerboseLevel == 1) System.out.println("            cleaning up previous dialog");
+                                            alertDialog.cancel();
+                                            handler.removeCallbacks(runnable); // ok if it wasn't scheduled
+                                            if (mVerboseLevel == 1) System.out.println("            cleaned up previous dialog");
+                                        }
+                                    };
 
                                     // Cute countdown
                                     new Handler().postDelayed(new Runnable() { @Override public void run() { alertDialog.setMessage("2..."); } }, 1*1000);

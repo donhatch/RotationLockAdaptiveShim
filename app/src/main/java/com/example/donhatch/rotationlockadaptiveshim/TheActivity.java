@@ -16,16 +16,18 @@ public class TheActivity extends android.app.Activity {
     // so that the onCheckedChanged listener can tell that's what happened.
     private boolean mSettingCheckedFromProgram = false;
     private long mNumUpdates = 0;
+    private boolean mPolling = true;  // TODO: make this a shared preference so it will persist?
+
     public static TheActivity theRunningActivity = null; // actually not sure there is guaranteed to be at most one
 
-    private android.os.Handler mHandler = new android.os.Handler();
-    private Runnable mRunnable = new Runnable() {
+    private android.os.Handler mPollingHandler = new android.os.Handler();
+    private Runnable mPollingRunnable = new Runnable() {
         @Override
         public void run() {
             System.out.println("                in once-per-second poll, should only be when ui is visible");
             updateAccelerometerOrientationDegreesTextView(); // XXX not sure about this
             updatePolledStatusTextView();
-            mHandler.postDelayed(this, 1*1000);
+            mPollingHandler.postDelayed(this, 1*1000);
             System.out.println("                out once-per-second poll, should only be when ui is visible");
         };
     };
@@ -122,6 +124,7 @@ public class TheActivity extends android.app.Activity {
         theWhackAMoleSwitch.setChecked(TheService.mStaticWhackAMole);
         theAutoRotateSwitch.setChecked(TheService.mStaticAutoRotate);
         thePromptFirstSwitch.setChecked(TheService.mStaticPromptFirst);
+        theMonitorSwitch.setChecked(mPolling);
 
         if (true) {
             theWhackAMoleSwitch.setOnCheckedChangeListener(new android.widget.CompoundButton.OnCheckedChangeListener() {
@@ -196,11 +199,12 @@ public class TheActivity extends android.app.Activity {
             theMonitorSwitch.setOnCheckedChangeListener(new android.widget.CompoundButton.OnCheckedChangeListener() {
                 public void onCheckedChanged(android.widget.CompoundButton buttonView, boolean isChecked) {
                     System.out.println("            in theMonitorSwitch onCheckedChanged(isChecked=" + isChecked + ")");
-                    mHandler.removeCallbacks(mRunnable); // ok if it wasn't scheduled
+                    mPolling = isChecked;
+                    mPollingHandler.removeCallbacks(mPollingRunnable);  // ok if it wasn't scheduled
                     if (isChecked) {
                         // Presumably the activity is between onResume and onPause when this happens,
                         // so it's correct to start the periodic callback here.
-                        mHandler.postDelayed(mRunnable, 0); // immediately
+                        mPollingHandler.postDelayed(mPollingRunnable, 0);  // immediately
                     }
                     System.out.println("            out theMonitorSwitch onCheckedChanged(isChecked=" + isChecked + ")");
                 }
@@ -448,9 +452,8 @@ public class TheActivity extends android.app.Activity {
         }
 
         {
-          android.widget.Switch theMonitorSwitch = (android.widget.Switch)findViewById(R.id.theMonitorSwitch);
-          if (theMonitorSwitch.isChecked()) {
-              mHandler.postDelayed(mRunnable, 1*1000);
+          if (mPolling) {
+              mPollingHandler.postDelayed(mPollingRunnable, 0);  // immediately
           }
         }
 
@@ -470,7 +473,7 @@ public class TheActivity extends android.app.Activity {
 
         getContentResolver().unregisterContentObserver(mAccelerometerRotationObserver); // ok if it wasn't registered, I think... although it should be
         getContentResolver().unregisterContentObserver(mUserRotationObserver); // ok if it wasn't registered, I think... although it should be
-        mHandler.removeCallbacks(mRunnable); // ok if it wasn't scheduled
+        mPollingHandler.removeCallbacks(mPollingRunnable); // ok if it wasn't scheduled
 
         super.onPause();
         System.out.println("            out onPause");

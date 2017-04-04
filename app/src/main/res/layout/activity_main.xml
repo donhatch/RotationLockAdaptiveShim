@@ -14,8 +14,21 @@ tools:context=".TheActivity" >
         android:text="Service is off "
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
         android:id="@+id/theServiceSwitch" />
+
+    <Switch
+        android:text="  Service should whack-a-mole system autorotate "
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/theServiceSwitch"
+        android:id="@+id/theWhackAMoleSwitch" />
+
+    <Switch
+        android:text="  Service should auto rotate "
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/theWhackAMoleSwitch"
+        android:id="@+id/theAutoRotateSwitch" />
 
     <TextView
         android:text="Listened values:"

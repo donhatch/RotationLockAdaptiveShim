@@ -38,7 +38,7 @@ tools:context=".TheActivity" >
         android:id="@+id/theListenedValuesHeader" />
 
     <TextView
-        android:text="accelerometer orientation degrees"
+        android:text="  accelerometer degrees: ???"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_above="@+id/theAccelerometerRotationTextView"
@@ -70,7 +70,7 @@ tools:context=".TheActivity" >
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:checked="false"
-        android:layout_above="@+id/thePolledValuesHeader"
+        android:layout_above="@+id/thePolledValuesHeaderTextView"
         android:id="@+id/theMonitorSwitch" />
 
     <TextView
@@ -78,7 +78,7 @@ tools:context=".TheActivity" >
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_above="@+id/thePolledStatusTextView"
-        android:id="@+id/thePolledValuesHeader" />
+        android:id="@+id/thePolledValuesHeaderTextView" />
 
     <TextView
         android:text="polled status"

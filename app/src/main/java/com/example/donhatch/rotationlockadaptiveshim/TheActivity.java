@@ -27,9 +27,9 @@ public class TheActivity extends android.app.Activity {
             //System.out.println("                in onReceive");
             int oldDegrees = intent.getIntExtra("oldDegrees", -100);
             int newDegrees = intent.getIntExtra("newDegrees", -100);
-            System.out.println("                  intent.getIntExtra(\"oldDegrees\") = "+oldDegrees);
-            System.out.println("                  intent.getIntExtra(\"newDegrees\") = "+newDegrees);
-            android.widget.TextView theAccelerometerOrientationDegreesTextView = (android.widget.TextView)findViewById(R.id.theAccelerometerOrientationDegreesTextView); // XXX TODO: make this a member
+            //System.out.println("                  intent.getIntExtra(\"oldDegrees\") = "+oldDegrees);
+            //System.out.println("                  intent.getIntExtra(\"newDegrees\") = "+newDegrees);
+            android.widget.TextView theAccelerometerOrientationDegreesTextView = (android.widget.TextView)findViewById(R.id.theAccelerometerOrientationDegreesTextView);
             theAccelerometerOrientationDegreesTextView.setText("  accelerometer degrees (most recent update): "+oldDegrees+" -> "+newDegrees);
             //System.out.println("                out onReceive");
         }
@@ -225,7 +225,7 @@ public class TheActivity extends android.app.Activity {
     }
 
     private void updateAccelerometerOrientationDegreesTextView() {
-        android.widget.TextView theAccelerometerOrientationDegreesTextView = (android.widget.TextView)findViewById(R.id.theAccelerometerOrientationDegreesTextView); // XXX TODO: make this a member
+        android.widget.TextView theAccelerometerOrientationDegreesTextView = (android.widget.TextView)findViewById(R.id.theAccelerometerOrientationDegreesTextView);
 
         // Can I just query the current value of the accelerometer, without registering a changed-listener??
 
@@ -249,10 +249,12 @@ public class TheActivity extends android.app.Activity {
         Hmm, it's just translating ACCELEROMETER onSensorChanged events.  Hmm.
         */
 
-        if (TheService.mStaticDegreesIsValid) {
-            theAccelerometerOrientationDegreesTextView.setText("accelerometer degrees: "+TheService.mStaticDegrees);
-        } else {
-            theAccelerometerOrientationDegreesTextView.setText("accelerometer degrees: ???");
+        if (false) { // XXX need to unconfuse what I'm doing here. does this have any value?
+            if (TheService.mStaticDegreesIsValid) {
+                theAccelerometerOrientationDegreesTextView.setText("  accelerometer degrees: "+TheService.mStaticDegrees);
+            } else {
+                theAccelerometerOrientationDegreesTextView.setText("  accelerometer degrees: ???");
+            }
         }
 
         if (false) // XXX needs work, maybe just kill this
@@ -289,7 +291,7 @@ public class TheActivity extends android.app.Activity {
     }
 
     private void updateAccelerometerRotationTextView() {
-        android.widget.TextView theAccelerometerRotationTextView = (android.widget.TextView)findViewById(R.id.theAccelerometerRotationTextView); // XXX TODO: make this a member
+        android.widget.TextView theAccelerometerRotationTextView = (android.widget.TextView)findViewById(R.id.theAccelerometerRotationTextView);
         try {
             int accelerometerRotation = Settings.System.getInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION);
             theAccelerometerRotationTextView.setText("  Settings.System.ACCELEROMETER_ROTATION: "+accelerometerRotation);
@@ -299,7 +301,7 @@ public class TheActivity extends android.app.Activity {
         }
     }
     private void updateUserRotationTextView() {
-        android.widget.TextView theUserRotationTextView = (android.widget.TextView)findViewById(R.id.theUserRotationTextView); // XXX TODO: make this a member
+        android.widget.TextView theUserRotationTextView = (android.widget.TextView)findViewById(R.id.theUserRotationTextView);
         try {
             int userRotation = Settings.System.getInt(getContentResolver(), Settings.System.USER_ROTATION);
             theUserRotationTextView.setText("  Settings.System.USER_ROTATION: "+TheService.surfaceRotationConstantToString(userRotation));
@@ -309,11 +311,11 @@ public class TheActivity extends android.app.Activity {
         }
     }
     private void updateConfigurationOrientationTextView() {
-        android.widget.TextView theConfigurationOrientationTextView = (android.widget.TextView)findViewById(R.id.theConfigurationOrientationTextView); // XXX TODO: make this a member
+        android.widget.TextView theConfigurationOrientationTextView = (android.widget.TextView)findViewById(R.id.theConfigurationOrientationTextView);
         theConfigurationOrientationTextView.setText("  getResources().getConfiguration().orientation = " + TheService.orientationConstantToString(getResources().getConfiguration().orientation));
     }
     private void updatePolledStatusTextView() {
-        android.widget.TextView thePolledStatusTextView = (android.widget.TextView)findViewById(R.id.thePolledStatusTextView); // XXX TODO: make this a member
+        android.widget.TextView thePolledStatusTextView = (android.widget.TextView)findViewById(R.id.thePolledStatusTextView);
         int accelerometerRotation = -1;
         boolean gotAccelerometerRotation = false;
         int userRotation = -1;
@@ -328,18 +330,22 @@ public class TheActivity extends android.app.Activity {
         } catch (Settings.SettingNotFoundException e) {}
         String message = "";
         message += ("  getRequestedOrientation() = " + TheService.screenOrientationConstantToString(getRequestedOrientation()));
-        message += "\n\n";
+        message += "\n";
+        message += "\n";
         message += (gotAccelerometerRotation ? "  Settings.System.ACCELEROMETER_ROTATION: "+accelerometerRotation : "[no Settings.System.ACCELEROMETER_ROTATION]");
-        message += "\n\n";
+        message += "\n";
         message += (gotUserRotation ? "  Settings.System.USER_ROTATION: "+TheService.surfaceRotationConstantToString(userRotation) : "[no Settings.System.USER_ROTATION]");
-        message += "\n\n";
+        message += "\n";
+        message += "\n";
         message += ("  getResources().getConfiguration().orientation = " + TheService.orientationConstantToString(getResources().getConfiguration().orientation));
-        message += "\n\n";
+        message += "\n";
+        message += "\n";
         message += ("  getWindowManager().getDefaultDisplay().getRotation() = " + TheService.surfaceRotationConstantToString(getWindowManager().getDefaultDisplay().getRotation()));
-        message += "\n\n";
-        mNumUpdates++;
-        message += "  "+mNumUpdates+" update"+(mNumUpdates==1?"":"s");
         thePolledStatusTextView.setText(message);
+
+        android.widget.TextView thePolledValuesHeader = (android.widget.TextView)findViewById(R.id.thePolledValuesHeaderTextView);
+        mNumUpdates++;
+        thePolledValuesHeader.setText("Polled values:  ("+mNumUpdates+" update"+(mNumUpdates==1?"":"s")+")");
     }
 
     @Override

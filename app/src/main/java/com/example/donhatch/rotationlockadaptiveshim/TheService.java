@@ -225,6 +225,7 @@ public class TheService extends Service {
                             if (mStaticAutoRotate) {
                                 if (oldACCELEROMETER_ROTATION != 0) {
                                   // In case this got turned on for some reason.
+                                  // TODO: maybe this isn't needed any more now that we have the whack-a-mole listner?  I think this will *probably* never happen.  Maybe it depends on what order listener callbacks are invoked in?
                                   // XXX actually need to do this much sooner! so that system won't get to it first.  (I think?  Not sure what I was saying)
                                   if (mVerboseLevel >= 1) System.out.println("          changing Settings.System.ACCELEROMETER_ROTATION from " + oldACCELEROMETER_ROTATION + " to 0 !!!!!!!!!!");
                                   Settings.System.putInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0);

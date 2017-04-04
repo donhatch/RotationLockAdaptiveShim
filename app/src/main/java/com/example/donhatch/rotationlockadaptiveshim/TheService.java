@@ -65,9 +65,9 @@ public class TheService extends Service {
         }
     };  // mAccelerometerRotationObserver
 
-    public static boolean mStaticWhackAMole = false; // TODO: make this a shared preference? the activity sets this
-    public static boolean mStaticAutoRotate = false; // TODO: make this a shared preference? the activity sets this
-    public static boolean mStaticPromptFirst = false; // TODO: make this a shared preference? the activity sets this
+    public static boolean mStaticWhackAMole = true; // TODO: make this a shared preference? the activity is the one who sets this
+    public static boolean mStaticAutoRotate = true; // TODO: make this a shared preference? the activity is the one who sets this
+    public static boolean mStaticPromptFirst = false; // TODO: make this a shared preference? the activity is the one who sets this
 
     // Used as value of System.Settings.USER_ROTATION
     public static String surfaceRotationConstantToString(int surfaceRotationConstant) {

@@ -119,6 +119,10 @@ public class TheActivity extends android.app.Activity {
         android.widget.Switch thePromptFirstSwitch = (android.widget.Switch)findViewById(R.id.thePromptFirstSwitch);
         android.widget.Switch theMonitorSwitch = (android.widget.Switch)findViewById(R.id.theMonitorSwitch);
 
+        theWhackAMoleSwitch.setChecked(TheService.mStaticWhackAMole);
+        theAutoRotateSwitch.setChecked(TheService.mStaticAutoRotate);
+        thePromptFirstSwitch.setChecked(TheService.mStaticPromptFirst);
+
         if (true) {
             theWhackAMoleSwitch.setOnCheckedChangeListener(new android.widget.CompoundButton.OnCheckedChangeListener() {
                 public void onCheckedChanged(android.widget.CompoundButton buttonView, boolean isChecked) {
@@ -413,11 +417,11 @@ public class TheActivity extends android.app.Activity {
         // That invoked the listener which set the label to "Service is on" or "Service is off";
         // overwrite it with something that says "initially".
         if (serviceIsRunning) {
-            System.out.println("          setting text to \"Service is initially on\"");
-            theServiceSwitch.setText("Service is initially on");
+            System.out.println("          setting text to \"Service is initially on  \"");
+            theServiceSwitch.setText("Service is initially on  ");
         } else {
-            System.out.println("          setting text to \"Service is initially off\"");
-            theServiceSwitch.setText("Service is initially off");
+            System.out.println("          setting text to \"Service is initially off \"");
+            theServiceSwitch.setText("Service is initially off ");
         }
         System.out.println("        out onStart");
     }

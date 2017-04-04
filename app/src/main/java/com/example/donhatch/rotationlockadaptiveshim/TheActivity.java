@@ -1,3 +1,7 @@
+//
+// TODO: implement app override
+// TODO: turn off accelerometer listening when screen is off
+
 package com.example.donhatch.rotationlockadaptiveshim;
 
 import android.content.Intent;

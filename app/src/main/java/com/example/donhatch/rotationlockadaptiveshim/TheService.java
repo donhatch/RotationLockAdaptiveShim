@@ -3,6 +3,7 @@ package com.example.donhatch.rotationlockadaptiveshim;
 import android.app.AlertDialog;
 import android.app.Notification;
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -472,7 +473,10 @@ public class TheService extends Service {
 
                 if (mVerboseLevel >= 2) System.out.println("        out onOrientationChanged(degrees="+degrees+")");
             }
-        };
+        };  // mOrientationEventListener
+
+
+        // same thing we do on ACTION_SCREEN_ON
         if (mOrientationEventListener.canDetectOrientation() == true) {
             if (mVerboseLevel >= 1) System.out.println("                          can detect orientation");
             mOrientationEventListener.enable();
@@ -481,8 +485,47 @@ public class TheService extends Service {
             mOrientationEventListener.disable();
         }
 
+        {
+
+            // XXX doesn't seem to be working?  onReceive isn't getting called at all.
+            // maybe try this, looks like a somewhat complete example:
+            //   http://androidexample.com/Screen_Wake_Sleep_Event_Listner_Service_-_Android_Example/index.php?view=article_discription&aid=91&aaid=115
+
+            // https://thinkandroid.wordpress.com/2010/01/24/handling-screen-off-and-screen-on-intents/
+            System.out.println("android.content.Intent.ACTION_SCREEN_OFF = "+android.content.Intent.ACTION_SCREEN_OFF);
+            System.out.println("android.content.Intent.ACTION_SCREEN_ON = "+android.content.Intent.ACTION_SCREEN_ON);
+
+            android.content.IntentFilter intentFilter = new android.content.IntentFilter();
+            intentFilter.addAction(android.content.Intent.ACTION_SCREEN_OFF);
+            intentFilter.addAction(android.content.Intent.ACTION_SCREEN_ON);
+            intentFilter.addAction(android.content.Intent.ACTION_USER_PRESENT);
+            android.support.v4.content.LocalBroadcastManager.getInstance(this).registerReceiver(new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    if (intent.getAction().equals(Intent.ACTION_SCREEN_OFF)) {
+                        if (mVerboseLevel >= 1) System.out.println("        in onReceive ACTION_SCREEN_OFF");
+                        mOrientationEventListener.disable();
+                    } else if (intent.getAction().equals(Intent.ACTION_SCREEN_ON)) {
+                        if (mVerboseLevel >= 1) System.out.println("        in onReceive ACTION_SCREEN_ON");
+                        if (mOrientationEventListener.canDetectOrientation() == true) {
+                            if (mVerboseLevel >= 1) System.out.println("                          can detect orientation");
+                            mOrientationEventListener.enable();
+                        } else {
+                            if (mVerboseLevel >= 1) System.out.println("                          cannot detect orientation");
+                            mOrientationEventListener.disable();
+                        }
+                    } else if (intent.getAction().equals(Intent.ACTION_USER_PRESENT)) {
+                    } else {
+                        if (mVerboseLevel >= 1) System.out.println("        in onReceive "+intent.getAction());
+                        CHECK(false);
+                    }
+                };
+            }, intentFilter);
+        }
+
         getContentResolver().registerContentObserver(Settings.System.getUriFor(Settings.System.ACCELEROMETER_ROTATION), false, mAccelerometerRotationObserver);
         if (mVerboseLevel >= 1) System.out.println("                        out TheService.onCreate");
+
     }
 
     @Override

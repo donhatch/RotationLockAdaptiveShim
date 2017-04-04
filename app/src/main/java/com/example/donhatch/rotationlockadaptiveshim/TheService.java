@@ -38,57 +38,92 @@ public class TheService extends Service {
     private android.view.OrientationEventListener mOrientationEventListener;
     private Runnable mCleanupDialog = null;
 
+    // We listen to these system settings, so these values should always be (pretty much) current
+    private int mCurrentSystemSettingACCELEROMETER_ROTATION = -1; // CBB: actually could be a valid value
+    private int mCurrentSystemSettingUSER_ROTATION = -1; // CBB: actually could be a valid value, though unlikely
+
+    private void updateCurrentACCELEROMETER_ROTATION() {
+        try {
+            mCurrentSystemSettingACCELEROMETER_ROTATION = Settings.System.getInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION);
+            if (mVerboseLevel >= 1) System.out.println("              Settings.System.ACCELEROMETER_ROTATION is now "+mCurrentSystemSettingACCELEROMETER_ROTATION);
+        } catch (Settings.SettingNotFoundException e) {
+            if (mVerboseLevel >= 1) System.out.println("              Settings.System.ACCELEROMETER_ROTATION was not found!?");
+        }
+    }
+    private void updateCurrentUSER_ROTATION() {
+        try {
+            mCurrentSystemSettingUSER_ROTATION = Settings.System.getInt(getContentResolver(), Settings.System.USER_ROTATION);
+            if (mVerboseLevel >= 1) System.out.println("              Settings.System.USER_ROTATION is now "+mCurrentSystemSettingUSER_ROTATION);
+        } catch (Settings.SettingNotFoundException e) {
+            if (mVerboseLevel >= 1) System.out.println("              Settings.System.USER_ROTATION was not found!?");
+        }
+    }
+
     private android.database.ContentObserver mAccelerometerRotationObserver = new android.database.ContentObserver(new android.os.Handler()) {
         // Per https://developer.android.com/reference/android/database/ContentObserver.html (probably not necessary though)
         @Override public void onChange(boolean selfChange) { onChange(selfChange, null); }
         @Override
         public void onChange(boolean selfChange, android.net.Uri uri) {
             System.out.println("            in TheService mAccelerometerRotationObserver onChange(selfChange="+selfChange+", uri="+uri+")");
+            updateCurrentACCELEROMETER_ROTATION();
             if (mStaticWhackAMole) {
-                int oldACCELEROMETER_ROTATION = -1;
-                try {
-                    oldACCELEROMETER_ROTATION = Settings.System.getInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION);
-                } catch (Settings.SettingNotFoundException e) {
-                    if (mVerboseLevel >= 1) System.out.println("          Settings.System.ACCELEROMETER_ROTATION was not found!?");
-                }
-                if (oldACCELEROMETER_ROTATION != 0) {
+                if (mCurrentSystemSettingACCELEROMETER_ROTATION != 0) {  // i.e. actually nonzero, or not found (which probably never happens)
                     System.out.println("              WHACK!");
                     Toast.makeText(TheService.this, "WHACK! system autorotate got turned on, turning it back off", Toast.LENGTH_SHORT).show();
-
                     try {
                         Settings.System.putInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0);
                     } catch (SecurityException e) {
                         // XXX dup code
-                        if (mVerboseLevel >= 1) System.out.println("          Oh no, can't set system settings-- were permissions revoked?");
+                        if (mVerboseLevel >= 1) System.out.println("              Oh no, can't set system settings-- were permissions revoked?");
                         Toast.makeText(TheService.this, " Oh no, can't set system settings-- were permissions revoked?\nHere, please grant the permission.", Toast.LENGTH_SHORT).show();
                         Intent grantIntent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
                         grantIntent.setData(android.net.Uri.parse("package:"+getPackageName()));
-                        if (mVerboseLevel >= 1) System.out.println("              grantIntent = "+grantIntent);
-                        if (mVerboseLevel >= 1) System.out.println("              calling startActivity with ACTION_MANAGE_WRITE_SETTINGS");
+                        if (mVerboseLevel >= 1) System.out.println("                  grantIntent = "+grantIntent);
+                        if (mVerboseLevel >= 1) System.out.println("                  calling startActivity with ACTION_MANAGE_WRITE_SETTINGS");
                         startActivity(grantIntent);
-                        if (mVerboseLevel >= 1) System.out.println("              returned from startActivity with ACTION_MANAGE_WRITE_SETTINGS");
+                        if (mVerboseLevel >= 1) System.out.println("                  returned from startActivity with ACTION_MANAGE_WRITE_SETTINGS");
                     }
                 }
             }
             System.out.println("            out TheService mAccelerometerRotationObserver onChange(selfChange="+selfChange+", uri="+uri+")");
         }
     };  // mAccelerometerRotationObserver
+    private android.database.ContentObserver mUserRotationObserver = new android.database.ContentObserver(new android.os.Handler()) {
+        // Per https://developer.android.com/reference/android/database/ContentObserver.html (probably not necessary though)
+        @Override public void onChange(boolean selfChange) { onChange(selfChange, null); }
+        @Override
+        public void onChange(boolean selfChange, android.net.Uri uri) {
+            System.out.println("            in TheService mUserRotationObserver onChange(selfChange="+selfChange+", uri="+uri+")");
+            updateCurrentUSER_ROTATION();
+            System.out.println("            out TheService mUserRotationObserver onChange(selfChange="+selfChange+", uri="+uri+")");
+        }
+    };  // mUserRotationObserver
 
     public static boolean mStaticWhackAMole = true; // TODO: make this a shared preference? the activity is the one who sets this
     public static boolean mStaticAutoRotate = true; // TODO: make this a shared preference? the activity is the one who sets this
     public static boolean mStaticPromptFirst = true; // TODO: make this a shared preference? the activity is the one who sets this
     public static boolean mStaticOverride = false; // TODO: make this a shared preference? the activity is the one who sets this
 
+    private static int closestCompassPointToUserRotation(int closestCompassPoint) {
+        switch (closestCompassPoint) {
+            case 0: return android.view.Surface.ROTATION_0;
+            case 90: return android.view.Surface.ROTATION_270;
+            case 180: return android.view.Surface.ROTATION_180;
+            case 270: return android.view.Surface.ROTATION_90;
+            default: return -1;
+        }
+    }  // closestCompassPointToUserRotation
+
     // Used as value of System.Settings.USER_ROTATION
     public static String surfaceRotationConstantToString(int surfaceRotationConstant) {
-      switch (surfaceRotationConstant) {
-        case android.view.Surface.ROTATION_0: return "ROTATION_0";
-        case android.view.Surface.ROTATION_90: return "ROTATION_90";
-        case android.view.Surface.ROTATION_180: return "ROTATION_180";
-        case android.view.Surface.ROTATION_270: return "ROTATION_270";
-        default: return "[unknown surface rotation constant "+surfaceRotationConstant+"]";
-      }
-    }
+        switch (surfaceRotationConstant) {
+            case android.view.Surface.ROTATION_0: return "ROTATION_0";
+            case android.view.Surface.ROTATION_90: return "ROTATION_90";
+            case android.view.Surface.ROTATION_180: return "ROTATION_180";
+            case android.view.Surface.ROTATION_270: return "ROTATION_270";
+            default: return "[unknown surface rotation constant "+surfaceRotationConstant+"]";
+        }
+    }  // surfaceRotationConstantToString
 
 
     // There are two different namespaces here:
@@ -203,6 +238,12 @@ public class TheService extends Service {
         }
         TheService.theRunningService = this;
         showToast(this, "Service Created", 1000); // it's about to change to "Service Started"
+
+        updateCurrentACCELEROMETER_ROTATION();
+        updateCurrentUSER_ROTATION();
+        getContentResolver().registerContentObserver(Settings.System.getUriFor(Settings.System.ACCELEROMETER_ROTATION), false, mAccelerometerRotationObserver);
+        getContentResolver().registerContentObserver(Settings.System.getUriFor(Settings.System.USER_ROTATION), false, mUserRotationObserver);
+
         mOrientationEventListener = new android.view.OrientationEventListener(this, android.hardware.SensorManager.SENSOR_DELAY_NORMAL) {
             @Override
             public void onOrientationChanged(int degrees) {
@@ -234,226 +275,229 @@ public class TheService extends Service {
                         closestCompassPointChanging = distanceFromPreviousClosestCompassPoint > 45+hysteresis;
                     }
 
-                    // TODO: check whether the value we'd change USER_ROTATION to is the same as the current value.  If so, just change mStaticClosestCompassPoint, no need to pop up dialog or anything.
-
-                    if (closestCompassPointChanging) {
+                    if (!closestCompassPointChanging) {
+                        if (mVerboseLevel >= 2) System.out.println("          (device physical orientation quadrant didn't change)");
+                    } else {
                         if (mVerboseLevel == 1) System.out.println("        in onOrientationChanged(degrees="+degrees+")"); // upgrade verbosity threshold from 2 to 1
                         int oldClosestCompassPoint = mStaticClosestCompassPoint;
                         int newClosestCompassPoint = degrees < 45 ? 0 : degrees < 135 ? 90 : degrees < 225 ? 180 : degrees < 315 ? 270 : 0;
                         mStaticClosestCompassPoint = newClosestCompassPoint;
 
+                        // TODO: maybe move this more outward?
+                        if (mCleanupDialog != null) {
+                            mCleanupDialog.run();
+                            mCleanupDialog = null;
+                        }
+
                         if (mStaticAutoRotate) {
-                            if (mStaticPromptFirst) {
+                            if (closestCompassPointToUserRotation(newClosestCompassPoint) == mCurrentSystemSettingUSER_ROTATION) {
+                                if (mVerboseLevel == 1) System.out.println("          (USER_ROTATION is already correct)");
+                            } else {
+                                if (!mStaticPromptFirst) {
+                                    if (mVerboseLevel >= 1) System.out.println("          calling doTheAutoRotateThing");
+                                    doTheAutoRotateThingNow();
+                                    if (mVerboseLevel >= 1) System.out.println("          returned from doTheAutoRotateThing");
+                                } else {
+                                    if (true) {
+                                        // https://developer.android.com/guide/topics/ui/dialogs.html
+                                        // For custom layout, use setView on the builder:
+                                        // but all the examples in the world use xml layouts. what a huge waste of time.
+                                        // maybe this one uses a view?
+                                        // https://www.codota.com/android/methods/android.app.AlertDialog.Builder/setView
+                                        // Maybe this has something?  http://iserveandroid.blogspot.com/2011/04/how-to-dismiss-your-non-modal-dialog.html
 
-                                if (mCleanupDialog != null) {
-                                    mCleanupDialog.run();
-                                    mCleanupDialog = null;
-                                }
+                                        if (mVerboseLevel == 1) System.out.println("          attempting to pop up an AlertDialog");
 
-                                if (true) {
-                                    // https://developer.android.com/guide/topics/ui/dialogs.html
-                                    // For custom layout, use setView on the builder:
-                                    // but all the examples in the world use xml layouts. what a huge waste of time.
-                                    // maybe this one uses a view?
-                                    // https://www.codota.com/android/methods/android.app.AlertDialog.Builder/setView
-                                    // Maybe this has something?  http://iserveandroid.blogspot.com/2011/04/how-to-dismiss-your-non-modal-dialog.html
-
-                                    if (mVerboseLevel == 1) System.out.println("          attempting to pop up an AlertDialog");
-
-                                    // Don't use an AlertDialog.Builder, since that's incompatible with custom onTouchEvent.
-                                    // (TODO:  although... could I use a View.OnTouchListener insted?)
-                                    final AlertDialog alertDialog = new AlertDialog(TheService.this) {
-                                        @Override
-                                        public boolean onTouchEvent(MotionEvent motionEvent) {
-                                            if (mVerboseLevel == 1) System.out.println("            in alertDialog onTouchEvent");
-                                            if (mVerboseLevel == 1) System.out.println("              motionEvent.getActionMasked()="+motionEventActionMaskedConstantToString(motionEvent.getActionMasked()));
-                                            if (motionEvent.getActionMasked() == MotionEvent.ACTION_OUTSIDE) {
-                                                if (mVerboseLevel == 1) System.out.println("              touch outside dialog! cancelling");
-                                                CHECK(mCleanupDialog != null); // XXX not completely confident in this
+                                        // Don't use an AlertDialog.Builder, since that's incompatible with custom onTouchEvent.
+                                        // (TODO:  although... could I use a View.OnTouchListener insted?)
+                                        final AlertDialog alertDialog = new AlertDialog(TheService.this) {
+                                            @Override
+                                            public boolean onTouchEvent(MotionEvent motionEvent) {
+                                                if (mVerboseLevel == 1) System.out.println("            in alertDialog onTouchEvent");
+                                                if (mVerboseLevel == 1) System.out.println("              motionEvent.getActionMasked()="+motionEventActionMaskedConstantToString(motionEvent.getActionMasked()));
+                                                if (motionEvent.getActionMasked() == MotionEvent.ACTION_OUTSIDE) {
+                                                    if (mVerboseLevel == 1) System.out.println("              touch outside dialog! cancelling");
+                                                    CHECK(mCleanupDialog != null); // XXX not completely confident in this
+                                                    mCleanupDialog.run();
+                                                    mCleanupDialog = null;
+                                                } else {
+                                                    if (mVerboseLevel == 1) System.out.println("              touch inside dialog; ignoring");
+                                                }
+                                                if (mVerboseLevel == 1) System.out.println("            out alertDialog onTouchEvent");
+                                                // I think returning true is supposed to mean "consume", i.e.
+                                                // don't pass the event to subsequent listeners or parent or "next level down",
+                                                // but I don't observe it making any difference--
+                                                // what we see as ACTION_OUTSIDE has an effect
+                                                // on the activity underneath the dialog,
+                                                // and touching inside the dialog does *not* affect the activity underneath,
+                                                // regardless of whether we return true or false here.
+                                                return false;
+                                            }
+                                        };
+                                        alertDialog.setTitle("Rotate the screen?");
+                                        alertDialog.setMessage("3...");
+                                        alertDialog.setButton(AlertDialog.BUTTON_NEGATIVE, "No", new DialogInterface.OnClickListener() {
+                                            @Override
+                                            public void onClick(DialogInterface dialog, int id) {
+                                                if (mVerboseLevel == 1) System.out.println("            in alertDialog negative button onClick");
+                                                // XXX is this evidence for why it's good to always delay?
+                                                CHECK(mCleanupDialog != null);
                                                 mCleanupDialog.run();
                                                 mCleanupDialog = null;
-                                            } else {
-                                                if (mVerboseLevel == 1) System.out.println("              touch inside dialog; ignoring");
+                                                if (mVerboseLevel == 1) System.out.println("            out alertDialog negative button onClick");
+                                            };
+                                        });
+                                        alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, "Yes", new DialogInterface.OnClickListener() {
+                                            @Override
+                                            public void onClick(DialogInterface dialog, int id) {
+                                                if (mVerboseLevel == 1) System.out.println("            in alertDialog positive button onClick");
+                                                // XXX is this evidence for why it's good to always delay?
+                                                CHECK(mCleanupDialog != null);
+                                                mCleanupDialog.run();
+                                                mCleanupDialog = null;
+                                                doTheAutoRotateThingNow();
+                                                if (mVerboseLevel == 1) System.out.println("            out alertDialog positive button onClick");
+                                            };
+                                        });
+
+
+                                        Window alertDialogWindow = alertDialog.getWindow();
+                                        alertDialogWindow.setType(WindowManager.LayoutParams.TYPE_SYSTEM_ALERT); // required when context=TheService.this, otherwise WindowManager.BadTokenException.
+                                        // Kill the dimming of the activity or whatever's behind it
+                                        alertDialogWindow.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+                                        // Kill the drop shadow too
+                                        //alertDialogWindow.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+
+                                        // Trying advice in http://iserveandroid.blogspot.com/2011/04/how-to-dismiss-your-non-modal-dialog.html ...
+                                        // Make it so user can interact with rest of screen
+                                        alertDialogWindow.addFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL);
+                                        // And so that we get the onTouchEvent first, when a touch comes on rest of screen
+                                        alertDialogWindow.addFlags(WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH);
+
+
+                                        try {
+                                            alertDialog.show();
+                                        } catch (android.view.WindowManager.BadTokenException e) {
+                                            // This happens if I omit android.permission.SYSTEM_ALERT_WINDOW from AndroidManifest, or if user revoke or didn't grant "Draw over other apps".
+                                            // TODO: need to do the double-opt-in dance here, similar to the WRITE_SETTINGS permission
+                                            CHECK(false);
+                                        }
+                                        // Make it expire in 3 seconds.
+                                        final Handler handler = new Handler();
+                                        final Runnable runnable = new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                if (mVerboseLevel == 1) System.out.println("            in run: prompt expired; canceling alert dialog");
+                                                alertDialog.cancel();
+                                                mCleanupDialog = null;
+                                                if (mVerboseLevel == 1) System.out.println("            out run: prompt expired; cancelled alert dialog");
                                             }
-                                            if (mVerboseLevel == 1) System.out.println("            out alertDialog onTouchEvent");
-                                            // I think returning true is supposed to mean "consume", i.e.
-                                            // don't pass the event to subsequent listeners or parent or "next level down",
-                                            // but I don't observe it making any difference--
-                                            // what we see as ACTION_OUTSIDE has an effect
-                                            // on the activity underneath the dialog,
-                                            // and touching inside the dialog does *not* affect the activity underneath,
-                                            // regardless of whether we return true or false here.
-                                            return false;
-                                        }
-                                    };
-                                    alertDialog.setTitle("Rotate the screen?");
-                                    alertDialog.setMessage("3...");
-                                    alertDialog.setButton(AlertDialog.BUTTON_NEGATIVE, "No", new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialog, int id) {
-                                            if (mVerboseLevel == 1) System.out.println("            in alertDialog negative button onClick");
-                                            // XXX is this evidence for why it's good to always delay?
-                                            CHECK(mCleanupDialog != null);
-                                            mCleanupDialog.run();
-                                            mCleanupDialog = null;
-                                            if (mVerboseLevel == 1) System.out.println("            out alertDialog negative button onClick");
                                         };
-                                    });
-                                    alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, "Yes", new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialog, int id) {
-                                            if (mVerboseLevel == 1) System.out.println("            in alertDialog positive button onClick");
-                                            // XXX is this evidence for why it's good to always delay?
-                                            CHECK(mCleanupDialog != null);
-                                            mCleanupDialog.run();
-                                            mCleanupDialog = null;
-                                            doTheAutoRotateThingNow();
-                                            if (mVerboseLevel == 1) System.out.println("            out alertDialog positive button onClick");
+                                        handler.postDelayed(runnable, 3*1000);
+
+                                        CHECK(mCleanupDialog == null);
+                                        mCleanupDialog = new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                if (mVerboseLevel == 1) System.out.println("            cleaning up previous dialog");
+                                                alertDialog.cancel();
+                                                handler.removeCallbacks(runnable); // ok if it wasn't scheduled
+                                                if (mVerboseLevel == 1) System.out.println("            cleaned up previous dialog");
+                                            }
                                         };
-                                    });
 
+                                        // Hacky countdown in the dialog.
+                                        // These don't get cleaned up by mCleanupDialog, but it doesn't matter; they don't hurt anything.
+                                        new Handler().postDelayed(new Runnable() { @Override public void run() { alertDialog.setMessage("2..."); } }, 1*1000);
+                                        new Handler().postDelayed(new Runnable() { @Override public void run() { alertDialog.setMessage("1..."); } }, 2*1000);
 
-                                    Window alertDialogWindow = alertDialog.getWindow();
-                                    alertDialogWindow.setType(WindowManager.LayoutParams.TYPE_SYSTEM_ALERT); // required when context=TheService.this, otherwise WindowManager.BadTokenException.
-                                    // Kill the dimming of the activity or whatever's behind it
-                                    alertDialogWindow.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
-                                    // Kill the drop shadow too
-                                    //alertDialogWindow.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-
-                                    // Trying advice in http://iserveandroid.blogspot.com/2011/04/how-to-dismiss-your-non-modal-dialog.html ...
-                                    // Make it so user can interact with rest of screen
-                                    alertDialogWindow.addFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL);
-                                    // And so that we get the onTouchEvent first, when a touch comes on rest of screen
-                                    alertDialogWindow.addFlags(WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH);
-
-
-                                    try {
-                                        alertDialog.show();
-                                    } catch (android.view.WindowManager.BadTokenException e) {
-                                        // This happens if I omit android.permission.SYSTEM_ALERT_WINDOW from AndroidManifest, or if user revoke or didn't grant "Draw over other apps".
-                                        // TODO: need to do the double-opt-in dance here, similar to the WRITE_SETTINGS permission
-                                        CHECK(false);
+                                        if (mVerboseLevel == 1) System.out.println("          attempted to pop up an AlertDialog");
                                     }
-                                    // Make it expire in 3 seconds.
-                                    final Handler handler = new Handler();
-                                    final Runnable runnable = new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            if (mVerboseLevel == 1) System.out.println("            in run: prompt expired; canceling alert dialog");
-                                            alertDialog.cancel();
-                                            mCleanupDialog = null;
-                                            if (mVerboseLevel == 1) System.out.println("            out run: prompt expired; cancelled alert dialog");
+                                    if (false) {
+                                        if (mVerboseLevel == 1) System.out.println("          attempting to pop up a semitransparent icon!");
+                                        // Pop up a semitransparent icon for at most 3 (or maybe configurable) seconds.
+                                        // If user taps it within the 3 seconds, call doTheAutoRotateThingNow(), otherwise disappear it.
+                                        // http://stackoverflow.com/questions/7678356/launch-popup-window-from-service
+                                        final View myView = new View(TheService.this) {
+                                            private Paint mPaint = new Paint() {{
+                                                setTextSize(100);
+                                                setARGB(200, 200, 200, 200);
+                                            }};
+
+                                            @Override
+                                            protected void onDraw(Canvas canvas) {
+                                                if (mVerboseLevel == 1) System.out.println("            in onDraw");
+                                                super.onDraw(canvas);
+                                                canvas.drawText("test test test", 0, 100, mPaint);
+                                                if (mVerboseLevel == 1) System.out.println("            out onDraw");
+                                            }
+
+                                            @Override
+                                            protected void onAttachedToWindow() {
+                                                if (mVerboseLevel == 1) System.out.println("            in onAttachedToWindow");
+                                                super.onAttachedToWindow();
+                                                if (mVerboseLevel == 1) System.out.println("            out onAttachedToWindow");
+                                            }
+
+                                            @Override
+                                            protected void onDetachedFromWindow() {
+                                                if (mVerboseLevel == 1) System.out.println("            in onDetachedFromWindow");
+                                                super.onDetachedFromWindow();
+                                                if (mVerboseLevel == 1) System.out.println("            out onDetachedFromWindow");
+                                            }
+
+                                            @Override
+                                            protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                                                if (mVerboseLevel == 1) System.out.println("            in onMeasure");
+                                                super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+                                                if (mVerboseLevel == 1) System.out.println("            out onMeasure");
+                                            }
+                                        };
+
+                                        WindowManager.LayoutParams layoutParams = new WindowManager.LayoutParams(
+                                            /*w=*/WindowManager.LayoutParams.MATCH_PARENT,
+                                            /*h=*/150,
+                                            /*xpos=*/10,
+                                            /*ypos=*/10,
+                                            /*_type=*/WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY,
+
+                                            /*
+                                            // I think doc says FLAG_NOT_TOUCH_MODAL only matters if not FLAG_NOT_FOCUSABLE ...
+                                            / *_flags=* /WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+                                            */
+
+                                            /*_flags=*/WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL, // allow pointer events outside of the window to be sent to the windows behind it
+
+                                            /*_format=*/PixelFormat.TRANSLUCENT);
+                                        layoutParams.gravity = Gravity.CENTER;
+                                        layoutParams.setTitle("Window test");
+                                        final WindowManager windowManager = (WindowManager)getSystemService(WINDOW_SERVICE); // there's no getWindowManager() in a service
+                                        try {
+                                             windowManager.addView(myView, layoutParams);
+                                        } catch (android.view.WindowManager.BadTokenException e) {
+                                             // This happens if I omit android.permission.SYSTEM_ALERT_WINDOW from AndroidManifest
+                                             // TODO: needs the double-opt-in dance here, similar for the WRITE_SETTINGS permission
+                                             CHECK(false);
                                         }
-                                    };
-                                    handler.postDelayed(runnable, 3*1000);
 
-                                    CHECK(mCleanupDialog == null);
-                                    mCleanupDialog = new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            if (mVerboseLevel == 1) System.out.println("            cleaning up previous dialog");
-                                            alertDialog.cancel();
-                                            handler.removeCallbacks(runnable); // ok if it wasn't scheduled
-                                            if (mVerboseLevel == 1) System.out.println("            cleaned up previous dialog");
-                                        }
-                                    };
+                                        // Make it expire in 3 seconds.
+                                        new Handler().postDelayed(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                if (mVerboseLevel == 1) System.out.println("            in run: prompt expired");
+                                                windowManager.removeView(myView);
+                                                if (mVerboseLevel == 1) System.out.println("            out run: prompt expired");
+                                            }
+                                        }, 3*1000);
 
-                                    // Hacky countdown in the dialog.
-                                    // These don't get cleaned up by mCleanupDialog, but it doesn't matter; they don't hurt anything.
-                                    new Handler().postDelayed(new Runnable() { @Override public void run() { alertDialog.setMessage("2..."); } }, 1*1000);
-                                    new Handler().postDelayed(new Runnable() { @Override public void run() { alertDialog.setMessage("1..."); } }, 2*1000);
-
-                                    if (mVerboseLevel == 1) System.out.println("          attempted to pop up an AlertDialog");
-                                }
-                                if (false) {
-                                    if (mVerboseLevel == 1) System.out.println("          attempting to pop up a semitransparent icon!");
-                                    // Pop up a semitransparent icon for at most 3 (or maybe configurable) seconds.
-                                    // If user taps it within the 3 seconds, call doTheAutoRotateThingNow(), otherwise disappear it.
-                                    // http://stackoverflow.com/questions/7678356/launch-popup-window-from-service
-                                    final View myView = new View(TheService.this) {
-                                        private Paint mPaint = new Paint() {{
-                                            setTextSize(100);
-                                            setARGB(200, 200, 200, 200);
-                                        }};
-
-                                        @Override
-                                        protected void onDraw(Canvas canvas) {
-                                            if (mVerboseLevel == 1) System.out.println("            in onDraw");
-                                            super.onDraw(canvas);
-                                            canvas.drawText("test test test", 0, 100, mPaint);
-                                            if (mVerboseLevel == 1) System.out.println("            out onDraw");
-                                        }
-
-                                        @Override
-                                        protected void onAttachedToWindow() {
-                                            if (mVerboseLevel == 1) System.out.println("            in onAttachedToWindow");
-                                            super.onAttachedToWindow();
-                                            if (mVerboseLevel == 1) System.out.println("            out onAttachedToWindow");
-                                        }
-
-                                        @Override
-                                        protected void onDetachedFromWindow() {
-                                            if (mVerboseLevel == 1) System.out.println("            in onDetachedFromWindow");
-                                            super.onDetachedFromWindow();
-                                            if (mVerboseLevel == 1) System.out.println("            out onDetachedFromWindow");
-                                        }
-
-                                        @Override
-                                        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                                            if (mVerboseLevel == 1) System.out.println("            in onMeasure");
-                                            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-                                            if (mVerboseLevel == 1) System.out.println("            out onMeasure");
-                                        }
-                                    };
-
-                                    WindowManager.LayoutParams layoutParams = new WindowManager.LayoutParams(
-                                        /*w=*/WindowManager.LayoutParams.MATCH_PARENT,
-                                        /*h=*/150,
-                                        /*xpos=*/10,
-                                        /*ypos=*/10,
-                                        /*_type=*/WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY,
-
-                                        /*
-                                        // I think doc says FLAG_NOT_TOUCH_MODAL only matters if not FLAG_NOT_FOCUSABLE ...
-                                        / *_flags=* /WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
-                                        */
-
-                                        /*_flags=*/WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL, // allow pointer events outside of the window to be sent to the windows behind it
-
-                                        /*_format=*/PixelFormat.TRANSLUCENT);
-                                    layoutParams.gravity = Gravity.CENTER;
-                                    layoutParams.setTitle("Window test");
-                                    final WindowManager windowManager = (WindowManager)getSystemService(WINDOW_SERVICE); // there's no getWindowManager() in a service
-                                    try {
-                                         windowManager.addView(myView, layoutParams);
-                                    } catch (android.view.WindowManager.BadTokenException e) {
-                                         // This happens if I omit android.permission.SYSTEM_ALERT_WINDOW from AndroidManifest
-                                         // TODO: needs the double-opt-in dance here, similar for the WRITE_SETTINGS permission
-                                         CHECK(false);
+                                        if (mVerboseLevel == 1) System.out.println("          attempted to pop up a semitransparent icon!");
                                     }
-
-                                    // Make it expire in 3 seconds.
-                                    new Handler().postDelayed(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            if (mVerboseLevel == 1) System.out.println("            in run: prompt expired");
-                                            windowManager.removeView(myView);
-                                            if (mVerboseLevel == 1) System.out.println("            out run: prompt expired");
-                                        }
-                                    }, 3*1000);
-
-                                    if (mVerboseLevel == 1) System.out.println("          attempted to pop up a semitransparent icon!");
                                 }
-                            } else {
-                                if (mVerboseLevel >= 1) System.out.println("          calling doTheAutoRotateThing");
-                                doTheAutoRotateThingNow();
-                                if (mVerboseLevel >= 1) System.out.println("          returned from doTheAutoRotateThing");
                             }
                         }
+
                         if (mVerboseLevel >= 1) System.out.println("          new mStaticClosestCompassPoint = " + mStaticClosestCompassPoint);
                         if (mVerboseLevel == 1) System.out.println("        out onOrientationChanged(degrees="+degrees+")"); // upgrade verbosity threshold from 2 to 1
-                    } else {
-                        if (mVerboseLevel >= 2) System.out.println("          (no change)");
                     }
                 }
                 int oldDegrees = mStaticDegrees;
@@ -526,11 +570,8 @@ public class TheService extends Service {
                 };
             }, intentFilter);
         }
-
-        getContentResolver().registerContentObserver(Settings.System.getUriFor(Settings.System.ACCELEROMETER_ROTATION), false, mAccelerometerRotationObserver);
         if (mVerboseLevel >= 1) System.out.println("                        out TheService.onCreate");
-
-    }
+    }  // onCreate
 
     @Override
     public int onStartCommand(Intent startIntent, int flags, int startId) {
@@ -610,16 +651,16 @@ public class TheService extends Service {
 
         Toast.makeText(this, "Service Started", Toast.LENGTH_SHORT).show();
 
-        if (mStaticAutoRotate) {
+        if (mStaticAutoRotate || mStaticWhackAMole) {
             // Make sure we don't fight with the system's ACCELEROMETER_ROTATION.
-            // This is the same as user doing Settings -> Display -> "When device is rotated": "Stay in portrait view".
-            // (actually that sets USER_ROTATION to 0 too, if it wasn't 0).
+            // This is part of what happens when user selects Settings -> Display -> "When device is rotated": "Stay in portrait view".
+            // (the other thing that happens is that USER_ROTATION gets set to 0 too, if it wasn't 0).
             Settings.System.putInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0);
         }
 
         if (mVerboseLevel >= 1) System.out.println("                            out TheService.onStartCommand(startIntent, flags="+flags+", startId="+startId+")");
         return START_STICKY; // Continue running until explicitly stopped, and restart the app process with service only if it gets kill by e.g. stopsign button in Android Monitor in AS
-    }
+    }  // onStartCommand
 
     @Override
     public void onDestroy() {
@@ -637,32 +678,21 @@ public class TheService extends Service {
         // - in the latter case, we must tell the activity, otherwise the switch will not be in sync.
         // XXX race? what if user is in the process of turning it on??
         if (mVerboseLevel >= 1) System.out.println("                        out TheService.onDestroy");
-    }
+    }  // onDestroy
 
     // Syncs system USER_ROTATION to mStaticClosestCompassPoint.
     // Also whacks ACCELEROMETER_ROTATION if set (but it shouldn't be).
     private void doTheAutoRotateThingNow() {
         if (mVerboseLevel >= 1) System.out.println("            in doTheAutoRotateThingNow");
-        int oldACCELEROMETER_ROTATION = -1;
-        int oldUSER_ROTATION = -1;
-        try {
-            oldACCELEROMETER_ROTATION = Settings.System.getInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION);
-        } catch (Settings.SettingNotFoundException e) {
-            if (mVerboseLevel >= 1) System.out.println("          Settings.System.ACCELEROMETER_ROTATION was not found!?");
-        }
-        try {
-            oldUSER_ROTATION = Settings.System.getInt(getContentResolver(), Settings.System.USER_ROTATION);
-        } catch (Settings.SettingNotFoundException e) {
-            if (mVerboseLevel >= 1) System.out.println("          Settings.System.USER_ROTATION was not found!?");
-        }
-        if (oldACCELEROMETER_ROTATION != 0) {
+
+        if (mCurrentSystemSettingACCELEROMETER_ROTATION != 0) {
           // In case this got turned on for some reason.
-          // TODO: maybe this isn't needed any more now that we have the whack-a-mole listener?  I think this will *probably* never happen.  Maybe it depends on what order listener callbacks are invoked in?
-          // XXX actually need to do this much sooner! so that system won't get to it first.  (I think?  Not sure what I was saying)
-          if (mVerboseLevel >= 1) System.out.println("          changing Settings.System.ACCELEROMETER_ROTATION from " + oldACCELEROMETER_ROTATION + " to 0 !!!!!!!!!!");
+          // Probably this can't happen unless mStaticWhackAMole is off. 
+          if (mVerboseLevel >= 1) System.out.println("          changing Settings.System.ACCELEROMETER_ROTATION from " + mCurrentSystemSettingACCELEROMETER_ROTATION + " to 0 !!!!!!!!!!");
           Settings.System.putInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0);
         } else {
           if (mVerboseLevel >= 1) System.out.println("          Settings.System.ACCELEROMETER_ROTATION was 0 as expected");
+          // TODO: need to do the double-opt-in dance here, although returns are diminishing
         }
 
         // From http://stackoverflow.com/questions/14587085/how-can-i-globally-force-screen-orientation-in-android#answer-26895627
@@ -694,20 +724,12 @@ public class TheService extends Service {
         //      3. else use system setting USER_ROTATION
         // XXX what is android:configChanges="orientation|keyboardHidden" and the onConfigurationChanged event?
 
-        int newUSER_ROTATION = -1;
-        if (mStaticClosestCompassPoint == 0) {
-            newUSER_ROTATION = android.view.Surface.ROTATION_0;
-        } else if (mStaticClosestCompassPoint == 90) {
-            newUSER_ROTATION = android.view.Surface.ROTATION_270;
-        } else if (mStaticClosestCompassPoint == 180) {
-            newUSER_ROTATION = android.view.Surface.ROTATION_180;
-        } else if (mStaticClosestCompassPoint == 270) {
-            newUSER_ROTATION = android.view.Surface.ROTATION_90;
-        }
+        int oldUSER_ROTATION = mCurrentSystemSettingUSER_ROTATION;
+        int newUSER_ROTATION = closestCompassPointToUserRotation(mStaticClosestCompassPoint);
         CHECK(newUSER_ROTATION != -1); // logical assertion
         try {
-        if (mVerboseLevel >= 1) System.out.println("          changing Settings.System.USER_ROTATION from " + surfaceRotationConstantToString(oldUSER_ROTATION) + " to " + surfaceRotationConstantToString(newUSER_ROTATION));
-        Settings.System.putInt(getContentResolver(), Settings.System.USER_ROTATION, newUSER_ROTATION);
+            if (mVerboseLevel >= 1) System.out.println("          changing Settings.System.USER_ROTATION from " + surfaceRotationConstantToString(oldUSER_ROTATION) + " to " + surfaceRotationConstantToString(newUSER_ROTATION));
+            Settings.System.putInt(getContentResolver(), Settings.System.USER_ROTATION, newUSER_ROTATION);
         } catch (SecurityException e) {
             if (mVerboseLevel >= 1) System.out.println("          Oh no, can't set system settings-- were permissions revoked?");
             Toast.makeText(TheService.this, " Oh no, can't set system settings-- were permissions revoked?\nHere, please grant the permission.", Toast.LENGTH_SHORT).show();

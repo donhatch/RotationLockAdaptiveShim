@@ -166,42 +166,6 @@ public class TheService extends Service {
         return toast;
     }
 
-// http://stackoverflow.com/questions/7678356/launch-popup-window-from-service
-public static class MyLoadView extends View {
-
-    private Paint mPaint;
-
-    public MyLoadView(Context context) {
-        super(context);
-        mPaint = new Paint();
-        //mPaint.setTextSize(50);
-        mPaint.setTextSize(100);
-        mPaint.setARGB(200, 200, 200, 200);
-    }
-
-    @Override
-    protected void onDraw(Canvas canvas) {
-        super.onDraw(canvas);
-        canvas.drawText("test test test", 0, 100, mPaint);
-    }
-
-    @Override
-    protected void onAttachedToWindow() {
-        super.onAttachedToWindow();
-    }
-
-    @Override
-    protected void onDetachedFromWindow() {
-        super.onDetachedFromWindow();
-    }
-
-    @Override
-    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-    }
-}  // MyLoadView
-
-
     @Override
     public void onCreate() {
         if (mVerboseLevel >= 1) System.out.println("                        in TheService.onCreate");
@@ -253,7 +217,34 @@ public static class MyLoadView extends View {
                                 // Something with this:
                                 // If user taps it within the 5 seconds, call doTheAutoRotateThingNow(), otherwise disappear it.
                                 // http://stackoverflow.com/questions/7678356/launch-popup-window-from-service
-                                MyLoadView myLoadView = new MyLoadView(TheService.this);
+                                View myLoadView = new View(TheService.this) {
+                                    private Paint mPaint = new Paint() {{
+                                        setTextSize(100);
+                                        setARGB(200, 200, 200, 200);
+                                    }};
+
+                                    @Override
+                                    protected void onDraw(Canvas canvas) {
+                                        super.onDraw(canvas);
+                                        canvas.drawText("test test test", 0, 100, mPaint);
+                                    }
+
+                                    @Override
+                                    protected void onAttachedToWindow() {
+                                        super.onAttachedToWindow();
+                                    }
+
+                                    @Override
+                                    protected void onDetachedFromWindow() {
+                                        super.onDetachedFromWindow();
+                                    }
+
+                                    @Override
+                                    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                                        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+                                    }
+                                };
+
                                 WindowManager.LayoutParams layoutParams = new WindowManager.LayoutParams(
                                     /*w=*/WindowManager.LayoutParams.MATCH_PARENT,
                                     /*h=*/150,

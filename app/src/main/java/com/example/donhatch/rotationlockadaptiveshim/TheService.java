@@ -174,7 +174,8 @@ public static class MyLoadView extends View {
     public MyLoadView(Context context) {
         super(context);
         mPaint = new Paint();
-        mPaint.setTextSize(50);
+        //mPaint.setTextSize(50);
+        mPaint.setTextSize(100);
         mPaint.setARGB(200, 200, 200, 200);
     }
 
@@ -252,33 +253,23 @@ public static class MyLoadView extends View {
                                 // Something with this:
                                 // If user taps it within the 5 seconds, call doTheAutoRotateThingNow(), otherwise disappear it.
                                 // http://stackoverflow.com/questions/7678356/launch-popup-window-from-service
-
-                                // Hmm but I'm getting this: http://stackoverflow.com/questions/2634991/android-1-6-android-view-windowmanagerbadtokenexception-unable-to-add-window
-                                // according to http://stackoverflow.com/questions/7569937/unable-to-add-window-android-view-viewrootw44da9bc0-permission-denied-for-t , maybe add android.permission.SYSTEM_ALERT_WINDOW to AndroidManifest?
-                                // Oh OUCH, this is another double-opt-in dance I think: http://stackoverflow.com/questions/7569937/unable-to-add-window-android-view-viewrootw44da9bc0-permission-denied-for-t#answer-34061521
-                                Context context;
-                                if (TheActivity.theRunningActivity != null) {
-                                    if (mVerboseLevel == 1) System.out.println("              using the running activity as the context");
-                                    context = TheActivity.theRunningActivity;
-                                } else {
-                                    if (mVerboseLevel == 1) System.out.println("              using this service as the context");
-                                    context = TheService.this;
-                                }
-                                MyLoadView myLoadView = new MyLoadView(context);
+                                MyLoadView myLoadView = new MyLoadView(TheService.this);
                                 WindowManager.LayoutParams layoutParams = new WindowManager.LayoutParams(
-                                    WindowManager.LayoutParams.MATCH_PARENT, 150, 10, 10,
-                                    WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY,
-                                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
-                                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
-                                    PixelFormat.TRANSLUCENT);
+                                    /*w=*/WindowManager.LayoutParams.MATCH_PARENT,
+                                    /*h=*/150,
+                                    /*xpos=*/10,
+                                    /*ypos=*/10,
+                                    /*_type=*/WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY,
+                                    /*_flags=*/WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+                                    /*_format=*/PixelFormat.TRANSLUCENT);
                                 layoutParams.gravity = Gravity.CENTER;
                                 layoutParams.setTitle("Window test");
-                                WindowManager windowManager = (WindowManager)getSystemService(WINDOW_SERVICE); // is this the same as getWindowManager()?
+                                WindowManager windowManager = (WindowManager)getSystemService(WINDOW_SERVICE); // there's no getWindowManager() in a service
                                 try {
                                      windowManager.addView(myLoadView, layoutParams);
                                 } catch (android.view.WindowManager.BadTokenException e) {
                                      // This happens if I omit android.permission.SYSTEM_ALERT_WINDOW from AndroidManifest
-                                     // XXX and needs the double-opt-in dance
+                                     // TODO: needs the double-opt-in dance here, similar for the WRITE_SETTINGS permission
                                      CHECK(false);
                                 }
                                 if (mVerboseLevel == 1) System.out.println("          attempted to pop up a semitransparent icon!");

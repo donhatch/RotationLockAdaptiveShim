@@ -21,8 +21,15 @@ tools:context=".TheActivity" >
         android:text="Listened values:"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_above="@+id/theAccelerometerRotationTextView"
+        android:layout_above="@+id/theAccelerometerOrientationDegreesTextView"
         android:id="@+id/theListenedValuesHeader" />
+
+    <TextView
+        android:text="accelerometer orientation degrees"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/theAccelerometerRotationTextView"
+        android:id="@+id/theAccelerometerOrientationDegreesTextView" />
 
     <TextView
         android:text="accelerometer rotation"
@@ -49,9 +56,9 @@ tools:context=".TheActivity" >
         android:text="Poll values once per second while ui is showing "
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:checked="false"
         android:layout_above="@+id/thePolledValuesHeader"
-        android:id="@+id/theMonitorSwitch"
-        android:checked="false" />
+        android:id="@+id/theMonitorSwitch" />
 
     <TextView
         android:text="Polled values:"

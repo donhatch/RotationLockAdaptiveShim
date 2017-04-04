@@ -15,9 +15,22 @@ public class TheService extends Service {
     private final int AN_IDENTIFIER_FOR_THIS_NOTIFICATION_UNIQUE_WITHIN_THIS_APPLICATION = 1;
 
     int mVerboseLevel = 1; // 0: nothing, 1: major stuff, 2: every accelerometer event (lots)
+    public int mDegrees = -1;  // most recent value passed to onOrientationChanged listener. read-only externally.
     private int mClosestCompassPoint = -1;
-    private android.view.OrientationEventListener
-            mOrientationEventListener;
+    private android.view.OrientationEventListener mOrientationEventListener;
+
+    public static interface DegreesListener {
+      public void degreesChanged(int oldDegrees, int newDegrees);
+    };
+    private java.util.ArrayList<DegreesListener> mDegreesListeners = new java.util.ArrayList<DegreesListener>();
+    public void addDegreesListener(DegreesListener degreesListener) {
+      while (mDegreesListeners.remove(degreesListener)) {}
+      mDegreesListeners.add(degreesListener);
+    }
+    // O(n), but we only expect the list to have size 0 or 1
+    public void removeDegreesListener(DegreesListener degreesListener) {
+      while (mDegreesListeners.remove(degreesListener)) {}
+    }
 
     // Used as value of System.Settings.USER_ROTATION
     public static String surfaceRotationConstantToString(int surfaceRotationConstant) {
@@ -234,6 +247,22 @@ public class TheService extends Service {
                         if (mVerboseLevel >= 2) System.out.println("          (no change)");
                     }
                 }
+                int oldDegrees = mDegrees;
+                int newDegrees = degrees;
+                mDegrees = newDegrees;
+                for (DegreesListener degreesListener : mDegreesListeners) {
+                    degreesListener.degreesChanged(oldDegrees, newDegrees);
+                }
+
+                {
+                    // Pretty lame to do this if there's no activity listening,
+                    // but I guess this is the standard way to do it.
+                    System.out.println("BROADCASTING DEGREES CHANGED");
+                    Intent intent = new Intent("degrees changed");
+                    intent.putExtra("message", oldDegrees+" -> "+newDegrees);
+                    android.support.v4.content.LocalBroadcastManager.getInstance(TheService.this).sendBroadcast(intent);
+                }
+
                 if (mVerboseLevel >= 2) System.out.println("        out onOrientationChanged(degrees="+degrees+")");
             }
         };

@@ -20,6 +20,28 @@ public class TheActivity extends android.app.Activity {
         };
     };
 
+    private android.content.BroadcastReceiver mBroadcastReceiver = new android.content.BroadcastReceiver() {
+        @Override
+        public void onReceive(android.content.Context context, android.content.Intent intent) {
+            System.out.println("                in onReceive");
+            System.out.println("                  intent = "+intent);
+            System.out.println("                  intent.getStringExtra(\"message\") = "+intent.getStringExtra("message"));
+            android.widget.TextView theAccelerometerOrientationDegreesTextView = (android.widget.TextView)findViewById(R.id.theAccelerometerOrientationDegreesTextView); // XXX TODO: make this a member
+            theAccelerometerOrientationDegreesTextView.setText("  accelerometer degrees (most recent update): "+oldDegrees+" -> "+newDegrees);
+            System.out.println("                out onReceive");
+        }
+    };  // mBroadcastReceiver
+    private TheService.DegreesListener mDegreesListener = new TheService.DegreesListener() {
+        @Override
+        public void degreesChanged(int oldDegrees, int newDegrees) {
+            System.out.println("                in degreesChanged(oldDegrees="+oldDegrees+", newDegrees="+newDegrees+")");
+            android.widget.TextView theAccelerometerOrientationDegreesTextView = (android.widget.TextView)findViewById(R.id.theAccelerometerOrientationDegreesTextView); // XXX TODO: make this a member
+            //theAccelerometerOrientationDegreesTextView.setText(newDegrees);
+            theAccelerometerOrientationDegreesTextView.setText("  accelerometer degrees (most recent update): "+oldDegrees+" -> "+newDegrees);
+            System.out.println("                out degreesChanged(oldDegrees="+oldDegrees+", newDegrees="+newDegrees+")");
+        }
+    };  // mDegreesListener
+
     private android.database.ContentObserver mAccelerometerRotationObserver = new android.database.ContentObserver(new android.os.Handler()) {
         // Per https://developer.android.com/reference/android/database/ContentObserver.html :
         // Delegate to ensure correct operation on older versions of the framework
@@ -167,6 +189,15 @@ public class TheActivity extends android.app.Activity {
         System.out.println("    out onCreate");
     }
 
+    private void updateAccelerometerOrientationDegreesTextView() {
+        android.widget.TextView theAccelerometerOrientationDegreesTextView = (android.widget.TextView)findViewById(R.id.theAccelerometerOrientationDegreesTextView); // XXX TODO: make this a member
+        if (TheService.theRunningService != null) {
+            theAccelerometerOrientationDegreesTextView.setText(""+TheService.theRunningService.mDegrees);
+        } else {
+            theAccelerometerOrientationDegreesTextView.setText("");
+        }
+    }
+
     private void updateAccelerometerRotationTextView() {
         android.widget.TextView theAccelerometerRotationTextView = (android.widget.TextView)findViewById(R.id.theAccelerometerRotationTextView); // XXX TODO: make this a member
         try {
@@ -251,6 +282,14 @@ public class TheActivity extends android.app.Activity {
         super.onResume();
 
         {
+            android.support.v4.content.LocalBroadcastManager.getInstance(this).registerReceiver(mBroadcastReceiver, new android.content.IntentFilter("degrees changed"));
+        }
+        if (TheService.theRunningService != null) {
+            // XXX TODO: need to add the listener when the service starts!
+            TheService.theRunningService.addDegreesListener(mDegreesListener);
+        }
+
+        {
             android.net.Uri uri = Settings.System.getUriFor(Settings.System.ACCELEROMETER_ROTATION);
             System.out.println("      uri = "+uri);
             getContentResolver().registerContentObserver(uri, false, mAccelerometerRotationObserver);
@@ -261,11 +300,14 @@ public class TheActivity extends android.app.Activity {
             getContentResolver().registerContentObserver(uri, false, mUserRotationObserver);
         }
 
-        android.widget.Switch theMonitorSwitch = (android.widget.Switch)findViewById(R.id.theMonitorSwitch);
-        if (theMonitorSwitch.isChecked()) {
-            mHandler.postDelayed(mRunnable, 1*1000);
+        {
+          android.widget.Switch theMonitorSwitch = (android.widget.Switch)findViewById(R.id.theMonitorSwitch);
+          if (theMonitorSwitch.isChecked()) {
+              mHandler.postDelayed(mRunnable, 1*1000);
+          }
         }
 
+        updateAccelerometerOrientationDegreesTextView();
         updateAccelerometerRotationTextView();
         updateUserRotationTextView();
         updateConfigurationOrientationTextView();
@@ -278,9 +320,12 @@ public class TheActivity extends android.app.Activity {
     protected void onPause() {
         System.out.println("            in onPause");
 
-        mHandler.removeCallbacks(mRunnable); // ok if it wasn't scheduled
+        if (TheService.theRunningService != null) {
+            TheService.theRunningService.removeDegreesListener(mDegreesListener);
+        }
         getContentResolver().unregisterContentObserver(mAccelerometerRotationObserver); // ok if it wasn't registered, I think... although it should be
         getContentResolver().unregisterContentObserver(mUserRotationObserver); // ok if it wasn't registered, I think... although it should be
+        mHandler.removeCallbacks(mRunnable); // ok if it wasn't scheduled
 
         super.onPause();
         System.out.println("            out onPause");

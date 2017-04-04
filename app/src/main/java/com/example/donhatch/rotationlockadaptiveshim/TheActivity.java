@@ -122,12 +122,16 @@ public class TheActivity extends android.app.Activity {
         android.widget.Switch thePromptFirstSwitch = (android.widget.Switch)findViewById(R.id.thePromptFirstSwitch);
         android.widget.Switch theOverrideSwitch = (android.widget.Switch)findViewById(R.id.theOverrideSwitch);
         android.widget.Switch theMonitorSwitch = (android.widget.Switch)findViewById(R.id.theMonitorSwitch);
+        android.widget.TextView thePolledValuesHeaderTextView = (android.widget.TextView)findViewById(R.id.thePolledValuesHeaderTextView);
+        android.widget.TextView thePolledStatusTextView = (android.widget.TextView)findViewById(R.id.thePolledStatusTextView);
 
         theWhackAMoleSwitch.setChecked(TheService.mStaticWhackAMole);
         theAutoRotateSwitch.setChecked(TheService.mStaticAutoRotate);
         thePromptFirstSwitch.setChecked(TheService.mStaticPromptFirst);
         theOverrideSwitch.setChecked(TheService.mStaticOverride);
         theMonitorSwitch.setChecked(mPolling);
+        thePolledValuesHeaderTextView.setEnabled(mPolling);
+        thePolledStatusTextView.setEnabled(mPolling);
 
         if (true) {
             theWhackAMoleSwitch.setOnCheckedChangeListener(new android.widget.CompoundButton.OnCheckedChangeListener() {
@@ -203,6 +207,10 @@ public class TheActivity extends android.app.Activity {
                 public void onCheckedChanged(android.widget.CompoundButton buttonView, boolean isChecked) {
                     System.out.println("            in theMonitorSwitch onCheckedChanged(isChecked=" + isChecked + ")");
                     mPolling = isChecked;
+                    android.widget.TextView thePolledValuesHeaderTextView = (android.widget.TextView)findViewById(R.id.thePolledValuesHeaderTextView);
+                    android.widget.TextView thePolledStatusTextView = (android.widget.TextView)findViewById(R.id.thePolledStatusTextView);
+                    thePolledValuesHeaderTextView.setEnabled(mPolling);
+                    thePolledStatusTextView.setEnabled(mPolling);
                     mPollingHandler.removeCallbacks(mPollingRunnable);  // ok if it wasn't scheduled
                     if (isChecked) {
                         // Presumably the activity is between onResume and onPause when this happens,

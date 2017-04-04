@@ -203,14 +203,10 @@ public class TheService extends Service {
                         if (mVerboseLevel == 1) System.out.println("        in onOrientationChanged(degrees="+degrees+")"); // upgrade verbosity threshold from 2 to 1
                         int newClosestCompassPoint = degrees < 45 ? 0 : degrees < 135 ? 90 : degrees < 225 ? 180 : degrees < 315 ? 270 : 0;
                         mStaticClosestCompassPoint = newClosestCompassPoint;
-                        // From http://stackoverflow.com/questions/14587085/how-can-i-globally-force-screen-orientation-in-android#answer-26895627
-                        // Requires WRITE_SETTINGS permission.
-                        // and also now it requires the canWrite dance (at beginning of Activity).
-                        // It's possible we don't have permissions now, even though we checked on Activity start.
-                        // e.g. the user may have never granted them, or granted them and then revoked them later.
-                        // So, we have to protect these calls.
                         if (mStaticAutoRotate) {
                             if (mStaticPromptFirst) {
+                                // Something with this:
+                                //setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT); // this is how an app requests it for itself. not sure how to relate with it.
                             } else {
                                 if (mVerboseLevel >= 1) System.out.println("          calling doTheAutoRotateThing");
                                 doTheAutoRotateThingNow();
@@ -362,7 +358,7 @@ public class TheService extends Service {
 
     // Syncs system USER_ROTATION to mStaticClosestCompassPoint.
     // Also whacks ACCELEROMETER_ROTATION if set (but it shouldn't be).
-    public void doTheAutoRotateThingNow() {
+    private void doTheAutoRotateThingNow() {
         if (mVerboseLevel >= 1) System.out.println("            in doTheAutoRotateThingNow");
         int oldACCELEROMETER_ROTATION = -1;
         int oldUSER_ROTATION = -1;
@@ -386,7 +382,12 @@ public class TheService extends Service {
           if (mVerboseLevel >= 1) System.out.println("          Settings.System.ACCELEROMETER_ROTATION was 0 as expected");
         }
 
-        //setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT); // this is how an app requests it for itself. not sure how to relate with it.
+        // From http://stackoverflow.com/questions/14587085/how-can-i-globally-force-screen-orientation-in-android#answer-26895627
+        // Requires WRITE_SETTINGS permission.
+        // and also now it requires the canWrite dance (at beginning of Activity).
+        // It's possible we don't have permissions now, even though we checked on Activity start.
+        // e.g. the user may have never granted them, or granted them and then revoked them later.
+        // So, we have to protect these calls.
 
         // Per https://developer.android.com/reference/android/provider/Settings.System.html:
         // USER_ROTATION: "Default screen rotation when no other policy applies.  When ACCELEROMETER_ROTATION is zero

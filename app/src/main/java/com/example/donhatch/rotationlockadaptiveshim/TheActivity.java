@@ -24,11 +24,11 @@ public class TheActivity extends android.app.Activity {
     private Runnable mPollingRunnable = new Runnable() {
         @Override
         public void run() {
-            System.out.println("                in once-per-second poll, should only be when ui is visible");
-            updateAccelerometerOrientationDegreesTextView(); // XXX not sure about this
+            System.out.println("                in once-per-second poll (this should only happen when ui is visible)");
+            updateAccelerometerOrientationDegreesTextView();
             updatePolledStatusTextView();
             mPollingHandler.postDelayed(this, 1*1000);
-            System.out.println("                out once-per-second poll, should only be when ui is visible");
+            System.out.println("                out once-per-second poll (this should only happen when ui is visible)");
         };
     };
 

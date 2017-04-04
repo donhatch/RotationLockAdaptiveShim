@@ -15,11 +15,11 @@ public class TheService extends Service {
     private final int AN_IDENTIFIER_FOR_THIS_NOTIFICATION_UNIQUE_WITHIN_THIS_APPLICATION = 1;
 
     int mVerboseLevel = 1; // 0: nothing, 1: major stuff, 2: every accelerometer event (lots)
-    public int mDegrees = -1;  // most recent value passed to onOrientationChanged listener. read-only externally.
-    public boolean mDegreesIsValid = false;
-    public static int mStaticDegrees = -1; // most recent value passed to onOrientationChanged listener of any TheService instance.  Avoids having to think about when service isn't running.
+
+    // These are static to avoid having to think about when the service isn't running.
+    public static int mStaticDegrees = -1; // most recent value passed to onOrientationChanged listener of any TheService instance.
     public static boolean mStaticDegreesIsValid = false;
-    public int mClosestCompassPoint = -1;
+    public int mStaticClosestCompassPoint = -1; // means invalid
     private android.view.OrientationEventListener mOrientationEventListener;
 
     private android.database.ContentObserver mAccelerometerRotationObserver = new android.database.ContentObserver(new android.os.Handler()) {
@@ -179,13 +179,13 @@ public class TheService extends Service {
                     if (mVerboseLevel == 1) System.out.println("        out onOrientationChanged(degrees="+degrees+")");
                 } else {
                     boolean closestCompassPointChanging = false;
-                    if (mClosestCompassPoint == -1) {
+                    if (mStaticClosestCompassPoint == -1) {
                         closestCompassPointChanging = true;
                     } else {
-                        int distanceFromPreviousClosestCompassPoint = Math.abs(degrees - mClosestCompassPoint);
+                        int distanceFromPreviousClosestCompassPoint = Math.abs(degrees - mStaticClosestCompassPoint);
                         if (distanceFromPreviousClosestCompassPoint > 180)
                             distanceFromPreviousClosestCompassPoint = Math.abs(distanceFromPreviousClosestCompassPoint - 360);
-                        if (mVerboseLevel >= 2) System.out.println("          old mClosestCompassPoint = " + mClosestCompassPoint);
+                        if (mVerboseLevel >= 2) System.out.println("          old mStaticClosestCompassPoint = " + mStaticClosestCompassPoint);
                         if (mVerboseLevel >= 2) System.out.println("          distanceFromPreviousClosestCompassPoint = " + distanceFromPreviousClosestCompassPoint);
 
 
@@ -202,7 +202,7 @@ public class TheService extends Service {
                     if (closestCompassPointChanging) {
                         if (mVerboseLevel == 1) System.out.println("        in onOrientationChanged(degrees="+degrees+")"); // upgrade verbosity threshold from 2 to 1
                         int newClosestCompassPoint = degrees < 45 ? 0 : degrees < 135 ? 90 : degrees < 225 ? 180 : degrees < 315 ? 270 : 0;
-                        mClosestCompassPoint = newClosestCompassPoint;
+                        mStaticClosestCompassPoint = newClosestCompassPoint;
                         // From http://stackoverflow.com/questions/14587085/how-can-i-globally-force-screen-orientation-in-android#answer-26895627
                         // Requires WRITE_SETTINGS permission.
                         // and also now it requires the canWrite dance (at beginning of Activity).
@@ -217,16 +217,14 @@ public class TheService extends Service {
                                 if (mVerboseLevel >= 1) System.out.println("          returned from doTheAutoRotateThing");
                             }
                         }
-                        if (mVerboseLevel >= 1) System.out.println("          new mClosestCompassPoint = " + mClosestCompassPoint);
+                        if (mVerboseLevel >= 1) System.out.println("          new mStaticClosestCompassPoint = " + mStaticClosestCompassPoint);
                         if (mVerboseLevel == 1) System.out.println("        out onOrientationChanged(degrees="+degrees+")"); // upgrade verbosity threshold from 2 to 1
                     } else {
                         if (mVerboseLevel >= 2) System.out.println("          (no change)");
                     }
                 }
-                int oldDegrees = mDegreesIsValid ? mDegrees : mStaticDegrees;
+                int oldDegrees = mStaticDegrees;
                 int newDegrees = degrees;
-                mDegrees = newDegrees;
-                mDegreesIsValid = true;
                 mStaticDegrees = newDegrees;
                 mStaticDegreesIsValid = true;
                 {
@@ -362,7 +360,7 @@ public class TheService extends Service {
         if (mVerboseLevel >= 1) System.out.println("                        out TheService.onDestroy");
     }
 
-    // Syncs system USER_ROTATION to mClosestCompassPoint.
+    // Syncs system USER_ROTATION to mStaticClosestCompassPoint.
     // Also whacks ACCELEROMETER_ROTATION if set (but it shouldn't be).
     public void doTheAutoRotateThingNow() {
         if (mVerboseLevel >= 1) System.out.println("            in doTheAutoRotateThingNow");
@@ -413,13 +411,13 @@ public class TheService extends Service {
         // XXX what is android:configChanges="orientation|keyboardHidden" and the onConfigurationChanged event?
 
         int newUSER_ROTATION = -1;
-        if (mClosestCompassPoint == 0) {
+        if (mStaticClosestCompassPoint == 0) {
             newUSER_ROTATION = android.view.Surface.ROTATION_0;
-        } else if (mClosestCompassPoint == 90) {
+        } else if (mStaticClosestCompassPoint == 90) {
             newUSER_ROTATION = android.view.Surface.ROTATION_270;
-        } else if (mClosestCompassPoint == 180) {
+        } else if (mStaticClosestCompassPoint == 180) {
             newUSER_ROTATION = android.view.Surface.ROTATION_180;
-        } else if (mClosestCompassPoint == 270) {
+        } else if (mStaticClosestCompassPoint == 270) {
             newUSER_ROTATION = android.view.Surface.ROTATION_90;
         }
         CHECK(newUSER_ROTATION != -1); // logical assertion

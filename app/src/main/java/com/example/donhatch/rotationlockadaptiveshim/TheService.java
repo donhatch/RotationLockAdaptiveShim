@@ -1,17 +1,23 @@
 package com.example.donhatch.rotationlockadaptiveshim;
 
+import android.app.AlertDialog;
 import android.app.Notification;
 import android.app.Service;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
+import android.graphics.drawable.ColorDrawable;
+import android.os.Handler;
 import android.os.IBinder;
 import android.provider.Settings;
 import android.view.Gravity;
 import android.view.OrientationListener;
 import android.view.View;
+import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Toast;
 
@@ -67,7 +73,8 @@ public class TheService extends Service {
 
     public static boolean mStaticWhackAMole = true; // TODO: make this a shared preference? the activity is the one who sets this
     public static boolean mStaticAutoRotate = true; // TODO: make this a shared preference? the activity is the one who sets this
-    public static boolean mStaticPromptFirst = false; // TODO: make this a shared preference? the activity is the one who sets this
+    public static boolean mStaticPromptFirst = true; // TODO: make this a shared preference? the activity is the one who sets this
+    public static boolean mStaticOverride = false; // TODO: make this a shared preference? the activity is the one who sets this
 
     // Used as value of System.Settings.USER_ROTATION
     public static String surfaceRotationConstantToString(int surfaceRotationConstant) {
@@ -206,64 +213,155 @@ public class TheService extends Service {
                         double hysteresis = 22.5;
                         closestCompassPointChanging = distanceFromPreviousClosestCompassPoint > 45+hysteresis;
                     }
+
+                    // TODO: check whether the value we'd change USER_ROTATION to is the same as the current value.  If so, just change mStaticClosestCompassPoint, no need to pop up dialog or anything.
+
                     if (closestCompassPointChanging) {
                         if (mVerboseLevel == 1) System.out.println("        in onOrientationChanged(degrees="+degrees+")"); // upgrade verbosity threshold from 2 to 1
+                        int oldClosestCompassPoint = mStaticClosestCompassPoint;
                         int newClosestCompassPoint = degrees < 45 ? 0 : degrees < 135 ? 90 : degrees < 225 ? 180 : degrees < 315 ? 270 : 0;
                         mStaticClosestCompassPoint = newClosestCompassPoint;
+
                         if (mStaticAutoRotate) {
                             if (mStaticPromptFirst) {
-                                if (mVerboseLevel == 1) System.out.println("          attempting to pop up a semitransparent icon!");
-                                // Pop up a semitransparent icon for at most 5 (or maybe configurable) seconds.
-                                // Something with this:
-                                // If user taps it within the 5 seconds, call doTheAutoRotateThingNow(), otherwise disappear it.
-                                // http://stackoverflow.com/questions/7678356/launch-popup-window-from-service
-                                View myLoadView = new View(TheService.this) {
-                                    private Paint mPaint = new Paint() {{
-                                        setTextSize(100);
-                                        setARGB(200, 200, 200, 200);
-                                    }};
 
-                                    @Override
-                                    protected void onDraw(Canvas canvas) {
-                                        super.onDraw(canvas);
-                                        canvas.drawText("test test test", 0, 100, mPaint);
+                                // TODO: cancel previous, if any
+
+
+                                if (true) {
+                                    // https://developer.android.com/guide/topics/ui/dialogs.html
+                                    // For custom layout, use setView on the builder:
+                                    // but all the examples in the world use xml layouts. what a huge waste of time.
+                                    // maybe this one uses a view?
+                                    // https://www.codota.com/android/methods/android.app.AlertDialog.Builder/setView
+                                    // ARGH!  I want the user to still be able to interact with everything else behind it!  So maybe an alert dialog isn't the thing to use after all :-(
+                                    if (mVerboseLevel == 1) System.out.println("          attempting to pop up an AlertDialog");
+                                    final AlertDialog alertDialog = new AlertDialog.Builder(TheService.this)
+                                        .setTitle("Rotate the screen?")
+                                        .setMessage("3...")
+                                        //.setNeutralButton("MAYBE", null)
+                                        .setNegativeButton("No", null)
+                                        // shameless hack to get it somewhat centered
+                                        .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                                            @Override
+                                            public void onClick(DialogInterface dialog, int id) {
+                                                if (mVerboseLevel == 1) System.out.println("            in alertDialog positive button onClick");
+                                                doTheAutoRotateThingNow();
+                                                if (mVerboseLevel == 1) System.out.println("            out alertDialog positive button onClick");
+                                            };
+                                        })
+                                        .create();
+                                    Window alertDialogWindow = alertDialog.getWindow();
+                                    alertDialogWindow.setType(WindowManager.LayoutParams.TYPE_SYSTEM_ALERT); // required when context=TheService.this, otherwise WindowManager.BadTokenException.
+                                    // Kill the dimming of the activity or whatever's behind it
+                                    alertDialogWindow.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+                                    // Kill the drop shadow too
+                                    //alertDialogWindow.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+                                    try {
+                                        alertDialog.show();
+                                    } catch (android.view.WindowManager.BadTokenException e) {
+                                        // This happens if I omit android.permission.SYSTEM_ALERT_WINDOW from AndroidManifest, or if user revoke or didn't grant "Draw over other apps".
+                                        // TODO: need to do the double-opt-in dance here, similar to the WRITE_SETTINGS permission
+                                        CHECK(false);
                                     }
+                                    // Make it expire in 3 seconds.
+                                    new Handler().postDelayed(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            if (mVerboseLevel == 1) System.out.println("            in run: prompt expired; canceling alert dialog");
+                                            alertDialog.cancel();
+                                            if (mVerboseLevel == 1) System.out.println("            out run: prompt expired; cancelled alert dialog");
+                                        }
+                                    }, 3*1000);
 
-                                    @Override
-                                    protected void onAttachedToWindow() {
-                                        super.onAttachedToWindow();
-                                    }
+                                    // Cute countdown
+                                    new Handler().postDelayed(new Runnable() { @Override public void run() { alertDialog.setMessage("2..."); } }, 1*1000);
+                                    new Handler().postDelayed(new Runnable() { @Override public void run() { alertDialog.setMessage("1..."); } }, 2*1000);
 
-                                    @Override
-                                    protected void onDetachedFromWindow() {
-                                        super.onDetachedFromWindow();
-                                    }
 
-                                    @Override
-                                    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                                        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-                                    }
-                                };
 
-                                WindowManager.LayoutParams layoutParams = new WindowManager.LayoutParams(
-                                    /*w=*/WindowManager.LayoutParams.MATCH_PARENT,
-                                    /*h=*/150,
-                                    /*xpos=*/10,
-                                    /*ypos=*/10,
-                                    /*_type=*/WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY,
-                                    /*_flags=*/WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
-                                    /*_format=*/PixelFormat.TRANSLUCENT);
-                                layoutParams.gravity = Gravity.CENTER;
-                                layoutParams.setTitle("Window test");
-                                WindowManager windowManager = (WindowManager)getSystemService(WINDOW_SERVICE); // there's no getWindowManager() in a service
-                                try {
-                                     windowManager.addView(myLoadView, layoutParams);
-                                } catch (android.view.WindowManager.BadTokenException e) {
-                                     // This happens if I omit android.permission.SYSTEM_ALERT_WINDOW from AndroidManifest
-                                     // TODO: needs the double-opt-in dance here, similar for the WRITE_SETTINGS permission
-                                     CHECK(false);
+
+                                    if (mVerboseLevel == 1) System.out.println("          attempted to pop up an AlertDialog");
                                 }
-                                if (mVerboseLevel == 1) System.out.println("          attempted to pop up a semitransparent icon!");
+                                if (false) {
+                                    if (mVerboseLevel == 1) System.out.println("          attempting to pop up a semitransparent icon!");
+                                    // Pop up a semitransparent icon for at most 3 (or maybe configurable) seconds.
+                                    // If user taps it within the 3 seconds, call doTheAutoRotateThingNow(), otherwise disappear it.
+                                    // http://stackoverflow.com/questions/7678356/launch-popup-window-from-service
+                                    final View myView = new View(TheService.this) {
+                                        private Paint mPaint = new Paint() {{
+                                            setTextSize(100);
+                                            setARGB(200, 200, 200, 200);
+                                        }};
+
+                                        @Override
+                                        protected void onDraw(Canvas canvas) {
+                                            if (mVerboseLevel == 1) System.out.println("            in onDraw");
+                                            super.onDraw(canvas);
+                                            canvas.drawText("test test test", 0, 100, mPaint);
+                                            if (mVerboseLevel == 1) System.out.println("            out onDraw");
+                                        }
+
+                                        @Override
+                                        protected void onAttachedToWindow() {
+                                            if (mVerboseLevel == 1) System.out.println("            in onAttachedToWindow");
+                                            super.onAttachedToWindow();
+                                            if (mVerboseLevel == 1) System.out.println("            out onAttachedToWindow");
+                                        }
+
+                                        @Override
+                                        protected void onDetachedFromWindow() {
+                                            if (mVerboseLevel == 1) System.out.println("            in onDetachedFromWindow");
+                                            super.onDetachedFromWindow();
+                                            if (mVerboseLevel == 1) System.out.println("            out onDetachedFromWindow");
+                                        }
+
+                                        @Override
+                                        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                                            if (mVerboseLevel == 1) System.out.println("            in onMeasure");
+                                            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+                                            if (mVerboseLevel == 1) System.out.println("            out onMeasure");
+                                        }
+                                    };
+
+                                    WindowManager.LayoutParams layoutParams = new WindowManager.LayoutParams(
+                                        /*w=*/WindowManager.LayoutParams.MATCH_PARENT,
+                                        /*h=*/150,
+                                        /*xpos=*/10,
+                                        /*ypos=*/10,
+                                        /*_type=*/WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY,
+
+                                        /*
+                                        // I think doc says FLAG_NOT_TOUCH_MODAL only matters if not FLAG_NOT_FOCUSABLE ...
+                                        / *_flags=* /WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+                                        */
+
+                                        /*_flags=*/WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL, // allow pointer events outside of the window to be sent to the windows behind it
+
+                                        /*_format=*/PixelFormat.TRANSLUCENT);
+                                    layoutParams.gravity = Gravity.CENTER;
+                                    layoutParams.setTitle("Window test");
+                                    final WindowManager windowManager = (WindowManager)getSystemService(WINDOW_SERVICE); // there's no getWindowManager() in a service
+                                    try {
+                                         windowManager.addView(myView, layoutParams);
+                                    } catch (android.view.WindowManager.BadTokenException e) {
+                                         // This happens if I omit android.permission.SYSTEM_ALERT_WINDOW from AndroidManifest
+                                         // TODO: needs the double-opt-in dance here, similar for the WRITE_SETTINGS permission
+                                         CHECK(false);
+                                    }
+
+                                    // Make it expire in 3 seconds.
+                                    new Handler().postDelayed(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            if (mVerboseLevel == 1) System.out.println("            in run: prompt expired");
+                                            windowManager.removeView(myView);
+                                            if (mVerboseLevel == 1) System.out.println("            out run: prompt expired");
+                                        }
+                                    }, 3*1000);
+
+                                    if (mVerboseLevel == 1) System.out.println("          attempted to pop up a semitransparent icon!");
+                                }
                             } else {
                                 if (mVerboseLevel >= 1) System.out.println("          calling doTheAutoRotateThing");
                                 doTheAutoRotateThingNow();

@@ -16,7 +16,7 @@ public class TheActivity extends android.app.Activity {
     // so that the onCheckedChanged listener can tell that's what happened.
     private boolean mSettingCheckedFromProgram = false;
     private long mNumUpdates = 0;
-    private boolean mPolling = true;  // TODO: make this a shared preference so it will persist?
+    private boolean mPolling = false;  // TODO: make this a shared preference so it will persist?
 
     public static TheActivity theRunningActivity = null; // actually not sure there is guaranteed to be at most one
 
@@ -114,16 +114,19 @@ public class TheActivity extends android.app.Activity {
         System.out.println("    in onCreate");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        // TODO: members
         android.widget.Switch theServiceSwitch = (android.widget.Switch)findViewById(R.id.theServiceSwitch);
         android.widget.Button theAppSettingsButton = (android.widget.Button)findViewById(R.id.theAppSettingsButton);
         android.widget.Switch theWhackAMoleSwitch = (android.widget.Switch)findViewById(R.id.theWhackAMoleSwitch);
         android.widget.Switch theAutoRotateSwitch = (android.widget.Switch)findViewById(R.id.theAutoRotateSwitch);
         android.widget.Switch thePromptFirstSwitch = (android.widget.Switch)findViewById(R.id.thePromptFirstSwitch);
+        android.widget.Switch theOverrideSwitch = (android.widget.Switch)findViewById(R.id.theOverrideSwitch);
         android.widget.Switch theMonitorSwitch = (android.widget.Switch)findViewById(R.id.theMonitorSwitch);
 
         theWhackAMoleSwitch.setChecked(TheService.mStaticWhackAMole);
         theAutoRotateSwitch.setChecked(TheService.mStaticAutoRotate);
         thePromptFirstSwitch.setChecked(TheService.mStaticPromptFirst);
+        theOverrideSwitch.setChecked(TheService.mStaticOverride);
         theMonitorSwitch.setChecked(mPolling);
 
         if (true) {

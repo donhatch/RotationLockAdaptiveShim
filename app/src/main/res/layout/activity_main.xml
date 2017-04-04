@@ -30,6 +30,14 @@ tools:context=".TheActivity" >
         android:layout_below="@+id/theWhackAMoleSwitch"
         android:id="@+id/theAutoRotateSwitch" />
 
+    <Switch
+        android:text="  but prompt first "
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/theWhackAMoleSwitch"
+        android:layout_toRightOf="@+id/theAutoRotateSwitch"
+        android:id="@+id/thePromptFirstSwitch" />
+
     <TextView
         android:text="Listened values:"
         android:layout_width="wrap_content"

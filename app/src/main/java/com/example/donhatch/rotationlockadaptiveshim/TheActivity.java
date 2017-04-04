@@ -4,10 +4,17 @@ import android.provider.Settings;
 
 public class TheActivity extends android.app.Activity {
 
+    private void CHECK(boolean condition) {
+        if (!condition) {
+            throw new AssertionError("CHECK failed");
+        }
+    }
+
     // We set this temporarily while setting the checkbox from the program,
     // so that the onCheckedChanged listener can tell that's what happened.
     private boolean mSettingCheckedFromProgram = false;
     private long mNumUpdates = 0;
+    public static TheActivity theRunningActivity = null; // actually not sure there is guaranteed to be at most one
 
     private android.os.Handler mHandler = new android.os.Handler();
     private Runnable mRunnable = new Runnable() {
@@ -106,6 +113,7 @@ public class TheActivity extends android.app.Activity {
         android.widget.Switch theServiceSwitch = (android.widget.Switch)findViewById(R.id.theServiceSwitch);
         android.widget.Switch theWhackAMoleSwitch = (android.widget.Switch)findViewById(R.id.theWhackAMoleSwitch);
         android.widget.Switch theAutoRotateSwitch = (android.widget.Switch)findViewById(R.id.theAutoRotateSwitch);
+        android.widget.Switch thePromptFirstSwitch = (android.widget.Switch)findViewById(R.id.thePromptFirstSwitch);
         android.widget.Switch theMonitorSwitch = (android.widget.Switch)findViewById(R.id.theMonitorSwitch);
 
         if (true) {
@@ -142,14 +150,22 @@ public class TheActivity extends android.app.Activity {
                         // TODO: do this through the service somehow?
                         // TODO: need to catch SecurityException!
                         Settings.System.putInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0);
-                        if (TheService.theRunningService != null) {
-                          // XXX just nuke everything without thinking too much.  TODO: think about it better
-                          TheService.theRunningService.mStaticDegreesIsValid = false;
-                          TheService.theRunningService.mStaticClosestCompassPoint = -1;
-                        }
+                        // XXX just nuke everything without thinking too much.  TODO: think about it better
+                        TheService.mStaticDegreesIsValid = false;
+                        TheService.mStaticClosestCompassPoint = -1;
                     }
                     // TODO: make it update immediately?
                     System.out.println("            out theAutoRotateSwitch onCheckedChanged(isChecked=" + isChecked + ")");
+                }
+            });
+        }
+        if (true) {
+            thePromptFirstSwitch.setOnCheckedChangeListener(new android.widget.CompoundButton.OnCheckedChangeListener() {
+                public void onCheckedChanged(android.widget.CompoundButton buttonView, boolean isChecked) {
+                    System.out.println("            in thePromptFirstSwitch onCheckedChanged(isChecked=" + isChecked + ")");
+                    TheService.mStaticPromptFirst = isChecked;
+                    // No immediate effect; this setting just modifies the behavior of autorotate
+                    System.out.println("            out thePromptFirstSwitch onCheckedChanged(isChecked=" + isChecked + ")");
                 }
             });
         }
@@ -217,8 +233,7 @@ public class TheActivity extends android.app.Activity {
         // (Can also manually grant/ungrant by Settings -> Apps -> <this app> -> Modify system settings -> Yes/No, *if* activity is not running. (Force Stop first if it is))
         // Actually I think I can grant/ungrant on the fly, but the Settings switch gets out of sync with what it really is.  This is a reported bug, I think.
         if (!android.provider.Settings.System.canWrite(this)) {
-            android.content.Intent grantIntent = new android.content.Intent(android.provider.Settings.ACTION_MANAGE_WRITE_SETTINGS);
-            grantIntent.setData(android.net.Uri.parse("package:"+getPackageName()));
+            android.content.Intent grantIntent = new android.content.Intent(android.provider.Settings.ACTION_MANAGE_WRITE_SETTINGS, android.net.Uri.parse("package:"+getPackageName()));
             System.out.println("              grantIntent = "+grantIntent);
             System.out.println("              calling startActivity with ACTION_MANAGE_WRITE_SETTINGS");
             startActivity(grantIntent);
@@ -226,6 +241,20 @@ public class TheActivity extends android.app.Activity {
         } else {
             System.out.println("              can already modify system settings.  Cool.");
         }
+
+        if (!android.provider.Settings.canDrawOverlays(this)) {
+            android.content.Intent grantIntent = new android.content.Intent(android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION, android.net.Uri.parse("package:"+getPackageName()));
+            System.out.println("              grantIntent = "+grantIntent);
+            System.out.println("              calling startActivity with ACTION_MANAGE_OVERLAY_PERMISSION");
+            startActivity(grantIntent); // XXX that example uses startActivityForResult. maybe use that when needed on the fly?
+            System.out.println("              returned from startActivity with ACTION_MANAGE_OVERLAY_PERMISSION");
+        } else {
+            System.out.println("              can already draw overlays.  Cool.");
+        }
+
+        CHECK(theRunningActivity == null); // XXX not confident in this
+        theRunningActivity = this;
+
         System.out.println("    out onCreate");
     }
 
@@ -410,7 +439,6 @@ public class TheActivity extends android.app.Activity {
         updateUserRotationTextView();
         updateConfigurationOrientationTextView();
         updatePolledStatusTextView();
-
         System.out.println("            out onResume");
     }
 
@@ -439,6 +467,7 @@ public class TheActivity extends android.app.Activity {
     protected void onDestroy() {
         System.out.println("    in onDestroy");
         super.onDestroy();
+        if (theRunningActivity == this) theRunningActivity = null;
         System.out.println("    out onDestroy");
     }
 

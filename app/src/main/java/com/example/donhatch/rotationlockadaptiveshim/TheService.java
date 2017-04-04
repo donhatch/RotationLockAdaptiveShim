@@ -2,10 +2,17 @@ package com.example.donhatch.rotationlockadaptiveshim;
 
 import android.app.Notification;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.PixelFormat;
 import android.os.IBinder;
 import android.provider.Settings;
+import android.view.Gravity;
 import android.view.OrientationListener;
+import android.view.View;
+import android.view.WindowManager;
 import android.widget.Toast;
 
 public class TheService extends Service {
@@ -19,7 +26,7 @@ public class TheService extends Service {
     // These are static to avoid having to think about when the service isn't running.
     public static int mStaticDegrees = -1; // most recent value passed to onOrientationChanged listener of any TheService instance.
     public static boolean mStaticDegreesIsValid = false;
-    public int mStaticClosestCompassPoint = -1; // means invalid
+    public static int mStaticClosestCompassPoint = -1; // means invalid
     private android.view.OrientationEventListener mOrientationEventListener;
 
     private android.database.ContentObserver mAccelerometerRotationObserver = new android.database.ContentObserver(new android.os.Handler()) {
@@ -159,6 +166,41 @@ public class TheService extends Service {
         return toast;
     }
 
+// http://stackoverflow.com/questions/7678356/launch-popup-window-from-service
+public static class MyLoadView extends View {
+
+    private Paint mPaint;
+
+    public MyLoadView(Context context) {
+        super(context);
+        mPaint = new Paint();
+        mPaint.setTextSize(50);
+        mPaint.setARGB(200, 200, 200, 200);
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
+        canvas.drawText("test test test", 0, 100, mPaint);
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+    }
+
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+    }
+}  // MyLoadView
+
+
     @Override
     public void onCreate() {
         if (mVerboseLevel >= 1) System.out.println("                        in TheService.onCreate");
@@ -205,8 +247,41 @@ public class TheService extends Service {
                         mStaticClosestCompassPoint = newClosestCompassPoint;
                         if (mStaticAutoRotate) {
                             if (mStaticPromptFirst) {
+                                if (mVerboseLevel == 1) System.out.println("          attempting to pop up a semitransparent icon!");
+                                // Pop up a semitransparent icon for at most 5 (or maybe configurable) seconds.
                                 // Something with this:
-                                //setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT); // this is how an app requests it for itself. not sure how to relate with it.
+                                // If user taps it within the 5 seconds, call doTheAutoRotateThingNow(), otherwise disappear it.
+                                // http://stackoverflow.com/questions/7678356/launch-popup-window-from-service
+
+                                // Hmm but I'm getting this: http://stackoverflow.com/questions/2634991/android-1-6-android-view-windowmanagerbadtokenexception-unable-to-add-window
+                                // according to http://stackoverflow.com/questions/7569937/unable-to-add-window-android-view-viewrootw44da9bc0-permission-denied-for-t , maybe add android.permission.SYSTEM_ALERT_WINDOW to AndroidManifest?
+                                // Oh OUCH, this is another double-opt-in dance I think: http://stackoverflow.com/questions/7569937/unable-to-add-window-android-view-viewrootw44da9bc0-permission-denied-for-t#answer-34061521
+                                Context context;
+                                if (TheActivity.theRunningActivity != null) {
+                                    if (mVerboseLevel == 1) System.out.println("              using the running activity as the context");
+                                    context = TheActivity.theRunningActivity;
+                                } else {
+                                    if (mVerboseLevel == 1) System.out.println("              using this service as the context");
+                                    context = TheService.this;
+                                }
+                                MyLoadView myLoadView = new MyLoadView(context);
+                                WindowManager.LayoutParams layoutParams = new WindowManager.LayoutParams(
+                                    WindowManager.LayoutParams.MATCH_PARENT, 150, 10, 10,
+                                    WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY,
+                                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
+                                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+                                    PixelFormat.TRANSLUCENT);
+                                layoutParams.gravity = Gravity.CENTER;
+                                layoutParams.setTitle("Window test");
+                                WindowManager windowManager = (WindowManager)getSystemService(WINDOW_SERVICE); // is this the same as getWindowManager()?
+                                try {
+                                     windowManager.addView(myLoadView, layoutParams);
+                                } catch (android.view.WindowManager.BadTokenException e) {
+                                     // This happens if I omit android.permission.SYSTEM_ALERT_WINDOW from AndroidManifest
+                                     // XXX and needs the double-opt-in dance
+                                     CHECK(false);
+                                }
+                                if (mVerboseLevel == 1) System.out.println("          attempted to pop up a semitransparent icon!");
                             } else {
                                 if (mVerboseLevel >= 1) System.out.println("          calling doTheAutoRotateThing");
                                 doTheAutoRotateThingNow();

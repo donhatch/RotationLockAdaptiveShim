@@ -15,6 +15,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.provider.Settings;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.OrientationListener;
 import android.view.View;
 import android.view.Window;
@@ -131,7 +132,24 @@ public class TheService extends Service {
         }
     }
 
-
+    public static String motionEventActionMaskedConstantToString(int motionEventActionMaskedConstant) {
+        switch (motionEventActionMaskedConstant) {
+            case MotionEvent.ACTION_BUTTON_PRESS: return "ACTION_BUTTON_PRESS";
+            case MotionEvent.ACTION_BUTTON_RELEASE: return "ACTION_BUTTON_RELEASE";
+            case MotionEvent.ACTION_CANCEL: return "ACTION_CANCEL";
+            case MotionEvent.ACTION_DOWN: return "ACTION_DOWN";
+            case MotionEvent.ACTION_HOVER_ENTER: return "ACTION_HOVER_ENTER";
+            case MotionEvent.ACTION_HOVER_EXIT: return "ACTION_HOVER_EXIT";
+            case MotionEvent.ACTION_HOVER_MOVE: return "ACTION_HOVER_MOVE";
+            case MotionEvent.ACTION_MOVE: return "ACTION_MOVE";
+            case MotionEvent.ACTION_OUTSIDE: return "ACTION_OUTSIDE";
+            case MotionEvent.ACTION_POINTER_DOWN: return "ACTION_POINTER_DOWN";
+            case MotionEvent.ACTION_POINTER_UP: return "ACTION_POINTER_UP";
+            case MotionEvent.ACTION_SCROLL: return "ACTION_SCROLL";
+            case MotionEvent.ACTION_UP: return "ACTION_UP";
+            default: return "[unknown motionEvent actionMasked constant "+motionEventActionMaskedConstant+"]";
+        }
+    }  // motionEventActionMaskedConstantToString
 
     private void CHECK(boolean condition) {
         if (!condition) {
@@ -237,43 +255,77 @@ public class TheService extends Service {
                                     // but all the examples in the world use xml layouts. what a huge waste of time.
                                     // maybe this one uses a view?
                                     // https://www.codota.com/android/methods/android.app.AlertDialog.Builder/setView
-                                    // ARGH!  I want the user to still be able to interact with everything else behind it!  So maybe an alert dialog isn't the thing to use after all :-(
+                                    // Maybe this has something?  http://iserveandroid.blogspot.com/2011/04/how-to-dismiss-your-non-modal-dialog.html
+
                                     if (mVerboseLevel == 1) System.out.println("          attempting to pop up an AlertDialog");
-                                    final AlertDialog alertDialog = new AlertDialog.Builder(TheService.this)
-                                        .setTitle("Rotate the screen?")
-                                        .setMessage("3...")
-                                        //.setNeutralButton("MAYBE", null)
-                                        .setNegativeButton("No", new DialogInterface.OnClickListener() {
-                                            @Override
-                                            public void onClick(DialogInterface dialog, int id) {
-                                                if (mVerboseLevel == 1) System.out.println("            in alertDialog negative button onClick");
-                                                // XXX is this evidence for why it's good to always delay?
-                                                CHECK(mCleanupDialog != null);
+
+                                    // Don't use an AlertDialog.Builder, since that's incompatible with custom onTouchEvent.
+                                    // (TODO:  although... could I use a View.OnTouchListener insted?)
+                                    final AlertDialog alertDialog = new AlertDialog(TheService.this) {
+                                        @Override
+                                        public boolean onTouchEvent(MotionEvent motionEvent) {
+                                            if (mVerboseLevel == 1) System.out.println("            in alertDialog onTouchEvent");
+                                            if (mVerboseLevel == 1) System.out.println("              motionEvent.getActionMasked()="+motionEventActionMaskedConstantToString(motionEvent.getActionMasked()));
+                                            if (motionEvent.getActionMasked() == MotionEvent.ACTION_OUTSIDE) {
+                                                if (mVerboseLevel == 1) System.out.println("              touch outside dialog! cancelling");
+                                                CHECK(mCleanupDialog != null); // XXX not completely confident in this
                                                 mCleanupDialog.run();
                                                 mCleanupDialog = null;
-                                                if (mVerboseLevel == 1) System.out.println("            out alertDialog negative button onClick");
-                                            };
-                                        })
-                                        // shameless hack to get it somewhat centered
-                                        .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-                                            @Override
-                                            public void onClick(DialogInterface dialog, int id) {
-                                                if (mVerboseLevel == 1) System.out.println("            in alertDialog positive button onClick");
-                                                // XXX is this evidence for why it's good to always delay?
-                                                CHECK(mCleanupDialog != null);
-                                                mCleanupDialog.run();
-                                                mCleanupDialog = null;
-                                                doTheAutoRotateThingNow();
-                                                if (mVerboseLevel == 1) System.out.println("            out alertDialog positive button onClick");
-                                            };
-                                        })
-                                        .create();
+                                            } else {
+                                                if (mVerboseLevel == 1) System.out.println("              touch inside dialog; ignoring");
+                                            }
+                                            if (mVerboseLevel == 1) System.out.println("            out alertDialog onTouchEvent");
+                                            // I think returning true is supposed to mean "consume", i.e.
+                                            // don't pass the event to subsequent listeners or parent or "next level down",
+                                            // but I don't observe it making any difference--
+                                            // what we see as ACTION_OUTSIDE has an effect
+                                            // on the activity underneath the dialog,
+                                            // and touching inside the dialog does *not* affect the activity underneath,
+                                            // regardless of whether we return true or false here.
+                                            return false;
+                                        }
+                                    };
+                                    alertDialog.setTitle("Rotate the screen?");
+                                    alertDialog.setMessage("3...");
+                                    alertDialog.setButton(AlertDialog.BUTTON_NEGATIVE, "No", new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int id) {
+                                            if (mVerboseLevel == 1) System.out.println("            in alertDialog negative button onClick");
+                                            // XXX is this evidence for why it's good to always delay?
+                                            CHECK(mCleanupDialog != null);
+                                            mCleanupDialog.run();
+                                            mCleanupDialog = null;
+                                            if (mVerboseLevel == 1) System.out.println("            out alertDialog negative button onClick");
+                                        };
+                                    });
+                                    alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, "Yes", new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int id) {
+                                            if (mVerboseLevel == 1) System.out.println("            in alertDialog positive button onClick");
+                                            // XXX is this evidence for why it's good to always delay?
+                                            CHECK(mCleanupDialog != null);
+                                            mCleanupDialog.run();
+                                            mCleanupDialog = null;
+                                            doTheAutoRotateThingNow();
+                                            if (mVerboseLevel == 1) System.out.println("            out alertDialog positive button onClick");
+                                        };
+                                    });
+
+
                                     Window alertDialogWindow = alertDialog.getWindow();
                                     alertDialogWindow.setType(WindowManager.LayoutParams.TYPE_SYSTEM_ALERT); // required when context=TheService.this, otherwise WindowManager.BadTokenException.
                                     // Kill the dimming of the activity or whatever's behind it
                                     alertDialogWindow.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
                                     // Kill the drop shadow too
                                     //alertDialogWindow.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+
+                                    // Trying advice in http://iserveandroid.blogspot.com/2011/04/how-to-dismiss-your-non-modal-dialog.html ...
+                                    // Make it so user can interact with rest of screen
+                                    alertDialogWindow.addFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL);
+                                    // And so that we get the onTouchEvent first, when a touch comes on rest of screen
+                                    alertDialogWindow.addFlags(WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH);
+
+
                                     try {
                                         alertDialog.show();
                                     } catch (android.view.WindowManager.BadTokenException e) {
@@ -305,12 +357,10 @@ public class TheService extends Service {
                                         }
                                     };
 
-                                    // Cute countdown
+                                    // Hacky countdown in the dialog.
+                                    // These don't get cleaned up by mCleanupDialog, but it doesn't matter; they don't hurt anything.
                                     new Handler().postDelayed(new Runnable() { @Override public void run() { alertDialog.setMessage("2..."); } }, 1*1000);
                                     new Handler().postDelayed(new Runnable() { @Override public void run() { alertDialog.setMessage("1..."); } }, 2*1000);
-
-
-
 
                                     if (mVerboseLevel == 1) System.out.println("          attempted to pop up an AlertDialog");
                                 }

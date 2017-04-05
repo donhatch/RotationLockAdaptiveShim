@@ -1,5 +1,4 @@
 //
-// BUG: prompt off, rotate to landscape mode, shake phone, it will eventually go into portrait mode and stay there!? that's not right
 // TODO: Put title at top of activity screen
 // TODO: actually make it work correctly when activity restarts due to orientation: remove the thing from the manifest? maybe worth a try
 // TODO: display a dial with current orientation
@@ -10,6 +9,7 @@
 // TODO: use import consistently
 // TODO: uncrowd ui
 // TODO: put bottom stuff in "advanced" or "debug" or "devel" section
+// TODO: if permission got revoked and we re-do the double-opt-in-dance, we end up not having written the value... I think? have to think about the consequences. maybe not too bad.
 
 package com.example.donhatch.rotationlockadaptiveshim;
 

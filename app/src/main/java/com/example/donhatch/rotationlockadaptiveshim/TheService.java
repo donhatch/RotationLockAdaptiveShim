@@ -115,7 +115,9 @@ public class TheService extends Service {
                         if (mVerboseLevel >= 1) System.out.println("                  grantIntent = "+grantIntent);
                         if (mVerboseLevel >= 1) System.out.println("                  calling startActivity with ACTION_MANAGE_WRITE_SETTINGS");
                         startActivity(grantIntent);
-                        if (mVerboseLevel >= 1) System.out.println("                  returned from startActivity with ACTION_MANAGE_WRITE_SETTINGS");
+                        if (mVerboseLevel >= 1) System.out.println("                  returned from startActivity with ACTION_MANAGE_WRITE_SETTINGS (but still didn't set ACCELEROMETER_ROTATION like we wanted!)");
+                        // CBB: still didn't write the value; not sure we can do anything better
+                        // since permission might not have actually been granted.
                     }
                 }
             }
@@ -873,16 +875,29 @@ public class TheService extends Service {
         CHECK(mStaticClosestCompassPoint != -1);
 
         if (mCurrentSystemSettingACCELEROMETER_ROTATION != 0) {
-          // In case this got turned on for some reason.
-          // Probably this can't happen unless mStaticWhackAMole is off. 
-          if (mVerboseLevel >= 1) System.out.println("              changing Settings.System.ACCELEROMETER_ROTATION from " + mCurrentSystemSettingACCELEROMETER_ROTATION + " to 0 !!!!!!!!!!");
-          Settings.System.putInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0);
-          // Do this here in addition to in listener, since it seems to be best practice
-          // (judging from the analogous situation for USER_ROTATION)
-          mCurrentSystemSettingACCELEROMETER_ROTATION = 0;
+            // In case this got turned on for some reason.
+            // Probably this can't happen unless mStaticWhackAMole is off. 
+            if (mVerboseLevel >= 1) System.out.println("              changing Settings.System.ACCELEROMETER_ROTATION from " + mCurrentSystemSettingACCELEROMETER_ROTATION + " to 0 !!!!!!!!!!");
+            try {
+                Settings.System.putInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0);
+                // Do this here in addition to in listener, since it seems to be best practice
+                // (judging from the analogous situation for USER_ROTATION)
+                mCurrentSystemSettingACCELEROMETER_ROTATION = 0;
+            } catch (SecurityException e) {
+                // XXX dup code
+                if (mVerboseLevel >= 1) System.out.println("              Oh no, can't set system settings-- were permissions revoked?");
+                Toast.makeText(TheService.this, " Oh no, can't set system settings-- were permissions revoked?\nHere, please grant the permission.", Toast.LENGTH_SHORT).show();
+                Intent grantIntent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
+                grantIntent.setData(Uri.parse("package:"+getPackageName()));
+                if (mVerboseLevel >= 1) System.out.println("                  grantIntent = "+grantIntent);
+                if (mVerboseLevel >= 1) System.out.println("                  calling startActivity with ACTION_MANAGE_WRITE_SETTINGS");
+                startActivity(grantIntent);
+                if (mVerboseLevel >= 1) System.out.println("                  returned from startActivity with ACTION_MANAGE_WRITE_SETTINGS (but still didn't set ACCELEROMETER_ROTATION like we wanted!)");
+                // CBB: still didn't write the value; not sure we can do anything better
+                // since permission might not have actually been granted.
+            }
         } else {
-          if (mVerboseLevel >= 1) System.out.println("              Settings.System.ACCELEROMETER_ROTATION was 0 as expected");
-          // TODO: need to do the double-opt-in dance here, although returns are diminishing
+            if (mVerboseLevel >= 1) System.out.println("              Settings.System.ACCELEROMETER_ROTATION was 0 as expected");
         }
 
         // From http://stackoverflow.com/questions/14587085/how-can-i-globally-force-screen-orientation-in-android#answer-26895627
@@ -934,10 +949,16 @@ public class TheService extends Service {
             if (mVerboseLevel >= 1) System.out.println("              grantIntent = "+grantIntent);
             if (mVerboseLevel >= 1) System.out.println("              calling startActivity with ACTION_MANAGE_WRITE_SETTINGS");
             startActivity(grantIntent);
-            if (mVerboseLevel >= 1) System.out.println("              returned from startActivity with ACTION_MANAGE_WRITE_SETTINGS");
+            if (mVerboseLevel >= 1) System.out.println("              returned from startActivity with ACTION_MANAGE_WRITE_SETTINGS (but still didn't set USER_ROTATION like we wanted!)");
+            // CBB: still didn't write the value.
+            // What to do now?
+            //     - try to write the value again? (endless loop possible)
+            //     - try to write the value again but only try again once?
+            //     - try to write the value again but only if it looks like permission was granted?
+            //     - just leave it; it will get resolved eventually (if permission eventually granted)
         }
 
-        // TODO: need to listen to changes on mStaticOverride, and do this when it changes too
+        // TODO: need to listen to changes on mStaticOverride, and do the following when it changes too
         WindowManager windowManager = (WindowManager)getSystemService(WINDOW_SERVICE); // there's no getWindowManager() in a service
         if (mStaticOverride) {
             int newScreenOrientationConstant = closestCompassPointToScreenOrientationConstant(mStaticClosestCompassPoint);

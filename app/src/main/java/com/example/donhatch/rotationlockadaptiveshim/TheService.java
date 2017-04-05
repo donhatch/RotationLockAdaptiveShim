@@ -467,6 +467,23 @@ public class TheService extends Service {
                                         };
                                         alertDialog.setTitle("Rotate the screen?");
                                         alertDialog.setMessage("3...");
+                                        alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "Stop asking me that", new DialogInterface.OnClickListener() {
+                                            @Override
+                                            public void onClick(DialogInterface dialog, int id) {
+                                                if (mVerboseLevel == 1) System.out.println("            in alertDialog neutral button onClick");
+
+                                                // Same as yes, but turn off mStaticPromptFirst
+                                                TheService.mStaticPromptFirst = false;
+                                                Intent intent = new Intent("mStaticPromptFirst changed");
+                                                if (mVerboseLevel == 1) System.out.println("              sending \"mStaticPromptFirst changed\" broadcast");
+                                                android.support.v4.content.LocalBroadcastManager.getInstance(TheService.this).sendBroadcast(intent);
+                                                if (mVerboseLevel == 1) System.out.println("              sent \"mStaticPromptFirst changed\" broadcast");
+                                                mCleanupDialog.run();
+                                                mCleanupDialog = null;
+                                                doTheAutoRotateThingNow();
+                                                if (mVerboseLevel == 1) System.out.println("            out alertDialog neutral button onClick");
+                                            };
+                                        });
                                         alertDialog.setButton(AlertDialog.BUTTON_NEGATIVE, "No", new DialogInterface.OnClickListener() {
                                             @Override
                                             public void onClick(DialogInterface dialog, int id) {

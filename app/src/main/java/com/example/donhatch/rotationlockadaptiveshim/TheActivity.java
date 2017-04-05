@@ -43,14 +43,27 @@ public class TheActivity extends android.app.Activity {
     private android.content.BroadcastReceiver mBroadcastReceiver = new android.content.BroadcastReceiver() {
         @Override
         public void onReceive(android.content.Context context, android.content.Intent intent) {
-            //System.out.println("                in onReceive");
-            int oldDegrees = intent.getIntExtra("oldDegrees", -100);
-            int newDegrees = intent.getIntExtra("newDegrees", -100);
-            //System.out.println("                  intent.getIntExtra(\"oldDegrees\") = "+oldDegrees);
-            //System.out.println("                  intent.getIntExtra(\"newDegrees\") = "+newDegrees);
-            android.widget.TextView theAccelerometerOrientationDegreesTextView = (android.widget.TextView)findViewById(R.id.theAccelerometerOrientationDegreesTextView);
-            theAccelerometerOrientationDegreesTextView.setText("  accelerometer degrees (most recent update): "+oldDegrees+" -> "+newDegrees);
-            //System.out.println("                out onReceive");
+            if (intent.getAction().equals("degrees changed")) {
+                //System.out.println("                in onReceive: "+intent.getAction());
+                int oldDegrees = intent.getIntExtra("oldDegrees", -100);
+                int newDegrees = intent.getIntExtra("newDegrees", -100);
+                //System.out.println("                  intent.getIntExtra(\"oldDegrees\") = "+oldDegrees);
+                //System.out.println("                  intent.getIntExtra(\"newDegrees\") = "+newDegrees);
+                android.widget.TextView theAccelerometerOrientationDegreesTextView = (android.widget.TextView)findViewById(R.id.theAccelerometerOrientationDegreesTextView);
+                theAccelerometerOrientationDegreesTextView.setText("  accelerometer degrees (most recent update): "+oldDegrees+" -> "+newDegrees);
+                //System.out.println("                out onReceive: "+intent.getAction());
+            } else if (intent.getAction().equals("mStaticPromptFirst changed")) {
+                System.out.println("                in onReceive: "+intent.getAction());
+                System.out.println("                  setting switch");
+                android.widget.Switch thePromptFirstSwitch = (android.widget.Switch)findViewById(R.id.thePromptFirstSwitch);
+                thePromptFirstSwitch.setChecked(TheService.mStaticPromptFirst);
+                System.out.println("                out onReceive: "+intent.getAction());
+            } else {
+                System.out.println("                in onReceive: "+intent.getAction());
+                System.out.println("                  (unrecognized)");
+                CHECK(false);  // shouldn't happen
+                System.out.println("                out onReceive: "+intent.getAction());
+            }
         }
     };  // mBroadcastReceiver
 
@@ -469,7 +482,7 @@ public class TheActivity extends android.app.Activity {
         super.onResume();
 
         {
-            android.support.v4.content.LocalBroadcastManager.getInstance(this).registerReceiver(mBroadcastReceiver, new android.content.IntentFilter("degrees changed"));
+            android.support.v4.content.LocalBroadcastManager.getInstance(this).registerReceiver(mBroadcastReceiver, new android.content.IntentFilter("degrees changed") {{addAction("mStaticPromptFirst changed");}});
         }
 
         {

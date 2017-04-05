@@ -10,23 +10,31 @@ package com.example.donhatch.rotationlockadaptiveshim;
 
 import android.app.AlertDialog;
 import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
+import android.content.res.Configuration;
+import android.database.ContentObserver;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.ColorDrawable;
+import android.hardware.SensorManager;
+import android.net.Uri;
 import android.os.Handler;
 import android.os.IBinder;
 import android.provider.Settings;
 import android.view.Gravity;
 import android.view.MotionEvent;
-import android.view.OrientationListener;
+import android.view.OrientationEventListener;
+import android.view.Surface;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -52,7 +60,7 @@ public class TheService extends Service {
     public static int mStaticDegrees = -1; // most recent value passed to onOrientationChanged listener of any TheService instance.
     public static boolean mStaticDegreesIsValid = false;
     public static int mStaticClosestCompassPoint = -1; // means invalid
-    private android.view.OrientationEventListener mOrientationEventListener;
+    private OrientationEventListener mOrientationEventListener;
     private Runnable mCleanupDialog = null;
 
     // http://stackoverflow.com/questions/14587085/how-can-i-globally-force-screen-orientation-in-android/14654302#answer-14862852
@@ -80,11 +88,11 @@ public class TheService extends Service {
         }
     }
 
-    private android.database.ContentObserver mAccelerometerRotationObserver = new android.database.ContentObserver(new android.os.Handler()) {
+    private ContentObserver mAccelerometerRotationObserver = new ContentObserver(new Handler()) {
         // Per https://developer.android.com/reference/android/database/ContentObserver.html (probably not necessary though)
         @Override public void onChange(boolean selfChange) { onChange(selfChange, null); }
         @Override
-        public void onChange(boolean selfChange, android.net.Uri uri) {
+        public void onChange(boolean selfChange, Uri uri) {
             System.out.println("            in TheService mAccelerometerRotationObserver onChange(selfChange="+selfChange+", uri="+uri+")");
             updateCurrentACCELEROMETER_ROTATION();
             if (mStaticWhackAMole) {
@@ -98,7 +106,7 @@ public class TheService extends Service {
                         if (mVerboseLevel >= 1) System.out.println("              Oh no, can't set system settings-- were permissions revoked?");
                         Toast.makeText(TheService.this, " Oh no, can't set system settings-- were permissions revoked?\nHere, please grant the permission.", Toast.LENGTH_SHORT).show();
                         Intent grantIntent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
-                        grantIntent.setData(android.net.Uri.parse("package:"+getPackageName()));
+                        grantIntent.setData(Uri.parse("package:"+getPackageName()));
                         if (mVerboseLevel >= 1) System.out.println("                  grantIntent = "+grantIntent);
                         if (mVerboseLevel >= 1) System.out.println("                  calling startActivity with ACTION_MANAGE_WRITE_SETTINGS");
                         startActivity(grantIntent);
@@ -109,11 +117,11 @@ public class TheService extends Service {
             System.out.println("            out TheService mAccelerometerRotationObserver onChange(selfChange="+selfChange+", uri="+uri+")");
         }
     };  // mAccelerometerRotationObserver
-    private android.database.ContentObserver mUserRotationObserver = new android.database.ContentObserver(new android.os.Handler()) {
+    private ContentObserver mUserRotationObserver = new ContentObserver(new Handler()) {
         // Per https://developer.android.com/reference/android/database/ContentObserver.html (probably not necessary though)
         @Override public void onChange(boolean selfChange) { onChange(selfChange, null); }
         @Override
-        public void onChange(boolean selfChange, android.net.Uri uri) {
+        public void onChange(boolean selfChange, Uri uri) {
             System.out.println("            in TheService mUserRotationObserver onChange(selfChange="+selfChange+", uri="+uri+")");
             updateCurrentUSER_ROTATION();
             System.out.println("            out TheService mUserRotationObserver onChange(selfChange="+selfChange+", uri="+uri+")");
@@ -127,10 +135,10 @@ public class TheService extends Service {
 
     private static int closestCompassPointToUserRotation(int closestCompassPoint) {
         switch (closestCompassPoint) {
-            case 0: return android.view.Surface.ROTATION_0;
-            case 90: return android.view.Surface.ROTATION_270;
-            case 180: return android.view.Surface.ROTATION_180;
-            case 270: return android.view.Surface.ROTATION_90;
+            case 0: return Surface.ROTATION_0;
+            case 90: return Surface.ROTATION_270;
+            case 180: return Surface.ROTATION_180;
+            case 270: return Surface.ROTATION_90;
             default: CHECK(false); return -1;  // shouldn't happen
         }
     }  // closestCompassPointToUserRotation
@@ -148,10 +156,10 @@ public class TheService extends Service {
     // Used as value of System.Settings.USER_ROTATION
     public static String surfaceRotationConstantToString(int surfaceRotationConstant) {
         switch (surfaceRotationConstant) {
-            case android.view.Surface.ROTATION_0: return "ROTATION_0";
-            case android.view.Surface.ROTATION_90: return "ROTATION_90";
-            case android.view.Surface.ROTATION_180: return "ROTATION_180";
-            case android.view.Surface.ROTATION_270: return "ROTATION_270";
+            case Surface.ROTATION_0: return "ROTATION_0";
+            case Surface.ROTATION_90: return "ROTATION_90";
+            case Surface.ROTATION_180: return "ROTATION_180";
+            case Surface.ROTATION_270: return "ROTATION_270";
             default: return "[unknown surface rotation constant "+surfaceRotationConstant+"]";
         }
     }  // surfaceRotationConstantToString
@@ -168,22 +176,22 @@ public class TheService extends Service {
     // But the values are the same!?  Weird.
     public static String screenOrientationConstantToString(int screenOrientationConstant) {
         switch (screenOrientationConstant) {
-            case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED: return "SCREEN_ORIENTATION_UNSPECIFIED";
-            case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE: return "SCREEN_ORIENTATION_LANDSCAPE";
-            case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT: return "SCREEN_ORIENTATION_PORTRAIT";
-            case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_USER: return "SCREEN_ORIENTATION_USER";
-            case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_BEHIND: return "SCREEN_ORIENTATION_BEHIND";
-            case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR: return "SCREEN_ORIENTATION_SENSOR";
-            case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_NOSENSOR: return "SCREEN_ORIENTATION_NOSENSOR";
-            case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE: return "SCREEN_ORIENTATION_SENSOR_LANDSCAPE";
-            case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT: return "SCREEN_ORIENTATION_SENSOR_PORTRAIT";
-            case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE: return "SCREEN_ORIENTATION_REVERSE_LANDSCAPE";
-            case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT: return "SCREEN_ORIENTATION_REVERSE_PORTRAIT";
-            case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR: return "SCREEN_ORIENTATION_FULL_SENSOR";
-            case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_USER_LANDSCAPE: return "SCREEN_ORIENTATION_USER_LANDSCAPE";
-            case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_USER_PORTRAIT: return "SCREEN_ORIENTATION_USER_PORTRAIT";
-            case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_FULL_USER: return "SCREEN_ORIENTATION_FULL_USER";
-            case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LOCKED: return "SCREEN_ORIENTATION_LOCKED";
+            case ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED: return "SCREEN_ORIENTATION_UNSPECIFIED";
+            case ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE: return "SCREEN_ORIENTATION_LANDSCAPE";
+            case ActivityInfo.SCREEN_ORIENTATION_PORTRAIT: return "SCREEN_ORIENTATION_PORTRAIT";
+            case ActivityInfo.SCREEN_ORIENTATION_USER: return "SCREEN_ORIENTATION_USER";
+            case ActivityInfo.SCREEN_ORIENTATION_BEHIND: return "SCREEN_ORIENTATION_BEHIND";
+            case ActivityInfo.SCREEN_ORIENTATION_SENSOR: return "SCREEN_ORIENTATION_SENSOR";
+            case ActivityInfo.SCREEN_ORIENTATION_NOSENSOR: return "SCREEN_ORIENTATION_NOSENSOR";
+            case ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE: return "SCREEN_ORIENTATION_SENSOR_LANDSCAPE";
+            case ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT: return "SCREEN_ORIENTATION_SENSOR_PORTRAIT";
+            case ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE: return "SCREEN_ORIENTATION_REVERSE_LANDSCAPE";
+            case ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT: return "SCREEN_ORIENTATION_REVERSE_PORTRAIT";
+            case ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR: return "SCREEN_ORIENTATION_FULL_SENSOR";
+            case ActivityInfo.SCREEN_ORIENTATION_USER_LANDSCAPE: return "SCREEN_ORIENTATION_USER_LANDSCAPE";
+            case ActivityInfo.SCREEN_ORIENTATION_USER_PORTRAIT: return "SCREEN_ORIENTATION_USER_PORTRAIT";
+            case ActivityInfo.SCREEN_ORIENTATION_FULL_USER: return "SCREEN_ORIENTATION_FULL_USER";
+            case ActivityInfo.SCREEN_ORIENTATION_LOCKED: return "SCREEN_ORIENTATION_LOCKED";
             default: return "[unknown screen orientation constant "+screenOrientationConstant+"]";
         }
     }
@@ -193,8 +201,8 @@ public class TheService extends Service {
     //   Configuration.ORIENTATION_PORTRAIT (1) or Configuration.ORIENTATION_LANDSCAPE (2)
     public static String orientationConstantToString(int orientationConstant) {
         switch (orientationConstant) {
-            case android.content.res.Configuration.ORIENTATION_PORTRAIT: return "ORIENTATION_PORTRAIT";
-            case android.content.res.Configuration.ORIENTATION_LANDSCAPE: return "ORIENTATION_LANDSCAPE";
+            case Configuration.ORIENTATION_PORTRAIT: return "ORIENTATION_PORTRAIT";
+            case Configuration.ORIENTATION_LANDSCAPE: return "ORIENTATION_LANDSCAPE";
             default: return "[unknown orientation constant "+orientationConstant+"]";
         }
     }
@@ -286,13 +294,13 @@ public class TheService extends Service {
 
     // Show toast for some length of time <= LENGTH_LONG (3500 millis).
     // BUG: if some other toast is up already, this one will get delayed in starting... but not in ending!  Argh.
-    private Toast showToast(android.content.Context ctx, String text, long millis) {
+    private Toast showToast(Context ctx, String text, long millis) {
         // LENGTH_SHORT is 2000 millis
         // LENGTH_LONG is 3500 millis  (not sure I believe that though-- seems like at least 6000)
         final Toast toast = Toast.makeText(ctx, text, Toast.LENGTH_LONG);
         toast.show();
 
-        android.os.Handler handler = new android.os.Handler();
+        Handler handler = new Handler();
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
@@ -316,7 +324,7 @@ public class TheService extends Service {
         {
             final Toast toast = showToast(this, "HEY!", 20000);
 
-            new android.os.Handler().postDelayed(new Runnable() {
+            new Handler().postDelayed(new Runnable() {
                 @Override
                 public void run() {
                     System.out.println("renewing?");
@@ -324,7 +332,7 @@ public class TheService extends Service {
                     toast.show();
                 }
             }, 2000);
-            new android.os.Handler().postDelayed(new Runnable() {
+            new Handler().postDelayed(new Runnable() {
                 @Override
                 public void run() {
                     System.out.println("renewing again?");
@@ -332,7 +340,7 @@ public class TheService extends Service {
                     toast.show();
                 }
             }, 4000);
-            new android.os.Handler().postDelayed(new Runnable() {
+            new Handler().postDelayed(new Runnable() {
                 @Override
                 public void run() {
                     System.out.println("renewing yet again?");
@@ -340,7 +348,7 @@ public class TheService extends Service {
                     toast.show();
                 }
             }, 6000);
-            new android.os.Handler().postDelayed(new Runnable() {
+            new Handler().postDelayed(new Runnable() {
                 @Override
                 public void run() {
                     System.out.println("renewing yet again, again?");
@@ -374,11 +382,11 @@ public class TheService extends Service {
             CHECK(mOrientationChanger.getVisibility() == View.GONE);
         }
 
-        mOrientationEventListener = new android.view.OrientationEventListener(this, android.hardware.SensorManager.SENSOR_DELAY_NORMAL) {
+        mOrientationEventListener = new OrientationEventListener(this, SensorManager.SENSOR_DELAY_NORMAL) {
             @Override
             public void onOrientationChanged(int degrees) {
                 if (mVerboseLevel >= 2) System.out.println("        in onOrientationChanged(degrees="+degrees+")");
-                if (degrees == android.view.OrientationEventListener.ORIENTATION_UNKNOWN) { // -1
+                if (degrees == OrientationEventListener.ORIENTATION_UNKNOWN) { // -1
                     if (mVerboseLevel == 1) System.out.println("        in onOrientationChanged(degrees="+degrees+")");
                     if (mVerboseLevel >= 1) System.out.println("          (not doing anything)");
                     if (mVerboseLevel == 1) System.out.println("        out onOrientationChanged(degrees="+degrees+")");
@@ -526,7 +534,7 @@ public class TheService extends Service {
 
                                         try {
                                             alertDialog.show();
-                                        } catch (android.view.WindowManager.BadTokenException e) {
+                                        } catch (WindowManager.BadTokenException e) {
                                             // This happens if I omit android.permission.SYSTEM_ALERT_WINDOW from AndroidManifest, or if user revoke or didn't grant "Draw over other apps".
                                             // TODO: need to do the double-opt-in dance here, similar to the WRITE_SETTINGS permission
                                             CHECK(false);
@@ -623,7 +631,7 @@ public class TheService extends Service {
                                         final WindowManager windowManager = (WindowManager)getSystemService(WINDOW_SERVICE); // there's no getWindowManager() in a service
                                         try {
                                              windowManager.addView(myView, layoutParams);
-                                        } catch (android.view.WindowManager.BadTokenException e) {
+                                        } catch (WindowManager.BadTokenException e) {
                                              // This happens if I omit android.permission.SYSTEM_ALERT_WINDOW from AndroidManifest
                                              // TODO: needs the double-opt-in dance here, similar for the WRITE_SETTINGS permission
                                              CHECK(false);
@@ -684,13 +692,13 @@ public class TheService extends Service {
             // For the ones that do, we want to stop listening to the accelerometer when the screen is off,
             // to conserve battery.
             // https://thinkandroid.wordpress.com/2010/01/24/handling-screen-off-and-screen-on-intents/
-            System.out.println("android.content.Intent.ACTION_SCREEN_OFF = "+android.content.Intent.ACTION_SCREEN_OFF);
-            System.out.println("android.content.Intent.ACTION_SCREEN_ON = "+android.content.Intent.ACTION_SCREEN_ON);
+            System.out.println("android.content.Intent.ACTION_SCREEN_OFF = "+Intent.ACTION_SCREEN_OFF);
+            System.out.println("android.content.Intent.ACTION_SCREEN_ON = "+Intent.ACTION_SCREEN_ON);
 
-            android.content.IntentFilter intentFilter = new android.content.IntentFilter();
-            intentFilter.addAction(android.content.Intent.ACTION_SCREEN_OFF);
-            intentFilter.addAction(android.content.Intent.ACTION_SCREEN_ON);
-            intentFilter.addAction(android.content.Intent.ACTION_USER_PRESENT);
+            IntentFilter intentFilter = new IntentFilter();
+            intentFilter.addAction(Intent.ACTION_SCREEN_OFF);
+            intentFilter.addAction(Intent.ACTION_SCREEN_ON);
+            intentFilter.addAction(Intent.ACTION_USER_PRESENT);
             registerReceiver(new BroadcastReceiver() {
                 @Override
                 public void onReceive(Context context, Intent intent) {
@@ -745,8 +753,8 @@ public class TheService extends Service {
             Intent notificationIntent = new Intent(this, TheActivity.class);
             http://stackoverflow.com/questions/7385443/flag-activity-clear-top-in-android#answer-7385849
             notificationIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            android.app.PendingIntent pendingIntent = android.app.PendingIntent.getActivity(this, 0, notificationIntent, 0);
-            final android.app.Notification.Builder builder = new android.app.Notification.Builder(this)
+            PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
+            final Notification.Builder builder = new Notification.Builder(this)
                     .setContentTitle("Adaptive Rotation Lock Shim") // XXX R.string.notification_title
                     .setContentText("Tap for configuration options") // XXX R.string.notification_messsage
                     .setSmallIcon(R.drawable.typewriter_el)
@@ -755,7 +763,7 @@ public class TheService extends Service {
                     .setWhen(System.currentTimeMillis()+10*60*1000)
                     .setShowWhen(true)
                     ;
-            final android.app.Notification notification = builder.build();
+            final Notification notification = builder.build();
             //notification.flags |= Notification.FLAG_NO_CLEAR; // XXX doesn't seem to help keep the icon up
             if (mVerboseLevel >= 1) System.out.println("                              calling startForeground");
             startForeground(AN_IDENTIFIER_FOR_THIS_NOTIFICATION_UNIQUE_WITHIN_THIS_APPLICATION, notification);
@@ -770,7 +778,7 @@ public class TheService extends Service {
             // This was an experiment to see if I can successfully update the notification text.  Yes, it works, pretty smoothly.
             if (false) {
                 final int count[] = {0};
-                final android.os.Handler handler = new android.os.Handler();
+                final Handler handler = new Handler();
                 handler.postDelayed(new Runnable() {
                     @Override
                     public void run() {
@@ -782,7 +790,7 @@ public class TheService extends Service {
                         }
                         builder.setContentText("updated "+(count[0]++));
                         if (false) {
-                            android.app.NotificationManager notificationManager = (android.app.NotificationManager) getApplicationContext().getSystemService(getApplicationContext().NOTIFICATION_SERVICE);
+                            NotificationManager notificationManager = (NotificationManager) getApplicationContext().getSystemService(getApplicationContext().NOTIFICATION_SERVICE);
                             // There seems to be some disagreement over whether the following will
                             // do something unfriendly-- either undo startForeground() (I don't think so)
                             // or make it so stopForeground() no longer removes the notification (yeah I think so).
@@ -891,7 +899,7 @@ public class TheService extends Service {
             if (mVerboseLevel >= 1) System.out.println("              Oh no, can't set system settings-- were permissions revoked?");
             Toast.makeText(TheService.this, " Oh no, can't set system settings-- were permissions revoked?\nHere, please grant the permission.", Toast.LENGTH_SHORT).show();
             Intent grantIntent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
-            grantIntent.setData(android.net.Uri.parse("package:"+getPackageName()));
+            grantIntent.setData(Uri.parse("package:"+getPackageName()));
             if (mVerboseLevel >= 1) System.out.println("              grantIntent = "+grantIntent);
             if (mVerboseLevel >= 1) System.out.println("              calling startActivity with ACTION_MANAGE_WRITE_SETTINGS");
             startActivity(grantIntent);

@@ -1,14 +1,14 @@
 //
 // TODO: Put title at top of activity screen
+// TODO: use import consistently  (done in TheService, not in TheActivity)
 // TODO: actually make it work correctly when activity restarts due to orientation: remove the thing from the manifest? maybe worth a try
 // TODO: display a dial with current orientation
 // TODO: make values turn red when they change and then fade to black? hmm
 // TODO: use a Binder to communicate between activity and service?  https://developer.android.com/guide/components/bound-services.html#Binder
 // TODO: when override toggled, should turn on or off the overrider immediately
-// TODO: maybe quick back and forth should turn the prompt back on?
-// TODO: use import consistently
+// TODO: maybe quick back and forth should turn the prompt back on?  (no I think that might be bad since indistinguishable from a shake)
 // TODO: uncrowd ui
-// TODO: put bottom stuff in "advanced" or "debug" or "devel" section
+// TODO: put bottom stuff in "advanced" or "debug" or "devel" section, closed by default
 // TODO: if permission got revoked and we re-do the double-opt-in-dance, we end up not having written the value... I think? have to think about the consequences. maybe not too bad.
 // TODO: if service is started while permissions aren't there (say, were revoked),
 //       process crashes.  Need to catch this and do something better I think.

@@ -31,6 +31,7 @@ import android.net.Uri;
 import android.os.Handler;
 import android.os.IBinder;
 import android.provider.Settings;
+import android.support.v4.content.LocalBroadcastManager;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.OrientationEventListener;
@@ -485,7 +486,7 @@ public class TheService extends Service {
                                                 Intent intent = new Intent("mStaticPromptFirst changed");
                                                 intent.putExtra("newStaticPromptFirst", mStaticPromptFirst);
                                                 if (mVerboseLevel == 1) System.out.println("              sending \"mStaticPromptFirst changed\" broadcast");
-                                                android.support.v4.content.LocalBroadcastManager.getInstance(TheService.this).sendBroadcast(intent);
+                                                LocalBroadcastManager.getInstance(TheService.this).sendBroadcast(intent);
                                                 if (mVerboseLevel == 1) System.out.println("              sent \"mStaticPromptFirst changed\" broadcast");
                                                 mCleanupDialog.run();
                                                 mCleanupDialog = null;
@@ -669,7 +670,7 @@ public class TheService extends Service {
                     Intent intent = new Intent("degrees changed");
                     intent.putExtra("oldDegrees", oldDegrees);
                     intent.putExtra("newDegrees", newDegrees);
-                    android.support.v4.content.LocalBroadcastManager.getInstance(TheService.this).sendBroadcast(intent);
+                    LocalBroadcastManager.getInstance(TheService.this).sendBroadcast(intent);
                 }
 
                 if (mVerboseLevel >= 2) System.out.println("        out onOrientationChanged(degrees="+degrees+")");

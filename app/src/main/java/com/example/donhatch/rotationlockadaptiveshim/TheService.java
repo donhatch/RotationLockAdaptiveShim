@@ -467,7 +467,7 @@ public class TheService extends Service {
                                         };
                                         alertDialog.setTitle("Rotate the screen?");
                                         alertDialog.setMessage("3...");
-                                        alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "Stop asking me that", new DialogInterface.OnClickListener() {
+                                        alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "Yes and don't ask again", new DialogInterface.OnClickListener() {
                                             @Override
                                             public void onClick(DialogInterface dialog, int id) {
                                                 if (mVerboseLevel == 1) System.out.println("            in alertDialog neutral button onClick");

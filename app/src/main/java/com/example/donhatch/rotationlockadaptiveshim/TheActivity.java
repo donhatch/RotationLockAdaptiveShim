@@ -68,8 +68,10 @@ public class TheActivity extends android.app.Activity {
                 int newClosestCompassPoint = intent.getIntExtra("new mStaticClosestCompassPoint", -100);
                 System.out.println("                  intent.getIntExtra(\"old mStaticClosestCompassPoint\") = "+oldClosestCompassPoint);
                 System.out.println("                  intent.getIntExtra(\"new mStaticClosestCompassPoint\") = "+newClosestCompassPoint);
+                /* (it's commented out in the layout too, made things too crowded)
                 android.widget.TextView theClosestCompassPointTextView = (android.widget.TextView)findViewById(R.id.theClosestCompassPointTextView);
                 theClosestCompassPointTextView.setText("  TheService.mStaticClosestCompassPoint: "+oldClosestCompassPoint+" -> "+newClosestCompassPoint);
+                */
                 System.out.println("                out onReceive: "+intent.getAction());
             } else if (intent.getAction().equals("mStaticPromptFirst changed")) {
                 System.out.println("                in onReceive: "+intent.getAction());

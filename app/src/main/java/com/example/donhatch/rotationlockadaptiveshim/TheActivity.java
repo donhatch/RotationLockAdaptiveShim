@@ -1,10 +1,12 @@
 //
-// TODO: implement app override
-// TODO: turn off accelerometer listening when screen is off
+// TODO: Put title at top of activity screen
 // TODO: actually make it work correctly when activity restarts due to orientation: remove the thing from the manifest? maybe worth a try
+// TODO: display a dial with current orientation
 // TODO: make values turn red when they change and then fade to black? hmm
 // TODO: use a Binder to communicate between activity and service?  https://developer.android.com/guide/components/bound-services.html#Binder
 // TODO: when override toggled, should turn on or off the overrider immediately
+// TODO: maybe quick back and forth should turn the prompt back on?
+// TODO: use import consistently
 
 package com.example.donhatch.rotationlockadaptiveshim;
 
@@ -54,9 +56,10 @@ public class TheActivity extends android.app.Activity {
                 //System.out.println("                out onReceive: "+intent.getAction());
             } else if (intent.getAction().equals("mStaticPromptFirst changed")) {
                 System.out.println("                in onReceive: "+intent.getAction());
-                System.out.println("                  setting switch");
+                boolean newStaticPromptFirst = intent.getBooleanExtra("newStaticPromptFirst", true);
+                System.out.println("                  setting thePromptFirstSwitch.setChecked("+newStaticPromptFirst+")");
                 android.widget.Switch thePromptFirstSwitch = (android.widget.Switch)findViewById(R.id.thePromptFirstSwitch);
-                thePromptFirstSwitch.setChecked(TheService.mStaticPromptFirst);
+                thePromptFirstSwitch.setChecked(newStaticPromptFirst);
                 System.out.println("                out onReceive: "+intent.getAction());
             } else {
                 System.out.println("                in onReceive: "+intent.getAction());

@@ -473,8 +473,9 @@ public class TheService extends Service {
                                                 if (mVerboseLevel == 1) System.out.println("            in alertDialog neutral button onClick");
 
                                                 // Same as yes, but turn off mStaticPromptFirst
-                                                TheService.mStaticPromptFirst = false;
+                                                mStaticPromptFirst = false;
                                                 Intent intent = new Intent("mStaticPromptFirst changed");
+                                                intent.putExtra("newStaticPromptFirst", mStaticPromptFirst);
                                                 if (mVerboseLevel == 1) System.out.println("              sending \"mStaticPromptFirst changed\" broadcast");
                                                 android.support.v4.content.LocalBroadcastManager.getInstance(TheService.this).sendBroadcast(intent);
                                                 if (mVerboseLevel == 1) System.out.println("              sent \"mStaticPromptFirst changed\" broadcast");
@@ -747,7 +748,7 @@ public class TheService extends Service {
             android.app.PendingIntent pendingIntent = android.app.PendingIntent.getActivity(this, 0, notificationIntent, 0);
             final android.app.Notification.Builder builder = new android.app.Notification.Builder(this)
                     .setContentTitle("Adaptive Rotation Lock Shim") // XXX R.string.notification_title
-                    .setContentText("Mode: the only mode I know") // XXX R.string.notification_messsage
+                    .setContentText("Tap for configuration options") // XXX R.string.notification_messsage
                     .setSmallIcon(R.drawable.typewriter_el)
                     .setContentIntent(pendingIntent)
                     //.setOngoing(true) // XXX doesn't seem to help keep the icon up
@@ -766,8 +767,8 @@ public class TheService extends Service {
             }
 
 
-            // XXX what is this?  can I remove it?  maybe it was just an experiment to see if I can successfully update the notification text?  hmm.
-            if (true) {
+            // This was an experiment to see if I can successfully update the notification text.  Yes, it works, pretty smoothly.
+            if (false) {
                 final int count[] = {0};
                 final android.os.Handler handler = new android.os.Handler();
                 handler.postDelayed(new Runnable() {
@@ -795,6 +796,7 @@ public class TheService extends Service {
                     }
                 }, 1000);
             }
+
         }
 
         showToast(this, "Service Started", 2000);  // this is immediately after the "Service Created" for 1 second... so it will really only show for 1 second due to the bug XXX

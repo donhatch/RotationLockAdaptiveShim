@@ -109,7 +109,7 @@ public class TheService extends Service {
                     } catch (SecurityException e) {
                         // XXX dup code
                         if (mVerboseLevel >= 1) System.out.println("              Oh no, can't set system settings-- were permissions revoked?");
-                        Toast.makeText(TheService.this, " Oh no, can't set system settings-- were permissions revoked?\nHere, please grant the permission.", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(TheService.this, " Oh no, can't set system settings-- were permissions revoked?\nHere, please grant the permission.", Toast.LENGTH_LONG).show();
                         Intent grantIntent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
                         grantIntent.setData(Uri.parse("package:"+getPackageName()));
                         if (mVerboseLevel >= 1) System.out.println("                  grantIntent = "+grantIntent);
@@ -886,7 +886,7 @@ public class TheService extends Service {
             } catch (SecurityException e) {
                 // XXX dup code
                 if (mVerboseLevel >= 1) System.out.println("              Oh no, can't set system settings-- were permissions revoked?");
-                Toast.makeText(TheService.this, " Oh no, can't set system settings-- were permissions revoked?\nHere, please grant the permission.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(TheService.this, " Oh no, can't set system settings-- were permissions revoked?\nHere, please grant the permission.", Toast.LENGTH_LONG).show();
                 Intent grantIntent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
                 grantIntent.setData(Uri.parse("package:"+getPackageName()));
                 if (mVerboseLevel >= 1) System.out.println("                  grantIntent = "+grantIntent);
@@ -943,7 +943,7 @@ public class TheService extends Service {
             mCurrentSystemSettingUSER_ROTATION = newUSER_ROTATION;
         } catch (SecurityException e) {
             if (mVerboseLevel >= 1) System.out.println("              Oh no, can't set system settings-- were permissions revoked?");
-            Toast.makeText(TheService.this, " Oh no, can't set system settings-- were permissions revoked?\nHere, please grant the permission.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(TheService.this, " Oh no, can't set system settings-- were permissions revoked?\nHere, please grant the permission.", Toast.LENGTH_LONG).show();
             Intent grantIntent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
             grantIntent.setData(Uri.parse("package:"+getPackageName()));
             if (mVerboseLevel >= 1) System.out.println("              grantIntent = "+grantIntent);

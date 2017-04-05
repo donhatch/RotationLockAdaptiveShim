@@ -10,6 +10,11 @@
 // TODO: uncrowd ui
 // TODO: put bottom stuff in "advanced" or "debug" or "devel" section
 // TODO: if permission got revoked and we re-do the double-opt-in-dance, we end up not having written the value... I think? have to think about the consequences. maybe not too bad.
+// TODO: if service is started while permissions aren't there (say, were revoked),
+//       process crashes.  Need to catch this and do something better I think.
+// TODO: if permission revoked in midstream and double-opt-in-dance is done,
+//       if activity isn't up, and it's the first time,
+//       the system settings screen is (sometimes) delayed until after the toast disappears!
 
 package com.example.donhatch.rotationlockadaptiveshim;
 

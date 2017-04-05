@@ -1,6 +1,10 @@
 //
 // TODO: implement app override
 // TODO: turn off accelerometer listening when screen is off
+// TODO: actually make it work correctly when activity restarts due to orientation: remove the thing from the manifest? maybe worth a try
+// TODO: make values turn red when they change and then fade to black? hmm
+// TODO: use a Binder to communicate between activity and service?  https://developer.android.com/guide/components/bound-services.html#Binder
+// TODO: when override toggled, should turn on or off the overrider immediately
 
 package com.example.donhatch.rotationlockadaptiveshim;
 
@@ -10,7 +14,7 @@ import android.provider.Settings;
 
 public class TheActivity extends android.app.Activity {
 
-    private void CHECK(boolean condition) {
+    private static void CHECK(boolean condition) {
         if (!condition) {
             throw new AssertionError("CHECK failed");
         }
@@ -207,6 +211,17 @@ public class TheActivity extends android.app.Activity {
             });
         }
         if (true) {
+            theOverrideSwitch.setOnCheckedChangeListener(new android.widget.CompoundButton.OnCheckedChangeListener() {
+                public void onCheckedChanged(android.widget.CompoundButton buttonView, boolean isChecked) {
+                    System.out.println("            in theOverrideSwitch onCheckedChanged(isChecked=" + isChecked + ")");
+                    TheService.mStaticOverride = isChecked;
+                    // No immediate effect; this setting just modifies the behavior of autorotate
+                    // XXX TODO: but it should have immediate effect
+                    System.out.println("            out theOverrideSwitch onCheckedChanged(isChecked=" + isChecked + ")");
+                }
+            });
+        }
+        if (true) {
             theMonitorSwitch.setOnCheckedChangeListener(new android.widget.CompoundButton.OnCheckedChangeListener() {
                 public void onCheckedChanged(android.widget.CompoundButton buttonView, boolean isChecked) {
                     System.out.println("            in theMonitorSwitch onCheckedChanged(isChecked=" + isChecked + ")");
@@ -323,6 +338,9 @@ public class TheActivity extends android.app.Activity {
         Maybe look at source code for OrientationEventListener?
         http://alvinalexander.com/java/jwarehouse/android/core/java/android/view/OrientationEventListener.java.shtml
         Hmm, it's just translating ACCELEROMETER onSensorChanged events.  Hmm.
+
+        I think there's a good example of how to really use these things here, if I want to revisit this:
+          http://stackoverflow.com/questions/4819626/android-phone-orientation-overview-including-compass?rq=1#answer-6804786
         */
 
         if (false) { // XXX need to unconfuse what I'm doing here. does this have any value?
@@ -517,8 +535,7 @@ public class TheActivity extends android.app.Activity {
         super.onConfigurationChanged(newConfig);
         System.out.println("  newConfig = "+newConfig);
         System.out.println("  newConfig.orientation = "+TheService.orientationConstantToString(newConfig.orientation));
-        //setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-        updateConfigurationOrientationTextView();
+        updateConfigurationOrientationTextView();  // CBB: should get it from newConfig! probably same answer but maybe not if several changes happen in rapid succession
         System.out.println("out onConfigurationChanged");
     }
 }

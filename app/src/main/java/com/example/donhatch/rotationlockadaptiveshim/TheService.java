@@ -1,5 +1,13 @@
 package com.example.donhatch.rotationlockadaptiveshim;
 
+// Info on how to force screen rotation for apps that request otherwise,
+// using a transparent overlay:
+//   http://stackoverflow.com/questions/14587085/how-can-i-globally-force-screen-orientation-in-android/14654302#answer-14654302
+//   http://stackoverflow.com/questions/14587085/how-can-i-globally-force-screen-orientation-in-android/14654302#answer-14862852
+//   http://stackoverflow.com/questions/10364815/how-does-rotation-locker-work
+//   http://stackoverflow.com/questions/32241079/setting-orientation-globally-using-android-service
+// And an app with source code that does it:  PerApp
+
 import android.app.AlertDialog;
 import android.app.Notification;
 import android.app.Service;
@@ -7,6 +15,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -21,9 +30,17 @@ import android.view.OrientationListener;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 public class TheService extends Service {
+
+    private static void CHECK(boolean condition) {
+        if (!condition) {
+            throw new AssertionError("CHECK failed");
+        }
+    }
+
     public static TheService theRunningService = null;
     public boolean mHasBeenDestroyed = false;
     // omfg it has to be nonzero
@@ -37,6 +54,10 @@ public class TheService extends Service {
     public static int mStaticClosestCompassPoint = -1; // means invalid
     private android.view.OrientationEventListener mOrientationEventListener;
     private Runnable mCleanupDialog = null;
+
+    // http://stackoverflow.com/questions/14587085/how-can-i-globally-force-screen-orientation-in-android/14654302#answer-14862852
+    private LinearLayout mOrientationChanger = null;  // has to be constructed when we have a context
+    private WindowManager.LayoutParams mOrientationLayout;
 
     // We listen to these system settings, so these values should always be (pretty much) current
     private int mCurrentSystemSettingACCELEROMETER_ROTATION = -1; // CBB: actually could be a valid value
@@ -110,9 +131,19 @@ public class TheService extends Service {
             case 90: return android.view.Surface.ROTATION_270;
             case 180: return android.view.Surface.ROTATION_180;
             case 270: return android.view.Surface.ROTATION_90;
-            default: return -1;
+            default: CHECK(false); return -1;  // shouldn't happen
         }
     }  // closestCompassPointToUserRotation
+
+    private static int closestCompassPointToScreenOrientationConstant(int closestCompassPoint) {
+        switch (closestCompassPoint) {
+            case 0: return ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
+            case 90: return ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE;
+            case 180: return ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT;
+            case 270: return ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
+            default: CHECK(false); return -1;  // shouldn't happen
+        }
+    }  // closestCompassPointToScreenOrientationConstant
 
     // Used as value of System.Settings.USER_ROTATION
     public static String surfaceRotationConstantToString(int surfaceRotationConstant) {
@@ -137,22 +168,22 @@ public class TheService extends Service {
     // But the values are the same!?  Weird.
     public static String screenOrientationConstantToString(int screenOrientationConstant) {
         switch (screenOrientationConstant) {
-            case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_BEHIND: return "SCREEN_ORIENTATION_BEHIND";
-            case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR: return "SCREEN_ORIENTATION_FULL_SENSOR";
-            case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_FULL_USER: return "SCREEN_ORIENTATION_FULL_USER";
+            case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED: return "SCREEN_ORIENTATION_UNSPECIFIED";
             case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE: return "SCREEN_ORIENTATION_LANDSCAPE";
-            case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LOCKED: return "SCREEN_ORIENTATION_LOCKED";
-            case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_NOSENSOR: return "SCREEN_ORIENTATION_NOSENSOR";
             case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT: return "SCREEN_ORIENTATION_PORTRAIT";
-            case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE: return "SCREEN_ORIENTATION_REVERSE_LANDSCAPE";
-            case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT: return "SCREEN_ORIENTATION_REVERSE_PORTRAIT";
+            case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_USER: return "SCREEN_ORIENTATION_USER";
+            case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_BEHIND: return "SCREEN_ORIENTATION_BEHIND";
             case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR: return "SCREEN_ORIENTATION_SENSOR";
+            case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_NOSENSOR: return "SCREEN_ORIENTATION_NOSENSOR";
             case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE: return "SCREEN_ORIENTATION_SENSOR_LANDSCAPE";
             case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT: return "SCREEN_ORIENTATION_SENSOR_PORTRAIT";
-            case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED: return "SCREEN_ORIENTATION_UNSPECIFIED";
-            case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_USER: return "SCREEN_ORIENTATION_USER";
+            case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE: return "SCREEN_ORIENTATION_REVERSE_LANDSCAPE";
+            case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT: return "SCREEN_ORIENTATION_REVERSE_PORTRAIT";
+            case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR: return "SCREEN_ORIENTATION_FULL_SENSOR";
             case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_USER_LANDSCAPE: return "SCREEN_ORIENTATION_USER_LANDSCAPE";
             case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_USER_PORTRAIT: return "SCREEN_ORIENTATION_USER_PORTRAIT";
+            case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_FULL_USER: return "SCREEN_ORIENTATION_FULL_USER";
+            case android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LOCKED: return "SCREEN_ORIENTATION_LOCKED";
             default: return "[unknown screen orientation constant "+screenOrientationConstant+"]";
         }
     }
@@ -187,12 +218,6 @@ public class TheService extends Service {
         }
     }  // motionEventActionMaskedConstantToString
 
-    private void CHECK(boolean condition) {
-        if (!condition) {
-            throw new AssertionError("CHECK failed");
-        }
-    }
-
     public TheService() {
         if (mVerboseLevel >= 1) System.out.println("                    in TheService ctor");
         if (mVerboseLevel >= 1) System.out.println("                    out TheService ctor");
@@ -204,17 +229,66 @@ public class TheService extends Service {
     }
 
     public class BetterToast {
+/*
+#ifdef NOTYET
         // This class allows making a toast of any given duration.
         // CAVEAT: it will interact well with other BetterToasts, but not regular toasts.
         // In particular, if a regular toast is being displayed,
         // this toast will get delayed in starting... but not in ending,
         // so it might not get displayed at all.
+        private static BetterToast first = null; // the currently running one
+        private static BetterToast last = null;
+        private Toast toast;
+        private long millis;
+        private BetterToast prev;
+        private BetterToast next;
+        private BetterToast(Toast toast, millis) {
+            this.toast = toast;
+            this.millis = millis;
+            this.prev = null;
+            this.next = null;
+        }
+        public static BetterToast makeText(Context context, String text, long millis) {
+            BetterToast betterToast = new BetterToast(Toast.makeText(context, text, LENGTH_LONG), millis);
+        }
+        public void show() {
+            if (this == first) {
+                // extend it from now
+                this.toast.show();
+                ... set a timeout to either cancel it or extend it ...
+            } else if (first == null) {
+                // Start it as the one and only
+                CHECK(this.prev == null);
+                CHECK(this.next == null);
+                first = last = this;
+                this.toast.show();
+                ... set a timeout to either cancel it or extend it ...
+            } else {
+                // Remove it from list if it's there, and append
+                if (this.next != null) {
+                    this.next.prev = this.prev;
+                }
+                if (this.prev != null) {
+                    this.prev.next = this.next;
+                }
+                CHECK(last.next == null);
+                CHECK(this.prev == null);
+                last.next = this;
+                this.prev = last;
+                last = this;
+            }
+        }
+        public void cancel() {
+        }
+    #endif // NOTYET
+    */
     }
+
     // Show toast for some length of time <= LENGTH_LONG (3500 millis).
     // BUG: if some other toast is up already, this one will get delayed in starting... but not in ending!  Argh.
     private Toast showToast(android.content.Context ctx, String text, long millis) {
         // LENGTH_SHORT is 2000 millis
-        // LENGTH_LONG is 3500 millis
+        // LENGTH_LONG is 3500 millis  (not sure I believe that though-- seems like at least 6000)
         final Toast toast = Toast.makeText(ctx, text, Toast.LENGTH_LONG);
         toast.show();
 
@@ -237,12 +311,69 @@ public class TheService extends Service {
             throw new AssertionError("TheService.onCreate called when there's already an existing service!");
         }
         TheService.theRunningService = this;
+
+        if (false) // set to true to experiment with renewing toasts to show it works.
+        {
+            final Toast toast = showToast(this, "HEY!", 20000);
+
+            new android.os.Handler().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    System.out.println("renewing?");
+                    toast.setDuration(Toast.LENGTH_LONG);
+                    toast.show();
+                }
+            }, 2000);
+            new android.os.Handler().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    System.out.println("renewing again?");
+                    toast.setDuration(Toast.LENGTH_LONG);
+                    toast.show();
+                }
+            }, 4000);
+            new android.os.Handler().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    System.out.println("renewing yet again?");
+                    toast.setDuration(Toast.LENGTH_LONG);
+                    toast.show();
+                }
+            }, 6000);
+            new android.os.Handler().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    System.out.println("renewing yet again, again?");
+                    toast.setDuration(Toast.LENGTH_LONG);
+                    toast.show();
+                }
+            }, 8000);
+        }
+
+        Toast.makeText(this, "HEY HEY HEY HEY", Toast.LENGTH_LONG).show();
+
         showToast(this, "Service Created", 1000); // it's about to change to "Service Started"
 
         updateCurrentACCELEROMETER_ROTATION();
         updateCurrentUSER_ROTATION();
         getContentResolver().registerContentObserver(Settings.System.getUriFor(Settings.System.ACCELEROMETER_ROTATION), false, mAccelerometerRotationObserver);
         getContentResolver().registerContentObserver(Settings.System.getUriFor(Settings.System.USER_ROTATION), false, mUserRotationObserver);
+
+        // http://stackoverflow.com/questions/14587085/how-can-i-globally-force-screen-orientation-in-android/14654302#answer-14862852
+        // and more specifically helpful code from the PerApp source code here: http://code.google.com/p/perapp
+        // Needs permission android.permission.SYSTEM_ALERT_WINDOW (XXX and double-opt-in, I think?)
+        mOrientationChanger = new LinearLayout(this);
+        mOrientationChanger.setVisibility(View.GONE);
+        mOrientationLayout = new WindowManager.LayoutParams(
+            /*_type=*/WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY,
+            /*_flags=*/0,
+            /*_format=*/PixelFormat.RGBA_8888);
+        CHECK(mOrientationLayout.screenOrientation == ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+        {
+            WindowManager windowManager = (WindowManager)getSystemService(Service.WINDOW_SERVICE);
+            windowManager.addView(mOrientationChanger, mOrientationLayout);
+            CHECK(mOrientationChanger.getVisibility() == View.GONE);
+        }
 
         mOrientationEventListener = new android.view.OrientationEventListener(this, android.hardware.SensorManager.SENSOR_DELAY_NORMAL) {
             @Override
@@ -282,6 +413,7 @@ public class TheService extends Service {
                         int oldClosestCompassPoint = mStaticClosestCompassPoint;
                         int newClosestCompassPoint = degrees < 45 ? 0 : degrees < 135 ? 90 : degrees < 225 ? 180 : degrees < 315 ? 270 : 0;
                         mStaticClosestCompassPoint = newClosestCompassPoint;
+                        CHECK(mStaticClosestCompassPoint != -1);
 
                         // TODO: maybe move this more outward?
                         if (mCleanupDialog != null) {
@@ -649,7 +781,8 @@ public class TheService extends Service {
             }
         }
 
-        Toast.makeText(this, "Service Started", Toast.LENGTH_SHORT).show();
+        //Toast.makeText(this, "Service Started", Toast.LENGTH_SHORT).show();
+        showToast(this, "Service Started", 2000);
 
         if (mStaticAutoRotate || mStaticWhackAMole) {
             // Make sure we don't fight with the system's ACCELEROMETER_ROTATION.
@@ -665,7 +798,9 @@ public class TheService extends Service {
     @Override
     public void onDestroy() {
         if (mVerboseLevel >= 1) System.out.println("                        in TheService.onDestroy");
-        Toast.makeText(this, "Service Destroyed", Toast.LENGTH_SHORT).show();
+        //Toast.makeText(this, "Service Destroyed", Toast.LENGTH_SHORT).show();
+        showToast(this, "Service Destroyed", 2000);
+
         getContentResolver().unregisterContentObserver(mAccelerometerRotationObserver);
         mAccelerometerRotationObserver = null;
         mOrientationEventListener.disable();
@@ -680,18 +815,19 @@ public class TheService extends Service {
         if (mVerboseLevel >= 1) System.out.println("                        out TheService.onDestroy");
     }  // onDestroy
 
-    // Syncs system USER_ROTATION to mStaticClosestCompassPoint.
+    // Syncs system USER_ROTATION to mStaticClosestCompassPoint, which must be valid.
     // Also whacks ACCELEROMETER_ROTATION if set (but it shouldn't be).
     private void doTheAutoRotateThingNow() {
         if (mVerboseLevel >= 1) System.out.println("            in doTheAutoRotateThingNow");
+        CHECK(mStaticClosestCompassPoint != -1);
 
         if (mCurrentSystemSettingACCELEROMETER_ROTATION != 0) {
           // In case this got turned on for some reason.
           // Probably this can't happen unless mStaticWhackAMole is off. 
-          if (mVerboseLevel >= 1) System.out.println("          changing Settings.System.ACCELEROMETER_ROTATION from " + mCurrentSystemSettingACCELEROMETER_ROTATION + " to 0 !!!!!!!!!!");
+          if (mVerboseLevel >= 1) System.out.println("              changing Settings.System.ACCELEROMETER_ROTATION from " + mCurrentSystemSettingACCELEROMETER_ROTATION + " to 0 !!!!!!!!!!");
           Settings.System.putInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0);
         } else {
-          if (mVerboseLevel >= 1) System.out.println("          Settings.System.ACCELEROMETER_ROTATION was 0 as expected");
+          if (mVerboseLevel >= 1) System.out.println("              Settings.System.ACCELEROMETER_ROTATION was 0 as expected");
           // TODO: need to do the double-opt-in dance here, although returns are diminishing
         }
 
@@ -727,11 +863,15 @@ public class TheService extends Service {
         int oldUSER_ROTATION = mCurrentSystemSettingUSER_ROTATION;
         int newUSER_ROTATION = closestCompassPointToUserRotation(mStaticClosestCompassPoint);
         CHECK(newUSER_ROTATION != -1); // logical assertion
+
+        // Note, we definitely need to set USER_ROTATION even if overriding.
+        // The reason is that if USER_ROTATION is directly opposite what mOrientationLayout specifies,
+        // the rotation will get set to USER_ROTATION!  (bug?)
         try {
-            if (mVerboseLevel >= 1) System.out.println("          changing Settings.System.USER_ROTATION from " + surfaceRotationConstantToString(oldUSER_ROTATION) + " to " + surfaceRotationConstantToString(newUSER_ROTATION));
+            if (mVerboseLevel >= 1) System.out.println("              changing Settings.System.USER_ROTATION from " + surfaceRotationConstantToString(oldUSER_ROTATION) + " to " + surfaceRotationConstantToString(newUSER_ROTATION));
             Settings.System.putInt(getContentResolver(), Settings.System.USER_ROTATION, newUSER_ROTATION);
         } catch (SecurityException e) {
-            if (mVerboseLevel >= 1) System.out.println("          Oh no, can't set system settings-- were permissions revoked?");
+            if (mVerboseLevel >= 1) System.out.println("              Oh no, can't set system settings-- were permissions revoked?");
             Toast.makeText(TheService.this, " Oh no, can't set system settings-- were permissions revoked?\nHere, please grant the permission.", Toast.LENGTH_SHORT).show();
             Intent grantIntent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
             grantIntent.setData(android.net.Uri.parse("package:"+getPackageName()));
@@ -740,6 +880,30 @@ public class TheService extends Service {
             startActivity(grantIntent);
             if (mVerboseLevel >= 1) System.out.println("              returned from startActivity with ACTION_MANAGE_WRITE_SETTINGS");
         }
+
+        // TODO: need to listen to changes on mStaticOverride, and do this when it changes too
+        WindowManager windowManager = (WindowManager)getSystemService(WINDOW_SERVICE); // there's no getWindowManager() in a service
+        if (mStaticOverride) {
+            int newScreenOrientationConstant = closestCompassPointToScreenOrientationConstant(mStaticClosestCompassPoint);
+            if (mVerboseLevel >= 1) System.out.println("              attempting to force orientation to "+screenOrientationConstantToString(newScreenOrientationConstant));
+            if (mOrientationChanger.getVisibility() != View.VISIBLE || mOrientationLayout.screenOrientation != newScreenOrientationConstant) {
+                mOrientationLayout.screenOrientation = newScreenOrientationConstant;
+                windowManager.updateViewLayout(mOrientationChanger, mOrientationLayout);
+                mOrientationChanger.setVisibility(View.VISIBLE);
+            } else {
+                if (mVerboseLevel >= 1) System.out.println("                  (no need)");
+            }
+        } else {
+            if (mVerboseLevel >= 1) System.out.println("              attempting to unforce orientation");
+            if (mOrientationChanger.getVisibility() != View.GONE) {
+                mOrientationChanger.setVisibility(View.GONE);
+                mOrientationLayout.screenOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
+                windowManager.updateViewLayout(mOrientationChanger, mOrientationLayout);
+            } else {
+                if (mVerboseLevel >= 1) System.out.println("                  (no need)");
+            }
+        }
+
         if (mVerboseLevel >= 1) System.out.println("            out doTheAutoRotateThingNow");
     }  // doTheAutoRotateThingNow
 }

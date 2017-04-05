@@ -38,11 +38,10 @@ tools:context=".TheActivity" >
         android:id="@+id/theAutoRotateSwitch" />
 
     <Switch
-        android:text="  Override home screen's and other apps' prefs (doesn't work yet)"
+        android:text="  Override home screen's and other apps' prefs "
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@+id/theAutoRotateSwitch"
-        android:enabled="false"
         android:id="@+id/theOverrideSwitch" />
 
     <Switch

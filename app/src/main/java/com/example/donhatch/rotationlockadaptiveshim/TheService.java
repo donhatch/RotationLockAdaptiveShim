@@ -350,8 +350,7 @@ public class TheService extends Service {
             }, 8000);
         }
 
-        Toast.makeText(this, "HEY HEY HEY HEY", Toast.LENGTH_LONG).show();
-
+        // TODO: cancel previous toast if any
         showToast(this, "Service Created", 1000); // it's about to change to "Service Started"
 
         updateCurrentACCELEROMETER_ROTATION();
@@ -781,8 +780,7 @@ public class TheService extends Service {
             }
         }
 
-        //Toast.makeText(this, "Service Started", Toast.LENGTH_SHORT).show();
-        showToast(this, "Service Started", 2000);
+        showToast(this, "Service Started", 2000);  // this is immediately after the "Service Created" for 1 second... so it will really only show for 1 second due to the bug XXX
 
         if (mStaticAutoRotate || mStaticWhackAMole) {
             // Make sure we don't fight with the system's ACCELEROMETER_ROTATION.
@@ -798,7 +796,7 @@ public class TheService extends Service {
     @Override
     public void onDestroy() {
         if (mVerboseLevel >= 1) System.out.println("                        in TheService.onDestroy");
-        //Toast.makeText(this, "Service Destroyed", Toast.LENGTH_SHORT).show();
+        // TODO: cancel previous toast if any
         showToast(this, "Service Destroyed", 2000);
 
         getContentResolver().unregisterContentObserver(mAccelerometerRotationObserver);

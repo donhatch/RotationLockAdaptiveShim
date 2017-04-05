@@ -63,8 +63,15 @@ tools:context=".TheActivity" >
         android:text="  accelerometer degrees: ???"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_above="@+id/theAccelerometerRotationTextView"
+        android:layout_above="@+id/theClosestCompassPointTextView"
         android:id="@+id/theAccelerometerOrientationDegreesTextView" />
+
+    <TextView
+        android:text="  closest compass point: ???"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/theAccelerometerRotationTextView"
+        android:id="@+id/theClosestCompassPointTextView" />
 
     <TextView
         android:text="accelerometer rotation"

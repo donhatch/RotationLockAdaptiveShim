@@ -1,4 +1,5 @@
 //
+// BUG: prompt off, rotate to landscape mode, shake phone, it will eventually go into portrait mode and stay there!? that's not right
 // TODO: Put title at top of activity screen
 // TODO: actually make it work correctly when activity restarts due to orientation: remove the thing from the manifest? maybe worth a try
 // TODO: display a dial with current orientation
@@ -7,6 +8,8 @@
 // TODO: when override toggled, should turn on or off the overrider immediately
 // TODO: maybe quick back and forth should turn the prompt back on?
 // TODO: use import consistently
+// TODO: uncrowd ui
+// TODO: put bottom stuff in "advanced" or "debug" or "devel" section
 
 package com.example.donhatch.rotationlockadaptiveshim;
 
@@ -47,16 +50,25 @@ public class TheActivity extends android.app.Activity {
         public void onReceive(android.content.Context context, android.content.Intent intent) {
             if (intent.getAction().equals("degrees changed")) {
                 //System.out.println("                in onReceive: "+intent.getAction());
-                int oldDegrees = intent.getIntExtra("oldDegrees", -100);
-                int newDegrees = intent.getIntExtra("newDegrees", -100);
-                //System.out.println("                  intent.getIntExtra(\"oldDegrees\") = "+oldDegrees);
-                //System.out.println("                  intent.getIntExtra(\"newDegrees\") = "+newDegrees);
+                int oldDegrees = intent.getIntExtra("old degrees", -100);
+                int newDegrees = intent.getIntExtra("new degrees", -100);
+                //System.out.println("                  intent.getIntExtra(\"old degrees\") = "+oldDegrees);
+                //System.out.println("                  intent.getIntExtra(\"new degrees\") = "+newDegrees);
                 android.widget.TextView theAccelerometerOrientationDegreesTextView = (android.widget.TextView)findViewById(R.id.theAccelerometerOrientationDegreesTextView);
                 theAccelerometerOrientationDegreesTextView.setText("  accelerometer degrees (most recent update): "+oldDegrees+" -> "+newDegrees);
                 //System.out.println("                out onReceive: "+intent.getAction());
+            } else if (intent.getAction().equals("mStaticClosestCompassPoint changed")) {
+                System.out.println("                in onReceive: "+intent.getAction());
+                int oldClosestCompassPoint = intent.getIntExtra("old mStaticClosestCompassPoint", -100);
+                int newClosestCompassPoint = intent.getIntExtra("new mStaticClosestCompassPoint", -100);
+                System.out.println("                  intent.getIntExtra(\"old mStaticClosestCompassPoint\") = "+oldClosestCompassPoint);
+                System.out.println("                  intent.getIntExtra(\"new mStaticClosestCompassPoint\") = "+newClosestCompassPoint);
+                android.widget.TextView theClosestCompassPointTextView = (android.widget.TextView)findViewById(R.id.theClosestCompassPointTextView);
+                theClosestCompassPointTextView.setText("  TheService.mStaticClosestCompassPoint: "+oldClosestCompassPoint+" -> "+newClosestCompassPoint);
+                System.out.println("                out onReceive: "+intent.getAction());
             } else if (intent.getAction().equals("mStaticPromptFirst changed")) {
                 System.out.println("                in onReceive: "+intent.getAction());
-                boolean newStaticPromptFirst = intent.getBooleanExtra("newStaticPromptFirst", true);
+                boolean newStaticPromptFirst = intent.getBooleanExtra("new mStaticPromptFirst", true);
                 System.out.println("                  setting thePromptFirstSwitch.setChecked("+newStaticPromptFirst+")");
                 android.widget.Switch thePromptFirstSwitch = (android.widget.Switch)findViewById(R.id.thePromptFirstSwitch);
                 thePromptFirstSwitch.setChecked(newStaticPromptFirst);
@@ -485,7 +497,10 @@ public class TheActivity extends android.app.Activity {
         super.onResume();
 
         {
-            android.support.v4.content.LocalBroadcastManager.getInstance(this).registerReceiver(mBroadcastReceiver, new android.content.IntentFilter("degrees changed") {{addAction("mStaticPromptFirst changed");}});
+            android.support.v4.content.LocalBroadcastManager.getInstance(this).registerReceiver(mBroadcastReceiver, new android.content.IntentFilter("degrees changed") {{
+                addAction("mStaticPromptFirst changed");
+                addAction("mStaticClosestCompassPoint changed");
+            }});
         }
 
         {

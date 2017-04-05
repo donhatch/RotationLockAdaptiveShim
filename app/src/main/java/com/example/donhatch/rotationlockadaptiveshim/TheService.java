@@ -423,6 +423,13 @@ public class TheService extends Service {
                         mStaticClosestCompassPoint = newClosestCompassPoint;
                         CHECK(mStaticClosestCompassPoint != -1);
 
+                        {
+                            Intent intent = new Intent("mStaticClosestCompassPoint changed");
+                            intent.putExtra("old mStaticClosestCompassPoint", oldClosestCompassPoint);
+                            intent.putExtra("new mStaticClosestCompassPoint", newClosestCompassPoint);
+                            LocalBroadcastManager.getInstance(TheService.this).sendBroadcast(intent);
+                        }
+
                         // TODO: maybe move this more outward?
                         if (mCleanupDialog != null) {
                             mCleanupDialog.run();
@@ -484,7 +491,7 @@ public class TheService extends Service {
                                                 // Same as yes, but turn off mStaticPromptFirst
                                                 mStaticPromptFirst = false;
                                                 Intent intent = new Intent("mStaticPromptFirst changed");
-                                                intent.putExtra("newStaticPromptFirst", mStaticPromptFirst);
+                                                intent.putExtra("new mStaticPromptFirst", mStaticPromptFirst);
                                                 if (mVerboseLevel == 1) System.out.println("              sending \"mStaticPromptFirst changed\" broadcast");
                                                 LocalBroadcastManager.getInstance(TheService.this).sendBroadcast(intent);
                                                 if (mVerboseLevel == 1) System.out.println("              sent \"mStaticPromptFirst changed\" broadcast");
@@ -668,8 +675,8 @@ public class TheService extends Service {
                     // CBB: think about whether it makes sense to have a "numBroadcastListeners" variable,
                     // and if it's zero, don't bother to send
                     Intent intent = new Intent("degrees changed");
-                    intent.putExtra("oldDegrees", oldDegrees);
-                    intent.putExtra("newDegrees", newDegrees);
+                    intent.putExtra("old degrees", oldDegrees);
+                    intent.putExtra("new degrees", newDegrees);
                     LocalBroadcastManager.getInstance(TheService.this).sendBroadcast(intent);
                 }
 

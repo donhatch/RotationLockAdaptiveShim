@@ -80,6 +80,7 @@ public class TheService extends Service {
             if (mVerboseLevel >= 1) System.out.println("              Settings.System.ACCELEROMETER_ROTATION was not found!?");
         }
     }
+
     private void updateCurrentUSER_ROTATION() {
         try {
             mCurrentSystemSettingUSER_ROTATION = Settings.System.getInt(getContentResolver(), Settings.System.USER_ROTATION);
@@ -102,6 +103,9 @@ public class TheService extends Service {
                     Toast.makeText(TheService.this, "WHACK! system autorotate got turned on, turning it back off", Toast.LENGTH_SHORT).show();
                     try {
                         Settings.System.putInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0);
+                        // Do this here in addition to in listener, since it seems to be best practice
+                        // (judging from the analogous situation for USER_ROTATION)
+                        mCurrentSystemSettingACCELEROMETER_ROTATION = 0;
                     } catch (SecurityException e) {
                         // XXX dup code
                         if (mVerboseLevel >= 1) System.out.println("              Oh no, can't set system settings-- were permissions revoked?");
@@ -124,6 +128,17 @@ public class TheService extends Service {
         @Override
         public void onChange(boolean selfChange, Uri uri) {
             System.out.println("            in TheService mUserRotationObserver onChange(selfChange="+selfChange+", uri="+uri+")");
+            // Potential bug if we *only* set mCurrentSystemSettingUSER_ROTATION here
+            // and not when we set it:
+            //     User rotates phone to 0
+            //         -> mStaticClosestCompassPoint changes to 0
+            //            USER_ROTATION is changed from 90 to 0
+            //            (but we don't get the callback yet so mCurrentSystemSettingUSER_ROTATION is still 90)
+            //     User rotates phone to 270
+            //         -> mStaticClosestCompassPoint changes to 270
+            //            this should cause USER_ROTATION to be changed to 90,
+            //            but we see mCurrentSystemSettingUSER_ROTATION is already 90
+            //            so we do nothing!  oh no!
             updateCurrentUSER_ROTATION();
             System.out.println("            out TheService mUserRotationObserver onChange(selfChange="+selfChange+", uri="+uri+")");
         }
@@ -438,7 +453,7 @@ public class TheService extends Service {
 
                         if (mStaticAutoRotate) {
                             if (closestCompassPointToUserRotation(newClosestCompassPoint) == mCurrentSystemSettingUSER_ROTATION) {
-                                if (mVerboseLevel == 1) System.out.println("          (USER_ROTATION is already correct)");
+                                if (mVerboseLevel == 1) System.out.println("          (USER_ROTATION="+surfaceRotationConstantToString(mCurrentSystemSettingUSER_ROTATION)+" is already correct)");
                             } else {
                                 if (!mStaticPromptFirst) {
                                     if (mVerboseLevel >= 1) System.out.println("          calling doTheAutoRotateThing");
@@ -822,6 +837,9 @@ public class TheService extends Service {
             // This is part of what happens when user selects Settings -> Display -> "When device is rotated": "Stay in portrait view".
             // (the other thing that happens is that USER_ROTATION gets set to 0 too, if it wasn't 0).
             Settings.System.putInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0);
+            // Do this here in addition to in listener, since it seems to be best practice
+            // (judging from the analogous situation for USER_ROTATION)
+            mCurrentSystemSettingACCELEROMETER_ROTATION = 0;
         }
 
         if (mVerboseLevel >= 1) System.out.println("                            out TheService.onStartCommand(startIntent, flags="+flags+", startId="+startId+")");
@@ -859,6 +877,9 @@ public class TheService extends Service {
           // Probably this can't happen unless mStaticWhackAMole is off. 
           if (mVerboseLevel >= 1) System.out.println("              changing Settings.System.ACCELEROMETER_ROTATION from " + mCurrentSystemSettingACCELEROMETER_ROTATION + " to 0 !!!!!!!!!!");
           Settings.System.putInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0);
+          // Do this here in addition to in listener, since it seems to be best practice
+          // (judging from the analogous situation for USER_ROTATION)
+          mCurrentSystemSettingACCELEROMETER_ROTATION = 0;
         } else {
           if (mVerboseLevel >= 1) System.out.println("              Settings.System.ACCELEROMETER_ROTATION was 0 as expected");
           // TODO: need to do the double-opt-in dance here, although returns are diminishing
@@ -903,6 +924,8 @@ public class TheService extends Service {
         try {
             if (mVerboseLevel >= 1) System.out.println("              changing Settings.System.USER_ROTATION from " + surfaceRotationConstantToString(oldUSER_ROTATION) + " to " + surfaceRotationConstantToString(newUSER_ROTATION));
             Settings.System.putInt(getContentResolver(), Settings.System.USER_ROTATION, newUSER_ROTATION);
+            // Do this here in addition to in listener, to avoid bug described at the listener!
+            mCurrentSystemSettingUSER_ROTATION = newUSER_ROTATION;
         } catch (SecurityException e) {
             if (mVerboseLevel >= 1) System.out.println("              Oh no, can't set system settings-- were permissions revoked?");
             Toast.makeText(TheService.this, " Oh no, can't set system settings-- were permissions revoked?\nHere, please grant the permission.", Toast.LENGTH_SHORT).show();

@@ -123,7 +123,7 @@ public class TheService extends Service {
     public static boolean mStaticWhackAMole = true; // TODO: make this a shared preference? the activity is the one who sets this
     public static boolean mStaticAutoRotate = true; // TODO: make this a shared preference? the activity is the one who sets this
     public static boolean mStaticPromptFirst = true; // TODO: make this a shared preference? the activity is the one who sets this
-    public static boolean mStaticOverride = false; // TODO: make this a shared preference? the activity is the one who sets this
+    public static boolean mStaticOverride = true; // TODO: make this a shared preference? the activity is the one who sets this
 
     private static int closestCompassPointToUserRotation(int closestCompassPoint) {
         switch (closestCompassPoint) {

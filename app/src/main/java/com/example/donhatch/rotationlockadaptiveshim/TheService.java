@@ -888,9 +888,38 @@ public class TheService extends Service {
     public static void setRed(boolean newRed) {
         mStaticRed = newRed;
         if (theRunningService != null) {
-            theRunningService.mOrientationChangerCurrentBackgroundColor = (mStaticRed ? 0x44ff0000 : 0x00000000); // faint translucent red color if mStaticRed
-            theRunningService.mOrientationChanger.setBackgroundColor(theRunningService.mOrientationChangerCurrentBackgroundColor);
-            // doesn't matter whether mOrientationChanger is visible or not
+            final int oldColor = theRunningService.mOrientationChangerCurrentBackgroundColor;
+            final int newColor = (mStaticRed ? 0x44ff0000 : 0x00000000); // faint translucent red color if mStaticRed
+            theRunningService.mOrientationChangerCurrentBackgroundColor = newColor;
+            if (false) {
+                theRunningService.mOrientationChanger.setBackgroundColor(theRunningService.mOrientationChangerCurrentBackgroundColor);
+            } else {
+                // Fade it in
+                final long fadeMillis = 100;
+                final int n = 10; // too small and it's jittery.  too big and it makes it take a long time.
+                final Handler handler = new Handler();
+                Runnable runnable = new Runnable() {
+                    private int i = 0;
+                    @Override
+                    public void run() {
+                        i++;
+                        double frac = (double)i / (double)n;
+                        int midColor = 0;
+                        for (int i = 0; i < 4; ++i) {
+                            int oldByte = (oldColor >> (i*8)) & 0xff;
+                            int newByte = (newColor >> (i*8)) & 0xff;
+                            int midByte = (int)((1.-frac)*oldByte
+                                                + frac*newByte + .5);
+                            midColor |= midByte << (i*8);
+                        }
+                        theRunningService.mOrientationChanger.setBackgroundColor(midColor);
+                        if (i < n) {
+                            handler.postDelayed(this, fadeMillis / n);
+                        }
+                    }
+                };
+                runnable.run();
+            }
         }
     }
 

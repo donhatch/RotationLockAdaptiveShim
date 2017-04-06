@@ -14,7 +14,6 @@
 //         - Put title at top of activity screen
 //         - uncrowd ui
 //         - put bottom stuff in "advanced" or "debug" or "devel" section, closed by default
-//         - red transition is too harsh-- fade it in/out!
 // TODO: enhance ui functionality
 //         - display a dial with current orientation
 //         - make values turn red when they change and then fade to black? hmm

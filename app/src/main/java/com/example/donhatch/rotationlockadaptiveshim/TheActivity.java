@@ -8,7 +8,8 @@
 //       if activity isn't up, and it's the first time,
 //       the system settings screen is (sometimes) delayed until after the toast disappears!
 // TODO: better communication from activity to service:
-//         - when override or red toggled, should update the overlay immediately
+//         - when override toggled, should update the overlay immediately
+//         - when service first turned on, should apply the overlay immediately even if already rotated properly
 // TODO: better communication from service to activity:
 //         - ui should monitor the overlay state: whether it's visible, and its getRequestedOrientation
 // TODO: enhance ui look

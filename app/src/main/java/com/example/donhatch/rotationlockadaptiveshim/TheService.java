@@ -151,7 +151,9 @@ public class TheService extends Service {
     public static boolean mStaticAutoRotate = true; // TODO: make this a shared preference? the activity is the one who sets this
     public static boolean mStaticPromptFirst = true; // TODO: make this a shared preference? the activity is the one who sets this
     public static boolean mStaticOverride = true; // TODO: make this a shared preference? the activity is the one who sets this
-    public static boolean mStaticRed = false; // TODO: make this a shared preference? the activity is the one who sets this
+
+    // this one has a public setter/getter
+    private static boolean mStaticRed = false; // TODO: make this a shared preference? the activity is the one who sets this
 
     private static int closestCompassPointToUserRotation(int closestCompassPoint) {
         switch (closestCompassPoint) {
@@ -876,6 +878,21 @@ public class TheService extends Service {
         // XXX race? what if user is in the process of turning it on??
         if (mVerboseLevel >= 1) System.out.println("                        out TheService.onDestroy");
     }  // onDestroy
+
+    // XXX not sure this is the way I want to do things
+    public static boolean getRed() {
+        return mStaticRed;
+    }
+
+    // TODO: animate the red!
+    public static void setRed(boolean newRed) {
+        mStaticRed = newRed;
+        if (theRunningService != null) {
+            theRunningService.mOrientationChangerCurrentBackgroundColor = (mStaticRed ? 0x44ff0000 : 0x00000000); // faint translucent red color if mStaticRed
+            theRunningService.mOrientationChanger.setBackgroundColor(theRunningService.mOrientationChangerCurrentBackgroundColor);
+            // doesn't matter whether mOrientationChanger is visible or not
+        }
+    }
 
     // Syncs system USER_ROTATION to mStaticClosestCompassPoint, which must be valid.
     // Also whacks ACCELEROMETER_ROTATION if set (but it shouldn't be).

@@ -13,11 +13,11 @@
 //         - Put title at top of activity screen
 //         - uncrowd ui
 //         - put bottom stuff in "advanced" or "debug" or "devel" section, closed by default
-// TODO: enhanve ui functionality
+//         - red transition is too harsh-- fade it in/out!
+// TODO: enhance ui functionality
 //         - display a dial with current orientation
 //         - make values turn red when they change and then fade to black? hmm
 // TODO: actually make it work correctly when activity restarts due to orientation: remove the thing from the manifest? maybe worth a try
-// TODO: maybe quick back and forth should turn the prompt back on?  (no I think that might be bad since indistinguishable from a shake)
 // TODO: if permission got revoked and we re-do the double-opt-in-dance, we end up not having written the value... I think? have to think about the consequences. maybe not too bad.
 // TODO: ask question on stackoverflow about interaction between
 //           setRequestedOrientation()
@@ -25,7 +25,10 @@
 //           USER_ROTATION
 //       The following may be useful:
 //           https://vaneyckt.io/posts/programmatically_rotating_the_android_screen/
-//       unfortunately, it can only control accelerometer_rotation and user_rotation
+//       unfortunately, it can only control accelerometer_rotation and user_rotation.
+//       Is there a way to query the windowmanager's stack of views?
+// TODO: ask on stackoverflow whether there are any downsides
+//       to communicating by calling methods on the singleton
 //
 
 package com.example.donhatch.rotationlockadaptiveshim;
@@ -200,7 +203,7 @@ public class TheActivity extends Activity {
         theAutoRotateSwitch.setChecked(TheService.mStaticAutoRotate);
         thePromptFirstSwitch.setChecked(TheService.mStaticPromptFirst);
         theOverrideSwitch.setChecked(TheService.mStaticOverride);
-        theRedSwitch.setChecked(TheService.mStaticRed);
+        theRedSwitch.setChecked(TheService.getRed());
         theMonitorSwitch.setChecked(mPolling);
         thePolledValuesHeaderTextView.setEnabled(mPolling);
         thePolledStatusTextView.setEnabled(mPolling);
@@ -289,9 +292,7 @@ public class TheActivity extends Activity {
             theRedSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                     System.out.println("            in theRedSwitch onCheckedChanged(isChecked=" + isChecked + ")");
-                    TheService.mStaticRed = isChecked;
-                    // No immediate effect; this setting just modifies the behavior of autorotate
-                    // XXX TODO: but it should have immediate effect
+                    TheService.setRed(isChecked);
                     System.out.println("            out theRedSwitch onCheckedChanged(isChecked=" + isChecked + ")");
                 }
             });

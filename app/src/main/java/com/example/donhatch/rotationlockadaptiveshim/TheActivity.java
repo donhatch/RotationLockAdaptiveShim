@@ -1,4 +1,5 @@
 //
+// BUG: why does there seem to be a delay after I click "yes" and before it rotates? seems more responsive when it's not prompting
 // BUG: when turning *off* overlay and it's red, it flashes off-on-off
 // BUG: if service is started while permissions aren't there (say, were revoked),
 //       process crashes.  Need to catch this and do something better I think.

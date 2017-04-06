@@ -9,6 +9,16 @@ android:paddingRight="@dimen/activity_horizontal_margin"
 android:paddingTop="@dimen/activity_vertical_margin"
 tools:context=".TheActivity" >
 
+    <!-- first so it's under everything else -->
+    <ImageView
+        android:src="@drawable/mygeomatic_rapporteur_5_svg_hi"
+        android:rotation="90"
+        android:scaleX="1."
+        android:scaleY="1."
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/theDialImageView" />
+
     <Switch
         android:text="Service is off "
         android:layout_width="wrap_content"
@@ -66,15 +76,6 @@ tools:context=".TheActivity" >
         android:layout_below="@id/theOverrideSwitch"
         android:layout_alignRight="@id/theOverrideSwitch"
         android:id="@+id/theRedSwitch" />
-
-    <ImageView
-        android:src="@drawable/mygeomatic_rapporteur_5_svg_hi"
-        android:rotation="90"
-        android:scaleX=".75"
-        android:scaleY=".75"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/theDialImageView" />
 
     <TextView
         android:text="Listened values:"

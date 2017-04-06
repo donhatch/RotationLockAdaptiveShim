@@ -468,7 +468,9 @@ public class TheActivity extends android.app.Activity {
     }
     private void updateConfigurationOrientationTextView() {
         android.widget.TextView theConfigurationOrientationTextView = (android.widget.TextView)findViewById(R.id.theConfigurationOrientationTextView);
-        theConfigurationOrientationTextView.setText("  getResources().getConfiguration().orientation = " + TheService.orientationConstantToString(getResources().getConfiguration().orientation));
+        //theConfigurationOrientationTextView.setText("  getResources().getConfiguration().orientation = " + TheService.orientationConstantToString(getResources().getConfiguration().orientation));
+        // CBB: this is a lie, but it is probably the same as the truth.  should really use newConfig.orientation, except at beginning at which time we should use and say getResources().getConfiguration().orientation
+        theConfigurationOrientationTextView.setText("  onConfigurationChanged newConfig.orientation = " + TheService.orientationConstantToString(getResources().getConfiguration().orientation));
     }
     private void updatePolledStatusTextView() {
         android.widget.TextView thePolledStatusTextView = (android.widget.TextView)findViewById(R.id.thePolledStatusTextView);

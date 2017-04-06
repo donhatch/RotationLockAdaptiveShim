@@ -13,8 +13,15 @@ tools:context=".TheActivity" >
         android:text="Service is off "
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_above="@+id/theWhackAMoleSwitch"
+        android:layout_alignParentTop="true"
         android:id="@+id/theServiceSwitch" />
+
+    <TextView
+        android:text="Service should:"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/theServiceSwitch"
+        android:id="@+id/theServiceHeader" />
 
     <Button
         android:text="App Settings"
@@ -24,21 +31,21 @@ tools:context=".TheActivity" >
         android:id="@+id/theAppSettingsButton" />
 
     <Switch
-        android:text="  Service should whack-a-mole system autorotate "
+        android:text="  Whack-a-mole system autorotate "
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/theAppSettingsButton"
+        android:layout_below="@+id/theServiceHeader"
         android:id="@+id/theWhackAMoleSwitch" />
 
     <Switch
-        android:text="  Service should auto rotate "
+        android:text="  Auto rotate "
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@+id/theWhackAMoleSwitch"
         android:id="@+id/theAutoRotateSwitch" />
 
     <Switch
-        android:text="  but prompt first "
+        android:text="  but ask first "
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@+id/theWhackAMoleSwitch"
@@ -98,7 +105,7 @@ tools:context=".TheActivity" >
         android:id="@+id/theUserRotationTextView" />
 
     <TextView
-        android:text="configuration orientation"
+        android:text="onConfigurationChanged newConfig.orientation"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_above="@+id/theMonitorSwitch"

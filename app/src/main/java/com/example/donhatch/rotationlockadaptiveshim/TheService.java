@@ -66,6 +66,7 @@ public class TheService extends Service {
 
     // http://stackoverflow.com/questions/14587085/how-can-i-globally-force-screen-orientation-in-android/14654302#answer-14862852
     private LinearLayout mOrientationChanger = null;  // has to be constructed when we have a context
+    private int mOrientationChangerCurrentBackgroundColor;
     private WindowManager.LayoutParams mOrientationLayout;
 
     // We listen to these system settings, so these values should always be (pretty much) current
@@ -150,6 +151,7 @@ public class TheService extends Service {
     public static boolean mStaticAutoRotate = true; // TODO: make this a shared preference? the activity is the one who sets this
     public static boolean mStaticPromptFirst = true; // TODO: make this a shared preference? the activity is the one who sets this
     public static boolean mStaticOverride = true; // TODO: make this a shared preference? the activity is the one who sets this
+    public static boolean mStaticRed = false; // TODO: make this a shared preference? the activity is the one who sets this
 
     private static int closestCompassPointToUserRotation(int closestCompassPoint) {
         switch (closestCompassPoint) {
@@ -389,6 +391,8 @@ public class TheService extends Service {
         // Needs permission android.permission.SYSTEM_ALERT_WINDOW (XXX and double-opt-in, I think?)
         mOrientationChanger = new LinearLayout(this);
         mOrientationChanger.setVisibility(View.GONE);
+        mOrientationChangerCurrentBackgroundColor = (mStaticRed ? 0x44ff0000 : 0x00000000); // faint translucent red color if mStaticRed
+        mOrientationChanger.setBackgroundColor(mOrientationChangerCurrentBackgroundColor);
         mOrientationLayout = new WindowManager.LayoutParams(
             /*_type=*/WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY,
             /*_flags=*/0,
@@ -399,7 +403,6 @@ public class TheService extends Service {
             windowManager.addView(mOrientationChanger, mOrientationLayout);
             CHECK(mOrientationChanger.getVisibility() == View.GONE);
         }
-
         mOrientationEventListener = new OrientationEventListener(this, SensorManager.SENSOR_DELAY_NORMAL) {
             @Override
             public void onOrientationChanged(int degrees) {
@@ -854,6 +857,12 @@ public class TheService extends Service {
         // TODO: cancel previous toast if any
         showToast(this, "Service Destroyed", 2000);
 
+        {
+            WindowManager windowManager = (WindowManager)getSystemService(Service.WINDOW_SERVICE);
+            windowManager.removeView(mOrientationChanger);
+            mOrientationChanger = null;
+        }
+
         getContentResolver().unregisterContentObserver(mAccelerometerRotationObserver);
         mAccelerometerRotationObserver = null;
         mOrientationEventListener.disable();
@@ -963,7 +972,11 @@ public class TheService extends Service {
         if (mStaticOverride) {
             int newScreenOrientationConstant = closestCompassPointToScreenOrientationConstant(mStaticClosestCompassPoint);
             if (mVerboseLevel >= 1) System.out.println("              attempting to force orientation to "+screenOrientationConstantToString(newScreenOrientationConstant));
-            if (mOrientationChanger.getVisibility() != View.VISIBLE || mOrientationLayout.screenOrientation != newScreenOrientationConstant) {
+            if (mOrientationChanger.getVisibility() != View.VISIBLE
+             || mOrientationLayout.screenOrientation != newScreenOrientationConstant
+             || mOrientationChangerCurrentBackgroundColor != (mStaticRed ? 0x44ff0000 : 0x00000000)) {
+                mOrientationChangerCurrentBackgroundColor = (mStaticRed ? 0x44ff0000 : 0x00000000); // faint translucent red color if mStaticRed
+                mOrientationChanger.setBackgroundColor(mOrientationChangerCurrentBackgroundColor);
                 mOrientationLayout.screenOrientation = newScreenOrientationConstant;
                 windowManager.updateViewLayout(mOrientationChanger, mOrientationLayout);
                 mOrientationChanger.setVisibility(View.VISIBLE);

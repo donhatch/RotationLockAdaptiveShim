@@ -38,6 +38,14 @@ tools:context=".TheActivity" >
         android:id="@+id/theAutoRotateSwitch" />
 
     <Switch
+        android:text="  but prompt first "
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/theWhackAMoleSwitch"
+        android:layout_toRightOf="@+id/theAutoRotateSwitch"
+        android:id="@+id/thePromptFirstSwitch" />
+
+    <Switch
         android:text="  Override home screen's and other apps' prefs "
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -45,12 +53,12 @@ tools:context=".TheActivity" >
         android:id="@+id/theOverrideSwitch" />
 
     <Switch
-        android:text="  but prompt first "
+        android:text="    using red overlay "
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/theWhackAMoleSwitch"
-        android:layout_toRightOf="@+id/theAutoRotateSwitch"
-        android:id="@+id/thePromptFirstSwitch" />
+        android:layout_below="@id/theOverrideSwitch"
+        android:layout_alignRight="@id/theOverrideSwitch"
+        android:id="@+id/theRedSwitch" />
 
     <TextView
         android:text="Listened values:"

@@ -7,7 +7,6 @@
 // BUG: if permission revoked in midstream and double-opt-in-dance is done,
 //       if activity isn't up, and it's the first time,
 //       the system settings screen is (sometimes) delayed until after the toast disappears!
-// TODO: smooth out degrees signal
 // TODO: better communication from activity to service:
 //         - when override or red toggled, should update the overlay immediately
 // TODO: better communication from service to activity:
@@ -21,6 +20,7 @@
 // TODO: enhance ui functionality
 //         - toggle switch to turn on/off dial?
 //         - make listened/polled values turn red when they change and then fade to black? hmm
+//         - control verbosity levels
 // TODO: actually make it work correctly when activity restarts due to orientation: remove the thing from the manifest? maybe worth a try
 // TODO: if permission got revoked and we re-do the double-opt-in-dance, we end up not having written the value... I think? have to think about the consequences. maybe not too bad.
 // TODO: ask question on stackoverflow about interaction between
@@ -48,6 +48,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.Settings;
+import android.util.Log;
 import android.view.Surface;
 import android.view.View;
 import android.widget.Button;
@@ -59,6 +60,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 public class TheActivity extends Activity {
+
+    private static final String TAG = "RotationLockAdaptiveShim activity";
 
     private static void CHECK(boolean condition) {
         if (!condition) {
@@ -80,11 +83,11 @@ public class TheActivity extends Activity {
     private Runnable mPollingRunnable = new Runnable() {
         @Override
         public void run() {
-            System.out.println("                in once-per-second poll (this should only happen when ui is visible)");
+            Log.i(TAG, "                in once-per-second poll (this should only happen when ui is visible)");
             updateAccelerometerOrientationDegreesTextView();
             updatePolledStatusTextView();
             mPollingHandler.postDelayed(this, 1*1000);
-            System.out.println("                out once-per-second poll (this should only happen when ui is visible)");
+            Log.i(TAG, "                out once-per-second poll (this should only happen when ui is visible)");
         };
     };
 
@@ -92,15 +95,15 @@ public class TheActivity extends Activity {
         @Override
         public void onReceive(Context context, Intent intent) {
             if (intent.getAction().equals("degrees changed")) {
-                //System.out.println("                in onReceive: "+intent.getAction());
+                //Log.i(TAG, "                in onReceive: "+intent.getAction());
                 int oldDegrees = intent.getIntExtra("old degrees", -100);
                 int newDegrees = intent.getIntExtra("new degrees", -100);
                 double oldDegreesSmoothed = intent.getDoubleExtra("old degrees smoothed", -100.);
                 double newDegreesSmoothed = intent.getDoubleExtra("new degrees smoothed", -100.);
-                //System.out.println("                  intent.getDoubleExtra(\"old degrees\") = "+oldDegrees);
-                //System.out.println("                  intent.getDoubleExtra(\"new degrees\") = "+newDegrees);
-                //System.out.println("                  intent.getDoubleExtra(\"old degrees smoothed\") = "+oldDegreesSmoothed);
-                //System.out.println("                  intent.getDoubleExtra(\"new degrees smoothed\") = "+newDegreesSmoothed);
+                //Log.i(TAG, "                  intent.getDoubleExtra(\"old degrees\") = "+oldDegrees);
+                //Log.i(TAG, "                  intent.getDoubleExtra(\"new degrees\") = "+newDegrees);
+                //Log.i(TAG, "                  intent.getDoubleExtra(\"old degrees smoothed\") = "+oldDegreesSmoothed);
+                //Log.i(TAG, "                  intent.getDoubleExtra(\"new degrees smoothed\") = "+newDegreesSmoothed);
                 TextView theAccelerometerOrientationDegreesTextView = (TextView)findViewById(R.id.theAccelerometerOrientationDegreesTextView);
                 theAccelerometerOrientationDegreesTextView.setText("  accelerometer degrees (most recent update): "+oldDegrees+" -> "+newDegrees);
 
@@ -126,30 +129,30 @@ public class TheActivity extends Activity {
                     theDialImageView.setScaleY(1.f);
                 }
 
-                //System.out.println("                out onReceive: "+intent.getAction());
+                //Log.i(TAG, "                out onReceive: "+intent.getAction());
             } else if (intent.getAction().equals("mStaticClosestCompassPoint changed")) {
-                System.out.println("                in onReceive: "+intent.getAction());
+                Log.i(TAG, "                in onReceive: "+intent.getAction());
                 int oldClosestCompassPoint = intent.getIntExtra("old mStaticClosestCompassPoint", -100);
                 int newClosestCompassPoint = intent.getIntExtra("new mStaticClosestCompassPoint", -100);
-                System.out.println("                  intent.getIntExtra(\"old mStaticClosestCompassPoint\") = "+oldClosestCompassPoint);
-                System.out.println("                  intent.getIntExtra(\"new mStaticClosestCompassPoint\") = "+newClosestCompassPoint);
+                Log.i(TAG, "                  intent.getIntExtra(\"old mStaticClosestCompassPoint\") = "+oldClosestCompassPoint);
+                Log.i(TAG, "                  intent.getIntExtra(\"new mStaticClosestCompassPoint\") = "+newClosestCompassPoint);
                 /* (it's commented out in the layout too, made things too crowded)
                 TextView theClosestCompassPointTextView = (TextView)findViewById(R.id.theClosestCompassPointTextView);
                 theClosestCompassPointTextView.setText("  TheService.mStaticClosestCompassPoint: "+oldClosestCompassPoint+" -> "+newClosestCompassPoint);
                 */
-                System.out.println("                out onReceive: "+intent.getAction());
+                Log.i(TAG, "                out onReceive: "+intent.getAction());
             } else if (intent.getAction().equals("mStaticPromptFirst changed")) {
-                System.out.println("                in onReceive: "+intent.getAction());
+                Log.i(TAG, "                in onReceive: "+intent.getAction());
                 boolean newStaticPromptFirst = intent.getBooleanExtra("new mStaticPromptFirst", true);
-                System.out.println("                  setting thePromptFirstSwitch.setChecked("+newStaticPromptFirst+")");
+                Log.i(TAG, "                  setting thePromptFirstSwitch.setChecked("+newStaticPromptFirst+")");
                 Switch thePromptFirstSwitch = (Switch)findViewById(R.id.thePromptFirstSwitch);
                 thePromptFirstSwitch.setChecked(newStaticPromptFirst);
-                System.out.println("                out onReceive: "+intent.getAction());
+                Log.i(TAG, "                out onReceive: "+intent.getAction());
             } else {
-                System.out.println("                in onReceive: "+intent.getAction());
-                System.out.println("                  (unrecognized)");
+                Log.i(TAG, "                in onReceive: "+intent.getAction());
+                Log.i(TAG, "                  (unrecognized)");
                 CHECK(false);  // shouldn't happen
-                System.out.println("                out onReceive: "+intent.getAction());
+                Log.i(TAG, "                out onReceive: "+intent.getAction());
             }
         }
     };  // mBroadcastReceiver
@@ -160,26 +163,26 @@ public class TheActivity extends Activity {
         // that didn't have the onChange(boolean, Uri) method. (XXX do I need to worry about this? is framework runtime, or my compiletime?)
         @Override
         public void onChange(boolean selfChange) {
-            System.out.println("            in TheActivity mAccelerometerRotationObserver onChange(selfChange="+selfChange+")");
+            Log.i(TAG, "            in TheActivity mAccelerometerRotationObserver onChange(selfChange="+selfChange+")");
             onChange(selfChange, null);
-            System.out.println("            out TheActivity mAccelerometerRotationObserver onChange(selfChange="+selfChange+")");
+            Log.i(TAG, "            out TheActivity mAccelerometerRotationObserver onChange(selfChange="+selfChange+")");
         }
         @Override
         public void onChange(boolean selfChange, Uri uri) {
-            System.out.println("            in TheActivity mAccelerometerRotationObserver onChange(selfChange="+selfChange+", uri="+uri+")");
+            Log.i(TAG, "            in TheActivity mAccelerometerRotationObserver onChange(selfChange="+selfChange+", uri="+uri+")");
             try {
-                System.out.println("              Settings.System.ACCELEROMETER_ROTATION: "+Settings.System.getInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION));
+                Log.i(TAG, "              Settings.System.ACCELEROMETER_ROTATION: "+Settings.System.getInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION));
             } catch (Settings.SettingNotFoundException e) {
-                System.out.println("              Settings.System.ACCELEROMETER_ROTATION setting not found!?");
+                Log.i(TAG, "              Settings.System.ACCELEROMETER_ROTATION setting not found!?");
             }
             try {
-                System.out.println("              (Settings.System.USER_ROTATION: "+TheService.surfaceRotationConstantToString(Settings.System.getInt(getContentResolver(), Settings.System.USER_ROTATION))+")");
+                Log.i(TAG, "              (Settings.System.USER_ROTATION: "+TheService.surfaceRotationConstantToString(Settings.System.getInt(getContentResolver(), Settings.System.USER_ROTATION))+")");
 
             } catch (Settings.SettingNotFoundException e) {
-                System.out.println("              (Settings.System.USER_ROTATION setting not found!?)");
+                Log.i(TAG, "              (Settings.System.USER_ROTATION setting not found!?)");
             }
             updateAccelerometerRotationTextView();
-            System.out.println("            out TheActivity mAccelerometerRotationObserver onChange(selfChange="+selfChange+", uri="+uri+")");
+            Log.i(TAG, "            out TheActivity mAccelerometerRotationObserver onChange(selfChange="+selfChange+", uri="+uri+")");
         }
     };  // mAccelerometerRotationObserver
     ContentObserver mUserRotationObserver = new ContentObserver(new Handler()) {
@@ -188,38 +191,38 @@ public class TheActivity extends Activity {
         // that didn't have the onChange(boolean, Uri) method. (XXX do I need to worry about this? is framework runtime, or my compiletime?)
         @Override
         public void onChange(boolean selfChange) {
-            System.out.println("            in TheActivity mUserRotationObserver onChange(selfChange="+selfChange+")");
+            Log.i(TAG, "            in TheActivity mUserRotationObserver onChange(selfChange="+selfChange+")");
             onChange(selfChange, null);
-            System.out.println("            out TheActivity mUserRotationObserver onChange(selfChange="+selfChange+")");
+            Log.i(TAG, "            out TheActivity mUserRotationObserver onChange(selfChange="+selfChange+")");
         }
         @Override
         public void onChange(boolean selfChange, Uri uri) {
-            System.out.println("            in TheActivity mUserRotationObserver onChange(selfChange="+selfChange+", uri="+uri+")");
+            Log.i(TAG, "            in TheActivity mUserRotationObserver onChange(selfChange="+selfChange+", uri="+uri+")");
             try {
-                System.out.println("              (Settings.System.ACCELEROMETER_ROTATION: "+Settings.System.getInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION)+")");
+                Log.i(TAG, "              (Settings.System.ACCELEROMETER_ROTATION: "+Settings.System.getInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION)+")");
             } catch (Settings.SettingNotFoundException e) {
-                System.out.println("              (Settings.System.ACCELEROMETER_ROTATION setting not found!?)");
+                Log.i(TAG, "              (Settings.System.ACCELEROMETER_ROTATION setting not found!?)");
             }
             try {
-                System.out.println("              Settings.System.USER_ROTATION: "+TheService.surfaceRotationConstantToString(Settings.System.getInt(getContentResolver(), Settings.System.USER_ROTATION)));
+                Log.i(TAG, "              Settings.System.USER_ROTATION: "+TheService.surfaceRotationConstantToString(Settings.System.getInt(getContentResolver(), Settings.System.USER_ROTATION)));
 
             } catch (Settings.SettingNotFoundException e) {
-                System.out.println("              Settings.System.USER_ROTATION setting not found!?");
+                Log.i(TAG, "              Settings.System.USER_ROTATION setting not found!?");
             }
             updateUserRotationTextView();
-            System.out.println("            out TheActivity mUserRotationObserver onChange(selfChange="+selfChange+", uri="+uri+")");
+            Log.i(TAG, "            out TheActivity mUserRotationObserver onChange(selfChange="+selfChange+", uri="+uri+")");
         }
     };  // mUserRotationObserver
 
     public TheActivity() {
-        System.out.println("in TheActivity ctor");
-        System.out.println("out TheActivity ctor");
+        Log.i(TAG, " TheActivity ctor");
+        Log.i(TAG, " TheActivity ctor");
     }
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        System.out.println("    in onCreate");
+        Log.i(TAG, "    in onCreate");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         // TODO: members
@@ -247,7 +250,7 @@ public class TheActivity extends Activity {
         if (true) {
             theWhackAMoleSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                    System.out.println("            in theWhackAMoleSwitch onCheckedChanged(isChecked=" + isChecked + ")");
+                    Log.i(TAG, "            in theWhackAMoleSwitch onCheckedChanged(isChecked=" + isChecked + ")");
                     TheService.mStaticWhackAMole = isChecked;
                     if (isChecked) {
                         // TODO: do this through the service somehow?
@@ -255,17 +258,17 @@ public class TheActivity extends Activity {
                           Settings.System.putInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0);
                         } catch (SecurityException e) {
                             // XXX dup code
-                            System.out.println("          Oh no, can't set system settings-- were permissions revoked?");
+                            Log.i(TAG, "          Oh no, can't set system settings-- were permissions revoked?");
                             Toast.makeText(TheActivity.this, " Oh no, can't set system settings-- were permissions revoked?\nHere, please grant the permission.", Toast.LENGTH_SHORT).show();
                             Intent grantIntent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
                             grantIntent.setData(Uri.parse("package:"+getPackageName()));
-                            System.out.println("              grantIntent = "+grantIntent);
-                            System.out.println("              calling startActivity with ACTION_MANAGE_WRITE_SETTINGS");
+                            Log.i(TAG, "              grantIntent = "+grantIntent);
+                            Log.i(TAG, "              calling startActivity with ACTION_MANAGE_WRITE_SETTINGS");
                             startActivity(grantIntent);
-                            System.out.println("              returned from startActivity with ACTION_MANAGE_WRITE_SETTINGS");
+                            Log.i(TAG, "              returned from startActivity with ACTION_MANAGE_WRITE_SETTINGS");
                         }
                     }
-                    System.out.println("            out theWhackAMoleSwitch onCheckedChanged(isChecked=" + isChecked + ")");
+                    Log.i(TAG, "            out theWhackAMoleSwitch onCheckedChanged(isChecked=" + isChecked + ")");
                 }
             });
         }
@@ -275,20 +278,20 @@ public class TheActivity extends Activity {
             theAppSettingsButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    System.out.println("            in theAppSettingsButton onClick");
+                    Log.i(TAG, "            in theAppSettingsButton onClick");
                     startActivityForResult(
                         new Intent(
                             Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
                             Uri.parse("package:"+getPackageName())),
                         0);
-                    System.out.println("            out theAppSettingsButton onClick");
+                    Log.i(TAG, "            out theAppSettingsButton onClick");
                 }
             });
         }
         if (true) {
             theAutoRotateSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                    System.out.println("            in theAutoRotateSwitch onCheckedChanged(isChecked=" + isChecked + ")");
+                    Log.i(TAG, "            in theAutoRotateSwitch onCheckedChanged(isChecked=" + isChecked + ")");
                     TheService.mStaticAutoRotate = isChecked;
                     if (isChecked) {
                         // TODO: do this through the service somehow?
@@ -299,44 +302,44 @@ public class TheActivity extends Activity {
                         TheService.mStaticClosestCompassPoint = -1;
                     }
                     // TODO: make it update immediately?
-                    System.out.println("            out theAutoRotateSwitch onCheckedChanged(isChecked=" + isChecked + ")");
+                    Log.i(TAG, "            out theAutoRotateSwitch onCheckedChanged(isChecked=" + isChecked + ")");
                 }
             });
         }
         if (true) {
             thePromptFirstSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                    System.out.println("            in thePromptFirstSwitch onCheckedChanged(isChecked=" + isChecked + ")");
+                    Log.i(TAG, "            in thePromptFirstSwitch onCheckedChanged(isChecked=" + isChecked + ")");
                     TheService.mStaticPromptFirst = isChecked;
                     // No immediate effect; this setting just modifies the behavior of autorotate
-                    System.out.println("            out thePromptFirstSwitch onCheckedChanged(isChecked=" + isChecked + ")");
+                    Log.i(TAG, "            out thePromptFirstSwitch onCheckedChanged(isChecked=" + isChecked + ")");
                 }
             });
         }
         if (true) {
             theOverrideSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                    System.out.println("            in theOverrideSwitch onCheckedChanged(isChecked=" + isChecked + ")");
+                    Log.i(TAG, "            in theOverrideSwitch onCheckedChanged(isChecked=" + isChecked + ")");
                     TheService.mStaticOverride = isChecked;
                     // No immediate effect; this setting just modifies the behavior of autorotate
                     // XXX TODO: but it should have immediate effect
-                    System.out.println("            out theOverrideSwitch onCheckedChanged(isChecked=" + isChecked + ")");
+                    Log.i(TAG, "            out theOverrideSwitch onCheckedChanged(isChecked=" + isChecked + ")");
                 }
             });
         }
         if (true) {
             theRedSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                    System.out.println("            in theRedSwitch onCheckedChanged(isChecked=" + isChecked + ")");
+                    Log.i(TAG, "            in theRedSwitch onCheckedChanged(isChecked=" + isChecked + ")");
                     TheService.setRed(isChecked);
-                    System.out.println("            out theRedSwitch onCheckedChanged(isChecked=" + isChecked + ")");
+                    Log.i(TAG, "            out theRedSwitch onCheckedChanged(isChecked=" + isChecked + ")");
                 }
             });
         }
         if (true) {
             theMonitorSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                    System.out.println("            in theMonitorSwitch onCheckedChanged(isChecked=" + isChecked + ")");
+                    Log.i(TAG, "            in theMonitorSwitch onCheckedChanged(isChecked=" + isChecked + ")");
                     mPolling = isChecked;
                     TextView thePolledValuesHeaderTextView = (TextView)findViewById(R.id.thePolledValuesHeaderTextView);
                     TextView thePolledStatusTextView = (TextView)findViewById(R.id.thePolledStatusTextView);
@@ -348,21 +351,21 @@ public class TheActivity extends Activity {
                         // so it's correct to start the periodic callback here.
                         mPollingHandler.postDelayed(mPollingRunnable, 0);  // immediately
                     }
-                    System.out.println("            out theMonitorSwitch onCheckedChanged(isChecked=" + isChecked + ")");
+                    Log.i(TAG, "            out theMonitorSwitch onCheckedChanged(isChecked=" + isChecked + ")");
                 }
             });
         }
         if (true) {
             theServiceSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                    System.out.println("            in theServiceSwitch onCheckedChanged(isChecked=" + isChecked + ")");
+                    Log.i(TAG, "            in theServiceSwitch onCheckedChanged(isChecked=" + isChecked + ")");
                     if (mSettingCheckedFromProgram) {
-                        System.out.println("              (from program; not doing anything)");
+                        Log.i(TAG, "              (from program; not doing anything)");
                     } else {
                         if (isChecked) {
-                            System.out.println("              calling startService");
+                            Log.i(TAG, "              calling startService");
                             startService(new Intent(TheActivity.this, TheService.class));
-                            System.out.println("              returned from startService");
+                            Log.i(TAG, "              returned from startService");
                             if (false) {
                                 // Make sure we can't mess up service's notion of whether it's running,
                                 // by sending a whole flurry of stuff.
@@ -373,12 +376,12 @@ public class TheActivity extends Activity {
                                 startService(new Intent(TheActivity.this, TheService.class));
                                 startService(new Intent(TheActivity.this, TheService.class));
                             }
-                            System.out.println("              setting text to \"Service is on  \"");
+                            Log.i(TAG, "              setting text to \"Service is on  \"");
                             buttonView.setText("Service is on  "); // we assume startService is reliable
                         } else {
-                            System.out.println("              calling stopService");
+                            Log.i(TAG, "              calling stopService");
                             stopService(new Intent(TheActivity.this, TheService.class));
-                            System.out.println("              returned from stopService");
+                            Log.i(TAG, "              returned from stopService");
                             if (false) {
                                 // Make sure we can't mess up service's notion of whether it's running,
                                 // by sending a whole flurry of stuff
@@ -389,11 +392,11 @@ public class TheActivity extends Activity {
                                 stopService(new Intent(TheActivity.this, TheService.class));
                                 stopService(new Intent(TheActivity.this, TheService.class));
                             }
-                            System.out.println("              setting text to \"Service is off \"");
+                            Log.i(TAG, "              setting text to \"Service is off \"");
                             buttonView.setText("Service is off "); // we assume stopService is reliable
                         }
                     }
-                    System.out.println("            out theServiceSwitch onCheckedChanged(isChecked=" + isChecked + ")");
+                    Log.i(TAG, "            out theServiceSwitch onCheckedChanged(isChecked=" + isChecked + ")");
                 }
             });
         }
@@ -403,28 +406,28 @@ public class TheActivity extends Activity {
         // Actually I think I can grant/ungrant on the fly, but the Settings switch gets out of sync with what it really is.  This is a reported bug, I think.
         if (!android.provider.Settings.System.canWrite(this)) {
             Intent grantIntent = new Intent(android.provider.Settings.ACTION_MANAGE_WRITE_SETTINGS, android.net.Uri.parse("package:"+getPackageName()));
-            System.out.println("              grantIntent = "+grantIntent);
-            System.out.println("              calling startActivity with ACTION_MANAGE_WRITE_SETTINGS");
+            Log.i(TAG, "              grantIntent = "+grantIntent);
+            Log.i(TAG, "              calling startActivity with ACTION_MANAGE_WRITE_SETTINGS");
             startActivity(grantIntent);
-            System.out.println("              returned from startActivity with ACTION_MANAGE_WRITE_SETTINGS");
+            Log.i(TAG, "              returned from startActivity with ACTION_MANAGE_WRITE_SETTINGS");
         } else {
-            System.out.println("              can already modify system settings.  Cool.");
+            Log.i(TAG, "              can already modify system settings.  Cool.");
         }
 
         if (!android.provider.Settings.canDrawOverlays(this)) {
             Intent grantIntent = new Intent(android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION, android.net.Uri.parse("package:"+getPackageName()));
-            System.out.println("              grantIntent = "+grantIntent);
-            System.out.println("              calling startActivity with ACTION_MANAGE_OVERLAY_PERMISSION");
+            Log.i(TAG, "              grantIntent = "+grantIntent);
+            Log.i(TAG, "              calling startActivity with ACTION_MANAGE_OVERLAY_PERMISSION");
             startActivity(grantIntent); // XXX that example uses startActivityForResult. maybe use that when needed on the fly?
-            System.out.println("              returned from startActivity with ACTION_MANAGE_OVERLAY_PERMISSION");
+            Log.i(TAG, "              returned from startActivity with ACTION_MANAGE_OVERLAY_PERMISSION");
         } else {
-            System.out.println("              can already draw overlays.  Cool.");
+            Log.i(TAG, "              can already draw overlays.  Cool.");
         }
 
         CHECK(theRunningActivity == null); // XXX not confident in this
         theRunningActivity = this;
 
-        System.out.println("    out onCreate");
+        Log.i(TAG, "    out onCreate");
     }
 
     private void updateAccelerometerOrientationDegreesTextView() {
@@ -558,31 +561,31 @@ public class TheActivity extends Activity {
 
     @Override
     protected void onStart() {
-        System.out.println("        in onStart");
+        Log.i(TAG, "        in onStart");
         super.onStart();
         Switch theServiceSwitch = (Switch)findViewById(R.id.theServiceSwitch);
 
         boolean serviceIsRunning = TheService.theRunningService != null;
-        System.out.println("          calling theServiceSwitch.setChecked("+serviceIsRunning+")");
+        Log.i(TAG, "          calling theServiceSwitch.setChecked("+serviceIsRunning+")");
         mSettingCheckedFromProgram = true;
         theServiceSwitch.setChecked(serviceIsRunning);
         mSettingCheckedFromProgram = false;
-        System.out.println("          returned from theServiceSwitch.setChecked("+serviceIsRunning+")");
+        Log.i(TAG, "          returned from theServiceSwitch.setChecked("+serviceIsRunning+")");
         // That invoked the listener which set the label to "Service is on" or "Service is off";
         // overwrite it with something that says "initially".
         if (serviceIsRunning) {
-            System.out.println("          setting text to \"Service is initially on  \"");
+            Log.i(TAG, "          setting text to \"Service is initially on  \"");
             theServiceSwitch.setText("Service is initially on  ");
         } else {
-            System.out.println("          setting text to \"Service is initially off \"");
+            Log.i(TAG, "          setting text to \"Service is initially off \"");
             theServiceSwitch.setText("Service is initially off ");
         }
-        System.out.println("        out onStart");
+        Log.i(TAG, "        out onStart");
     }
 
     @Override
     protected void onResume() {
-        System.out.println("            in onResume");
+        Log.i(TAG, "            in onResume");
         super.onResume();
 
         {
@@ -594,13 +597,13 @@ public class TheActivity extends Activity {
 
         {
             android.net.Uri uri = Settings.System.getUriFor(Settings.System.ACCELEROMETER_ROTATION);
-            System.out.println("      uri = "+uri);
+            Log.i(TAG, "      uri = "+uri);
             getContentResolver().registerContentObserver(uri, false, mAccelerometerRotationObserver);
         }
 
         {
             android.net.Uri uri = Settings.System.getUriFor(Settings.System.USER_ROTATION);
-            System.out.println("      uri = "+uri);
+            Log.i(TAG, "      uri = "+uri);
             getContentResolver().registerContentObserver(uri, false, mUserRotationObserver);
         }
 
@@ -617,12 +620,12 @@ public class TheActivity extends Activity {
         updateUserRotationTextView();
         updateConfigurationOrientationTextView();
         updatePolledStatusTextView();
-        System.out.println("            out onResume");
+        Log.i(TAG, "            out onResume");
     }
 
     @Override
     protected void onPause() {
-        System.out.println("            in onPause");
+        Log.i(TAG, "            in onPause");
 
         android.support.v4.content.LocalBroadcastManager.getInstance(this).unregisterReceiver(mBroadcastReceiver);
 
@@ -631,32 +634,32 @@ public class TheActivity extends Activity {
         mPollingHandler.removeCallbacks(mPollingRunnable); // ok if it wasn't scheduled
 
         super.onPause();
-        System.out.println("            out onPause");
+        Log.i(TAG, "            out onPause");
     }
 
     @Override
     protected void onStop() {
-        System.out.println("        in onStop");
+        Log.i(TAG, "        in onStop");
         super.onStop();
-        System.out.println("        out onStop");
+        Log.i(TAG, "        out onStop");
     }
 
     @Override
     protected void onDestroy() {
-        System.out.println("    in onDestroy");
+        Log.i(TAG, "    in onDestroy");
         super.onDestroy();
         if (theRunningActivity == this) theRunningActivity = null;
-        System.out.println("    out onDestroy");
+        Log.i(TAG, "    out onDestroy");
     }
 
     // Note, in order for this to be called (rather than the system stopping and restarting
     // the activity), the manifest must have "orientation|screenSize" in android:configChanges
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
-        System.out.println("in onConfigurationChanged");
+        Log.i(TAG, " onConfigurationChanged");
         super.onConfigurationChanged(newConfig);
-        System.out.println("  newConfig = "+newConfig);
-        System.out.println("  newConfig.orientation = "+TheService.orientationConstantToString(newConfig.orientation));
+        Log.i(TAG, "  newConfig = "+newConfig);
+        Log.i(TAG, "  newConfig.orientation = "+TheService.orientationConstantToString(newConfig.orientation));
 
         mMostRecentConfigurationOrientation = newConfig.orientation;
         updateConfigurationOrientationTextView();
@@ -667,7 +670,7 @@ public class TheActivity extends Activity {
             RelativeLayout.LayoutParams redSwitchLayoutParams = ((RelativeLayout.LayoutParams)theRedSwitch.getLayoutParams());
             if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT) {
                 // put red switch below override switch, right-aligned with it
-                System.out.println("  putting red switch below and right-aligned with override switch");
+                Log.i(TAG, "  putting red switch below and right-aligned with override switch");
                 redSwitchLayoutParams.removeRule(RelativeLayout.RIGHT_OF);
                 redSwitchLayoutParams.removeRule(RelativeLayout.ALIGN_TOP);
                 redSwitchLayoutParams.addRule(RelativeLayout.BELOW, theOverrideSwitch.getId());
@@ -678,7 +681,7 @@ public class TheActivity extends Activity {
                 // put red switch to right of override switch, top-aligned with it
                 //theRedSwitch.layout_toRightOf = theOverrideSwitch;
                 //theRedSwitch.alignTop = theOverrideSwitch;
-                System.out.println("  putting red switch to right and top-aligned with override switch");
+                Log.i(TAG, "  putting red switch to right and top-aligned with override switch");
                 redSwitchLayoutParams.removeRule(RelativeLayout.BELOW);
                 redSwitchLayoutParams.removeRule(RelativeLayout.ALIGN_RIGHT);
                 redSwitchLayoutParams.addRule(RelativeLayout.RIGHT_OF, theOverrideSwitch.getId());
@@ -686,6 +689,6 @@ public class TheActivity extends Activity {
             }
         }
 
-        System.out.println("out onConfigurationChanged");
+        Log.i(TAG, " onConfigurationChanged");
     }
 }

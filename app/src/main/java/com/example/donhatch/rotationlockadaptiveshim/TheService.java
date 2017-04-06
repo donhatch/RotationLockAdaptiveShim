@@ -32,6 +32,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.provider.Settings;
 import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.OrientationEventListener;
@@ -43,6 +44,8 @@ import android.widget.LinearLayout;
 import android.widget.Toast;
 
 public class TheService extends Service {
+
+    private static final String TAG = "RotationLockAdaptiveShim service";
 
     private static void CHECK(boolean condition) {
         if (!condition) {
@@ -98,18 +101,18 @@ public class TheService extends Service {
     private void updateCurrentACCELEROMETER_ROTATION() {
         try {
             mCurrentSystemSettingACCELEROMETER_ROTATION = Settings.System.getInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION);
-            if (mVerboseLevel >= 1) System.out.println("              Settings.System.ACCELEROMETER_ROTATION is now "+mCurrentSystemSettingACCELEROMETER_ROTATION);
+            if (mVerboseLevel >= 1) Log.i(TAG, "              Settings.System.ACCELEROMETER_ROTATION is now "+mCurrentSystemSettingACCELEROMETER_ROTATION);
         } catch (Settings.SettingNotFoundException e) {
-            if (mVerboseLevel >= 1) System.out.println("              Settings.System.ACCELEROMETER_ROTATION was not found!?");
+            if (mVerboseLevel >= 1) Log.i(TAG, "              Settings.System.ACCELEROMETER_ROTATION was not found!?");
         }
     }
 
     private void updateCurrentUSER_ROTATION() {
         try {
             mCurrentSystemSettingUSER_ROTATION = Settings.System.getInt(getContentResolver(), Settings.System.USER_ROTATION);
-            if (mVerboseLevel >= 1) System.out.println("              Settings.System.USER_ROTATION is now "+mCurrentSystemSettingUSER_ROTATION);
+            if (mVerboseLevel >= 1) Log.i(TAG, "              Settings.System.USER_ROTATION is now "+mCurrentSystemSettingUSER_ROTATION);
         } catch (Settings.SettingNotFoundException e) {
-            if (mVerboseLevel >= 1) System.out.println("              Settings.System.USER_ROTATION was not found!?");
+            if (mVerboseLevel >= 1) Log.i(TAG, "              Settings.System.USER_ROTATION was not found!?");
         }
     }
 
@@ -118,11 +121,11 @@ public class TheService extends Service {
         @Override public void onChange(boolean selfChange) { onChange(selfChange, null); }
         @Override
         public void onChange(boolean selfChange, Uri uri) {
-            System.out.println("            in TheService mAccelerometerRotationObserver onChange(selfChange="+selfChange+", uri="+uri+")");
+            Log.i(TAG, "            in TheService mAccelerometerRotationObserver onChange(selfChange="+selfChange+", uri="+uri+")");
             updateCurrentACCELEROMETER_ROTATION();
             if (mStaticWhackAMole) {
                 if (mCurrentSystemSettingACCELEROMETER_ROTATION != 0) {  // i.e. actually nonzero, or not found (which probably never happens)
-                    System.out.println("              WHACK!");
+                    Log.i(TAG, "              WHACK!");
                     Toast.makeText(TheService.this, "WHACK! system autorotate got turned on, turning it back off", Toast.LENGTH_SHORT).show();
                     try {
                         Settings.System.putInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0);
@@ -131,20 +134,20 @@ public class TheService extends Service {
                         mCurrentSystemSettingACCELEROMETER_ROTATION = 0;
                     } catch (SecurityException e) {
                         // XXX dup code
-                        if (mVerboseLevel >= 1) System.out.println("              Oh no, can't set system settings-- were permissions revoked?");
+                        if (mVerboseLevel >= 1) Log.i(TAG, "              Oh no, can't set system settings-- were permissions revoked?");
                         Toast.makeText(TheService.this, " Oh no, can't set system settings-- were permissions revoked?\nHere, please grant the permission.", Toast.LENGTH_LONG).show();
                         Intent grantIntent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
                         grantIntent.setData(Uri.parse("package:"+getPackageName()));
-                        if (mVerboseLevel >= 1) System.out.println("                  grantIntent = "+grantIntent);
-                        if (mVerboseLevel >= 1) System.out.println("                  calling startActivity with ACTION_MANAGE_WRITE_SETTINGS");
+                        if (mVerboseLevel >= 1) Log.i(TAG, "                  grantIntent = "+grantIntent);
+                        if (mVerboseLevel >= 1) Log.i(TAG, "                  calling startActivity with ACTION_MANAGE_WRITE_SETTINGS");
                         startActivity(grantIntent);
-                        if (mVerboseLevel >= 1) System.out.println("                  returned from startActivity with ACTION_MANAGE_WRITE_SETTINGS (but still didn't set ACCELEROMETER_ROTATION like we wanted!)");
+                        if (mVerboseLevel >= 1) Log.i(TAG, "                  returned from startActivity with ACTION_MANAGE_WRITE_SETTINGS (but still didn't set ACCELEROMETER_ROTATION like we wanted!)");
                         // CBB: still didn't write the value; not sure we can do anything better
                         // since permission might not have actually been granted.
                     }
                 }
             }
-            System.out.println("            out TheService mAccelerometerRotationObserver onChange(selfChange="+selfChange+", uri="+uri+")");
+            Log.i(TAG, "            out TheService mAccelerometerRotationObserver onChange(selfChange="+selfChange+", uri="+uri+")");
         }
     };  // mAccelerometerRotationObserver
     private ContentObserver mUserRotationObserver = new ContentObserver(new Handler()) {
@@ -152,7 +155,7 @@ public class TheService extends Service {
         @Override public void onChange(boolean selfChange) { onChange(selfChange, null); }
         @Override
         public void onChange(boolean selfChange, Uri uri) {
-            System.out.println("            in TheService mUserRotationObserver onChange(selfChange="+selfChange+", uri="+uri+")");
+            Log.i(TAG, "            in TheService mUserRotationObserver onChange(selfChange="+selfChange+", uri="+uri+")");
             // Potential bug if we *only* set mCurrentSystemSettingUSER_ROTATION here
             // and not when we set it:
             //     User rotates phone to 0
@@ -165,7 +168,7 @@ public class TheService extends Service {
             //            but we see mCurrentSystemSettingUSER_ROTATION is already 90
             //            so we do nothing!  oh no!
             updateCurrentUSER_ROTATION();
-            System.out.println("            out TheService mUserRotationObserver onChange(selfChange="+selfChange+", uri="+uri+")");
+            Log.i(TAG, "            out TheService mUserRotationObserver onChange(selfChange="+selfChange+", uri="+uri+")");
         }
     };  // mUserRotationObserver
 
@@ -272,8 +275,8 @@ public class TheService extends Service {
     }  // motionEventActionMaskedConstantToString
 
     public TheService() {
-        if (mVerboseLevel >= 1) System.out.println("                    in TheService ctor");
-        if (mVerboseLevel >= 1) System.out.println("                    out TheService ctor");
+        if (mVerboseLevel >= 1) Log.i(TAG, "                    in TheService ctor");
+        if (mVerboseLevel >= 1) Log.i(TAG, "                    out TheService ctor");
     }
 
     @Override
@@ -357,7 +360,7 @@ public class TheService extends Service {
 
     @Override
     public void onCreate() {
-        if (mVerboseLevel >= 1) System.out.println("                        in TheService.onCreate");
+        if (mVerboseLevel >= 1) Log.i(TAG, "                        in TheService.onCreate");
         if (theRunningService != null) {
             // XXX do this via a Notification, I think
             // XXX have I decided this never happens?  Not sure.
@@ -372,7 +375,7 @@ public class TheService extends Service {
             new Handler().postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    System.out.println("renewing?");
+                    Log.i(TAG, "renewing?");
                     toast.setDuration(Toast.LENGTH_LONG);
                     toast.show();
                 }
@@ -380,7 +383,7 @@ public class TheService extends Service {
             new Handler().postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    System.out.println("renewing again?");
+                    Log.i(TAG, "renewing again?");
                     toast.setDuration(Toast.LENGTH_LONG);
                     toast.show();
                 }
@@ -388,7 +391,7 @@ public class TheService extends Service {
             new Handler().postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    System.out.println("renewing yet again?");
+                    Log.i(TAG, "renewing yet again?");
                     toast.setDuration(Toast.LENGTH_LONG);
                     toast.show();
                 }
@@ -396,7 +399,7 @@ public class TheService extends Service {
             new Handler().postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    System.out.println("renewing yet again, again?");
+                    Log.i(TAG, "renewing yet again, again?");
                     toast.setDuration(Toast.LENGTH_LONG);
                     toast.show();
                 }
@@ -431,11 +434,11 @@ public class TheService extends Service {
         mOrientationEventListener = new OrientationEventListener(this, SensorManager.SENSOR_DELAY_NORMAL) {
             @Override
             public void onOrientationChanged(int degrees) {
-                if (mVerboseLevel >= 2) System.out.println("        in onOrientationChanged(degrees="+degrees+")");
+                if (mVerboseLevel >= 2) Log.i(TAG, "        in onOrientationChanged(degrees="+degrees+")");
                 if (degrees == OrientationEventListener.ORIENTATION_UNKNOWN) { // -1
-                    if (mVerboseLevel == 1) System.out.println("        in onOrientationChanged(degrees="+degrees+")");
-                    if (mVerboseLevel >= 1) System.out.println("          (not doing anything)");
-                    if (mVerboseLevel == 1) System.out.println("        out onOrientationChanged(degrees="+degrees+")");
+                    if (mVerboseLevel == 1) Log.i(TAG, "        in onOrientationChanged(degrees="+degrees+")");
+                    if (mVerboseLevel >= 1) Log.i(TAG, "          (not doing anything)");
+                    if (mVerboseLevel == 1) Log.i(TAG, "        out onOrientationChanged(degrees="+degrees+")");
                 } else {
                     boolean closestCompassPointChanging = false;
                     if (mStaticClosestCompassPoint == -1) {
@@ -444,8 +447,8 @@ public class TheService extends Service {
                         int distanceFromPreviousClosestCompassPoint = Math.abs(degrees - mStaticClosestCompassPoint);
                         if (distanceFromPreviousClosestCompassPoint > 180)
                             distanceFromPreviousClosestCompassPoint = Math.abs(distanceFromPreviousClosestCompassPoint - 360);
-                        if (mVerboseLevel >= 2) System.out.println("          old mStaticClosestCompassPoint = " + mStaticClosestCompassPoint);
-                        if (mVerboseLevel >= 2) System.out.println("          distanceFromPreviousClosestCompassPoint = " + distanceFromPreviousClosestCompassPoint);
+                        if (mVerboseLevel >= 2) Log.i(TAG, "          old mStaticClosestCompassPoint = " + mStaticClosestCompassPoint);
+                        if (mVerboseLevel >= 2) Log.i(TAG, "          distanceFromPreviousClosestCompassPoint = " + distanceFromPreviousClosestCompassPoint);
 
 
                         // empirically, when using ACCELEROMETER_ROTATION, changes happen on:
@@ -460,9 +463,9 @@ public class TheService extends Service {
                     }
 
                     if (!closestCompassPointChanging) {
-                        if (mVerboseLevel >= 2) System.out.println("          (device physical orientation quadrant didn't change)");
+                        if (mVerboseLevel >= 2) Log.i(TAG, "          (device physical orientation quadrant didn't change)");
                     } else {
-                        if (mVerboseLevel == 1) System.out.println("        in onOrientationChanged(degrees="+degrees+")"); // upgrade verbosity threshold from 2 to 1
+                        if (mVerboseLevel == 1) Log.i(TAG, "        in onOrientationChanged(degrees="+degrees+")"); // upgrade verbosity threshold from 2 to 1
                         int oldClosestCompassPoint = mStaticClosestCompassPoint;
                         int newClosestCompassPoint = degrees < 45 ? 0 : degrees < 135 ? 90 : degrees < 225 ? 180 : degrees < 315 ? 270 : 0;
                         mStaticClosestCompassPoint = newClosestCompassPoint;
@@ -483,12 +486,12 @@ public class TheService extends Service {
 
                         if (mStaticAutoRotate) {
                             if (closestCompassPointToUserRotation(newClosestCompassPoint) == mCurrentSystemSettingUSER_ROTATION) {
-                                if (mVerboseLevel == 1) System.out.println("          (USER_ROTATION="+surfaceRotationConstantToString(mCurrentSystemSettingUSER_ROTATION)+" is already correct)");
+                                if (mVerboseLevel == 1) Log.i(TAG, "          (USER_ROTATION="+surfaceRotationConstantToString(mCurrentSystemSettingUSER_ROTATION)+" is already correct)");
                             } else {
                                 if (!mStaticPromptFirst) {
-                                    if (mVerboseLevel >= 1) System.out.println("          calling doTheAutoRotateThing");
+                                    if (mVerboseLevel >= 1) Log.i(TAG, "          calling doTheAutoRotateThing");
                                     doTheAutoRotateThingNow();
-                                    if (mVerboseLevel >= 1) System.out.println("          returned from doTheAutoRotateThing");
+                                    if (mVerboseLevel >= 1) Log.i(TAG, "          returned from doTheAutoRotateThing");
                                 } else {
                                     if (true) {
                                         // https://developer.android.com/guide/topics/ui/dialogs.html
@@ -498,24 +501,24 @@ public class TheService extends Service {
                                         // https://www.codota.com/android/methods/android.app.AlertDialog.Builder/setView
                                         // Maybe this has something?  http://iserveandroid.blogspot.com/2011/04/how-to-dismiss-your-non-modal-dialog.html
 
-                                        if (mVerboseLevel == 1) System.out.println("          attempting to pop up an AlertDialog");
+                                        if (mVerboseLevel == 1) Log.i(TAG, "          attempting to pop up an AlertDialog");
 
                                         // Don't use an AlertDialog.Builder, since that's incompatible with custom onTouchEvent.
                                         // (TODO:  although... could I use a View.OnTouchListener insted?)
                                         final AlertDialog alertDialog = new AlertDialog(TheService.this) {
                                             @Override
                                             public boolean onTouchEvent(MotionEvent motionEvent) {
-                                                if (mVerboseLevel == 1) System.out.println("            in alertDialog onTouchEvent");
-                                                if (mVerboseLevel == 1) System.out.println("              motionEvent.getActionMasked()="+motionEventActionMaskedConstantToString(motionEvent.getActionMasked()));
+                                                if (mVerboseLevel == 1) Log.i(TAG, "            in alertDialog onTouchEvent");
+                                                if (mVerboseLevel == 1) Log.i(TAG, "              motionEvent.getActionMasked()="+motionEventActionMaskedConstantToString(motionEvent.getActionMasked()));
                                                 if (motionEvent.getActionMasked() == MotionEvent.ACTION_OUTSIDE) {
-                                                    if (mVerboseLevel == 1) System.out.println("              touch outside dialog! cancelling");
+                                                    if (mVerboseLevel == 1) Log.i(TAG, "              touch outside dialog! cancelling");
                                                     CHECK(mCleanupDialog != null); // XXX not completely confident in this
                                                     mCleanupDialog.run();
                                                     mCleanupDialog = null;
                                                 } else {
-                                                    if (mVerboseLevel == 1) System.out.println("              touch inside dialog; ignoring");
+                                                    if (mVerboseLevel == 1) Log.i(TAG, "              touch inside dialog; ignoring");
                                                 }
-                                                if (mVerboseLevel == 1) System.out.println("            out alertDialog onTouchEvent");
+                                                if (mVerboseLevel == 1) Log.i(TAG, "            out alertDialog onTouchEvent");
                                                 // I think returning true is supposed to mean "consume", i.e.
                                                 // don't pass the event to subsequent listeners or parent or "next level down",
                                                 // but I don't observe it making any difference--
@@ -531,42 +534,42 @@ public class TheService extends Service {
                                         alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "Yes and don't ask again", new DialogInterface.OnClickListener() {
                                             @Override
                                             public void onClick(DialogInterface dialog, int id) {
-                                                if (mVerboseLevel == 1) System.out.println("            in alertDialog neutral button onClick");
+                                                if (mVerboseLevel == 1) Log.i(TAG, "            in alertDialog neutral button onClick");
 
                                                 // Same as yes, but turn off mStaticPromptFirst
                                                 mStaticPromptFirst = false;
                                                 Intent intent = new Intent("mStaticPromptFirst changed");
                                                 intent.putExtra("new mStaticPromptFirst", mStaticPromptFirst);
-                                                if (mVerboseLevel == 1) System.out.println("              sending \"mStaticPromptFirst changed\" broadcast");
+                                                if (mVerboseLevel == 1) Log.i(TAG, "              sending \"mStaticPromptFirst changed\" broadcast");
                                                 LocalBroadcastManager.getInstance(TheService.this).sendBroadcast(intent);
-                                                if (mVerboseLevel == 1) System.out.println("              sent \"mStaticPromptFirst changed\" broadcast");
+                                                if (mVerboseLevel == 1) Log.i(TAG, "              sent \"mStaticPromptFirst changed\" broadcast");
                                                 mCleanupDialog.run();
                                                 mCleanupDialog = null;
                                                 doTheAutoRotateThingNow();
-                                                if (mVerboseLevel == 1) System.out.println("            out alertDialog neutral button onClick");
+                                                if (mVerboseLevel == 1) Log.i(TAG, "            out alertDialog neutral button onClick");
                                             };
                                         });
                                         alertDialog.setButton(AlertDialog.BUTTON_NEGATIVE, "No", new DialogInterface.OnClickListener() {
                                             @Override
                                             public void onClick(DialogInterface dialog, int id) {
-                                                if (mVerboseLevel == 1) System.out.println("            in alertDialog negative button onClick");
+                                                if (mVerboseLevel == 1) Log.i(TAG, "            in alertDialog negative button onClick");
                                                 // XXX is this evidence for why it's good to always delay?
                                                 CHECK(mCleanupDialog != null);
                                                 mCleanupDialog.run();
                                                 mCleanupDialog = null;
-                                                if (mVerboseLevel == 1) System.out.println("            out alertDialog negative button onClick");
+                                                if (mVerboseLevel == 1) Log.i(TAG, "            out alertDialog negative button onClick");
                                             };
                                         });
                                         alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, "Yes", new DialogInterface.OnClickListener() {
                                             @Override
                                             public void onClick(DialogInterface dialog, int id) {
-                                                if (mVerboseLevel == 1) System.out.println("            in alertDialog positive button onClick");
+                                                if (mVerboseLevel == 1) Log.i(TAG, "            in alertDialog positive button onClick");
                                                 // XXX is this evidence for why it's good to always delay?
                                                 CHECK(mCleanupDialog != null);
                                                 mCleanupDialog.run();
                                                 mCleanupDialog = null;
                                                 doTheAutoRotateThingNow();
-                                                if (mVerboseLevel == 1) System.out.println("            out alertDialog positive button onClick");
+                                                if (mVerboseLevel == 1) Log.i(TAG, "            out alertDialog positive button onClick");
                                             };
                                         });
 
@@ -597,10 +600,10 @@ public class TheService extends Service {
                                         final Runnable runnable = new Runnable() {
                                             @Override
                                             public void run() {
-                                                if (mVerboseLevel == 1) System.out.println("            in run: prompt expired; canceling alert dialog");
+                                                if (mVerboseLevel == 1) Log.i(TAG, "            in run: prompt expired; canceling alert dialog");
                                                 alertDialog.cancel();
                                                 mCleanupDialog = null;
-                                                if (mVerboseLevel == 1) System.out.println("            out run: prompt expired; cancelled alert dialog");
+                                                if (mVerboseLevel == 1) Log.i(TAG, "            out run: prompt expired; cancelled alert dialog");
                                             }
                                         };
                                         handler.postDelayed(runnable, 3*1000);
@@ -609,10 +612,10 @@ public class TheService extends Service {
                                         mCleanupDialog = new Runnable() {
                                             @Override
                                             public void run() {
-                                                if (mVerboseLevel == 1) System.out.println("            cleaning up previous dialog");
+                                                if (mVerboseLevel == 1) Log.i(TAG, "            cleaning up previous dialog");
                                                 alertDialog.cancel();
                                                 handler.removeCallbacks(runnable); // ok if it wasn't scheduled
-                                                if (mVerboseLevel == 1) System.out.println("            cleaned up previous dialog");
+                                                if (mVerboseLevel == 1) Log.i(TAG, "            cleaned up previous dialog");
                                             }
                                         };
 
@@ -621,10 +624,10 @@ public class TheService extends Service {
                                         new Handler().postDelayed(new Runnable() { @Override public void run() { alertDialog.setMessage("2..."); } }, 1*1000);
                                         new Handler().postDelayed(new Runnable() { @Override public void run() { alertDialog.setMessage("1..."); } }, 2*1000);
 
-                                        if (mVerboseLevel == 1) System.out.println("          attempted to pop up an AlertDialog");
+                                        if (mVerboseLevel == 1) Log.i(TAG, "          attempted to pop up an AlertDialog");
                                     }
                                     if (false) {
-                                        if (mVerboseLevel == 1) System.out.println("          attempting to pop up a semitransparent icon!");
+                                        if (mVerboseLevel == 1) Log.i(TAG, "          attempting to pop up a semitransparent icon!");
                                         // Pop up a semitransparent icon for at most 3 (or maybe configurable) seconds.
                                         // If user taps it within the 3 seconds, call doTheAutoRotateThingNow(), otherwise disappear it.
                                         // http://stackoverflow.com/questions/7678356/launch-popup-window-from-service
@@ -636,31 +639,31 @@ public class TheService extends Service {
 
                                             @Override
                                             protected void onDraw(Canvas canvas) {
-                                                if (mVerboseLevel == 1) System.out.println("            in onDraw");
+                                                if (mVerboseLevel == 1) Log.i(TAG, "            in onDraw");
                                                 super.onDraw(canvas);
                                                 canvas.drawText("test test test", 0, 100, mPaint);
-                                                if (mVerboseLevel == 1) System.out.println("            out onDraw");
+                                                if (mVerboseLevel == 1) Log.i(TAG, "            out onDraw");
                                             }
 
                                             @Override
                                             protected void onAttachedToWindow() {
-                                                if (mVerboseLevel == 1) System.out.println("            in onAttachedToWindow");
+                                                if (mVerboseLevel == 1) Log.i(TAG, "            in onAttachedToWindow");
                                                 super.onAttachedToWindow();
-                                                if (mVerboseLevel == 1) System.out.println("            out onAttachedToWindow");
+                                                if (mVerboseLevel == 1) Log.i(TAG, "            out onAttachedToWindow");
                                             }
 
                                             @Override
                                             protected void onDetachedFromWindow() {
-                                                if (mVerboseLevel == 1) System.out.println("            in onDetachedFromWindow");
+                                                if (mVerboseLevel == 1) Log.i(TAG, "            in onDetachedFromWindow");
                                                 super.onDetachedFromWindow();
-                                                if (mVerboseLevel == 1) System.out.println("            out onDetachedFromWindow");
+                                                if (mVerboseLevel == 1) Log.i(TAG, "            out onDetachedFromWindow");
                                             }
 
                                             @Override
                                             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                                                if (mVerboseLevel == 1) System.out.println("            in onMeasure");
+                                                if (mVerboseLevel == 1) Log.i(TAG, "            in onMeasure");
                                                 super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-                                                if (mVerboseLevel == 1) System.out.println("            out onMeasure");
+                                                if (mVerboseLevel == 1) Log.i(TAG, "            out onMeasure");
                                             }
                                         };
 
@@ -694,20 +697,20 @@ public class TheService extends Service {
                                         new Handler().postDelayed(new Runnable() {
                                             @Override
                                             public void run() {
-                                                if (mVerboseLevel == 1) System.out.println("            in run: prompt expired");
+                                                if (mVerboseLevel == 1) Log.i(TAG, "            in run: prompt expired");
                                                 windowManager.removeView(myView);
-                                                if (mVerboseLevel == 1) System.out.println("            out run: prompt expired");
+                                                if (mVerboseLevel == 1) Log.i(TAG, "            out run: prompt expired");
                                             }
                                         }, 3*1000);
 
-                                        if (mVerboseLevel == 1) System.out.println("          attempted to pop up a semitransparent icon!");
+                                        if (mVerboseLevel == 1) Log.i(TAG, "          attempted to pop up a semitransparent icon!");
                                     }
                                 }
                             }
                         }
 
-                        if (mVerboseLevel >= 1) System.out.println("          new mStaticClosestCompassPoint = " + mStaticClosestCompassPoint);
-                        if (mVerboseLevel == 1) System.out.println("        out onOrientationChanged(degrees="+degrees+")"); // upgrade verbosity threshold from 2 to 1
+                        if (mVerboseLevel >= 1) Log.i(TAG, "          new mStaticClosestCompassPoint = " + mStaticClosestCompassPoint);
+                        if (mVerboseLevel == 1) Log.i(TAG, "        out onOrientationChanged(degrees="+degrees+")"); // upgrade verbosity threshold from 2 to 1
                     }
                 }
 
@@ -735,17 +738,17 @@ public class TheService extends Service {
                     LocalBroadcastManager.getInstance(TheService.this).sendBroadcast(intent);
                 }
 
-                if (mVerboseLevel >= 2) System.out.println("        out onOrientationChanged(degrees="+degrees+")");
+                if (mVerboseLevel >= 2) Log.i(TAG, "        out onOrientationChanged(degrees="+degrees+")");
             }
         };  // mOrientationEventListener
 
 
         // same thing we do on ACTION_SCREEN_ON (dup code)
         if (mOrientationEventListener.canDetectOrientation() == true) {
-            if (mVerboseLevel >= 1) System.out.println("                          can detect orientation, enabling orientation event listener");
+            if (mVerboseLevel >= 1) Log.i(TAG, "                          can detect orientation, enabling orientation event listener");
             mOrientationEventListener.enable();
         } else {
-            if (mVerboseLevel >= 1) System.out.println("                          cannot detect orientation, disabling orientation event listener");
+            if (mVerboseLevel >= 1) Log.i(TAG, "                          cannot detect orientation, disabling orientation event listener");
             mOrientationEventListener.disable();
         }
 
@@ -755,8 +758,8 @@ public class TheService extends Service {
             // For the ones that do, we want to stop listening to the accelerometer when the screen is off,
             // to conserve battery.
             // https://thinkandroid.wordpress.com/2010/01/24/handling-screen-off-and-screen-on-intents/
-            System.out.println("android.content.Intent.ACTION_SCREEN_OFF = "+Intent.ACTION_SCREEN_OFF);
-            System.out.println("android.content.Intent.ACTION_SCREEN_ON = "+Intent.ACTION_SCREEN_ON);
+            Log.i(TAG, "android.content.Intent.ACTION_SCREEN_OFF = "+Intent.ACTION_SCREEN_OFF);
+            Log.i(TAG, "android.content.Intent.ACTION_SCREEN_ON = "+Intent.ACTION_SCREEN_ON);
 
             IntentFilter intentFilter = new IntentFilter();
             intentFilter.addAction(Intent.ACTION_SCREEN_OFF);
@@ -765,38 +768,38 @@ public class TheService extends Service {
             registerReceiver(new BroadcastReceiver() {
                 @Override
                 public void onReceive(Context context, Intent intent) {
-                    if (mVerboseLevel >= 1) System.out.println("        in onReceive(intent.getAction()="+intent.getAction()+")");
+                    if (mVerboseLevel >= 1) Log.i(TAG, "        in onReceive(intent.getAction()="+intent.getAction()+")");
                     if (intent.getAction().equals(Intent.ACTION_SCREEN_OFF)) {
-                        if (mVerboseLevel >= 1) System.out.println("          ACTION_SCREEN_OFF: disabling orientation event listener");
+                        if (mVerboseLevel >= 1) Log.i(TAG, "          ACTION_SCREEN_OFF: disabling orientation event listener");
                         mOrientationEventListener.disable();
                     } else if (intent.getAction().equals(Intent.ACTION_SCREEN_ON)) {
                         // same thing we do on create (dup code)
                         if (mOrientationEventListener.canDetectOrientation() == true) {
-                            if (mVerboseLevel >= 1) System.out.println("          ACTION_SCREEN_ON and can detect orientation, enabling orientation event listener");
+                            if (mVerboseLevel >= 1) Log.i(TAG, "          ACTION_SCREEN_ON and can detect orientation, enabling orientation event listener");
                             mOrientationEventListener.enable();
                         } else {
-                            if (mVerboseLevel >= 1) System.out.println("          ACTION_SCREEN_ON but cannot detect orientation, disabling orientation event listener");
+                            if (mVerboseLevel >= 1) Log.i(TAG, "          ACTION_SCREEN_ON but cannot detect orientation, disabling orientation event listener");
                             mOrientationEventListener.disable();
                         }
                     } else if (intent.getAction().equals(Intent.ACTION_USER_PRESENT)) {
-                        if (mVerboseLevel >= 1) System.out.println("          ACTION_USER_PRESENT");
+                        if (mVerboseLevel >= 1) Log.i(TAG, "          ACTION_USER_PRESENT");
                         // XXX TODO: figure out whether there's something meaningful to do here
                     } else {
                         // This shouldn't happen
-                        System.out.println("          received unexpected broadcast: "+intent.getAction()+" (this shouldn't happen)");
+                        Log.i(TAG, "          received unexpected broadcast: "+intent.getAction()+" (this shouldn't happen)");
                         CHECK(false);
                     }
-                    if (mVerboseLevel >= 1) System.out.println("        out onReceive(intent.getAction()="+intent.getAction()+")");
+                    if (mVerboseLevel >= 1) Log.i(TAG, "        out onReceive(intent.getAction()="+intent.getAction()+")");
                 };
             }, intentFilter);
         }
-        if (mVerboseLevel >= 1) System.out.println("                        out TheService.onCreate");
+        if (mVerboseLevel >= 1) Log.i(TAG, "                        out TheService.onCreate");
     }  // onCreate
 
     @Override
     public int onStartCommand(Intent startIntent, int flags, int startId) {
-        if (mVerboseLevel >= 1) System.out.println("                            in TheService.onStartCommand(startIntent, flags="+flags+", startId="+startId+")");
-        if (mVerboseLevel >= 1) System.out.println("                              startIntent = "+startIntent);
+        if (mVerboseLevel >= 1) Log.i(TAG, "                            in TheService.onStartCommand(startIntent, flags="+flags+", startId="+startId+")");
+        if (mVerboseLevel >= 1) Log.i(TAG, "                              startIntent = "+startIntent);
 
         if (true)
         {
@@ -828,13 +831,13 @@ public class TheService extends Service {
                     ;
             final Notification notification = builder.build();
             //notification.flags |= Notification.FLAG_NO_CLEAR; // XXX doesn't seem to help keep the icon up
-            if (mVerboseLevel >= 1) System.out.println("                              calling startForeground");
+            if (mVerboseLevel >= 1) Log.i(TAG, "                              calling startForeground");
             startForeground(AN_IDENTIFIER_FOR_THIS_NOTIFICATION_UNIQUE_WITHIN_THIS_APPLICATION, notification);
-            if (mVerboseLevel >= 1) System.out.println("                              returned from startForeground");
+            if (mVerboseLevel >= 1) Log.i(TAG, "                              returned from startForeground");
             if (false) {
-                if (mVerboseLevel >= 1) System.out.println("                              calling stopForeground");
+                if (mVerboseLevel >= 1) Log.i(TAG, "                              calling stopForeground");
                 stopForeground(AN_IDENTIFIER_FOR_THIS_NOTIFICATION_UNIQUE_WITHIN_THIS_APPLICATION);
-                if (mVerboseLevel >= 1) System.out.println("                              returned from stopForeground");
+                if (mVerboseLevel >= 1) Log.i(TAG, "                              returned from stopForeground");
             }
 
 
@@ -848,7 +851,7 @@ public class TheService extends Service {
                         if (mHasBeenDestroyed) {
                             // stop updating the notification!
                             // TODO: We actually shouldn't have gotten this far; should make onDestroy() cancel us.
-                            if (mVerboseLevel >= 1) System.out.println("service has been destroyed! abandoning notification update");
+                            if (mVerboseLevel >= 1) Log.i(TAG, "service has been destroyed! abandoning notification update");
                             return;
                         }
                         builder.setContentText("updated "+(count[0]++));
@@ -882,13 +885,13 @@ public class TheService extends Service {
             mCurrentSystemSettingACCELEROMETER_ROTATION = 0;
         }
 
-        if (mVerboseLevel >= 1) System.out.println("                            out TheService.onStartCommand(startIntent, flags="+flags+", startId="+startId+")");
+        if (mVerboseLevel >= 1) Log.i(TAG, "                            out TheService.onStartCommand(startIntent, flags="+flags+", startId="+startId+")");
         return START_STICKY; // Continue running until explicitly stopped, and restart the app process with service only if it gets kill by e.g. stopsign button in Android Monitor in AS
     }  // onStartCommand
 
     @Override
     public void onDestroy() {
-        if (mVerboseLevel >= 1) System.out.println("                        in TheService.onDestroy");
+        if (mVerboseLevel >= 1) Log.i(TAG, "                        in TheService.onDestroy");
         // TODO: cancel previous toast if any
         showToast(this, "Service Destroyed", 2000);
 
@@ -909,7 +912,7 @@ public class TheService extends Service {
         // - something else called stopService
         // - in the latter case, we must tell the activity, otherwise the switch will not be in sync.
         // XXX race? what if user is in the process of turning it on??
-        if (mVerboseLevel >= 1) System.out.println("                        out TheService.onDestroy");
+        if (mVerboseLevel >= 1) Log.i(TAG, "                        out TheService.onDestroy");
     }  // onDestroy
 
     // XXX not sure this is the way I want to do things
@@ -959,13 +962,13 @@ public class TheService extends Service {
     // Syncs system USER_ROTATION to mStaticClosestCompassPoint, which must be valid.
     // Also whacks ACCELEROMETER_ROTATION if set (but it shouldn't be).
     private void doTheAutoRotateThingNow() {
-        if (mVerboseLevel >= 1) System.out.println("            in doTheAutoRotateThingNow");
+        if (mVerboseLevel >= 1) Log.i(TAG, "            in doTheAutoRotateThingNow");
         CHECK(mStaticClosestCompassPoint != -1);
 
         if (mCurrentSystemSettingACCELEROMETER_ROTATION != 0) {
             // In case this got turned on for some reason.
             // Probably this can't happen unless mStaticWhackAMole is off. 
-            if (mVerboseLevel >= 1) System.out.println("              changing Settings.System.ACCELEROMETER_ROTATION from " + mCurrentSystemSettingACCELEROMETER_ROTATION + " to 0 !!!!!!!!!!");
+            if (mVerboseLevel >= 1) Log.i(TAG, "              changing Settings.System.ACCELEROMETER_ROTATION from " + mCurrentSystemSettingACCELEROMETER_ROTATION + " to 0 !!!!!!!!!!");
             try {
                 Settings.System.putInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0);
                 // Do this here in addition to in listener, since it seems to be best practice
@@ -973,19 +976,19 @@ public class TheService extends Service {
                 mCurrentSystemSettingACCELEROMETER_ROTATION = 0;
             } catch (SecurityException e) {
                 // XXX dup code
-                if (mVerboseLevel >= 1) System.out.println("              Oh no, can't set system settings-- were permissions revoked?");
+                if (mVerboseLevel >= 1) Log.i(TAG, "              Oh no, can't set system settings-- were permissions revoked?");
                 Toast.makeText(TheService.this, " Oh no, can't set system settings-- were permissions revoked?\nHere, please grant the permission.", Toast.LENGTH_LONG).show();
                 Intent grantIntent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
                 grantIntent.setData(Uri.parse("package:"+getPackageName()));
-                if (mVerboseLevel >= 1) System.out.println("                  grantIntent = "+grantIntent);
-                if (mVerboseLevel >= 1) System.out.println("                  calling startActivity with ACTION_MANAGE_WRITE_SETTINGS");
+                if (mVerboseLevel >= 1) Log.i(TAG, "                  grantIntent = "+grantIntent);
+                if (mVerboseLevel >= 1) Log.i(TAG, "                  calling startActivity with ACTION_MANAGE_WRITE_SETTINGS");
                 startActivity(grantIntent);
-                if (mVerboseLevel >= 1) System.out.println("                  returned from startActivity with ACTION_MANAGE_WRITE_SETTINGS (but still didn't set ACCELEROMETER_ROTATION like we wanted!)");
+                if (mVerboseLevel >= 1) Log.i(TAG, "                  returned from startActivity with ACTION_MANAGE_WRITE_SETTINGS (but still didn't set ACCELEROMETER_ROTATION like we wanted!)");
                 // CBB: still didn't write the value; not sure we can do anything better
                 // since permission might not have actually been granted.
             }
         } else {
-            if (mVerboseLevel >= 1) System.out.println("              Settings.System.ACCELEROMETER_ROTATION was 0 as expected");
+            if (mVerboseLevel >= 1) Log.i(TAG, "              Settings.System.ACCELEROMETER_ROTATION was 0 as expected");
         }
 
         // From http://stackoverflow.com/questions/14587085/how-can-i-globally-force-screen-orientation-in-android#answer-26895627
@@ -1025,19 +1028,19 @@ public class TheService extends Service {
         // The reason is that if USER_ROTATION is directly opposite what mOrientationLayout specifies,
         // the rotation will get set to USER_ROTATION!  (bug?)
         try {
-            if (mVerboseLevel >= 1) System.out.println("              changing Settings.System.USER_ROTATION from " + surfaceRotationConstantToString(oldUSER_ROTATION) + " to " + surfaceRotationConstantToString(newUSER_ROTATION));
+            if (mVerboseLevel >= 1) Log.i(TAG, "              changing Settings.System.USER_ROTATION from " + surfaceRotationConstantToString(oldUSER_ROTATION) + " to " + surfaceRotationConstantToString(newUSER_ROTATION));
             Settings.System.putInt(getContentResolver(), Settings.System.USER_ROTATION, newUSER_ROTATION);
             // Do this here in addition to in listener, to avoid bug described at the listener!
             mCurrentSystemSettingUSER_ROTATION = newUSER_ROTATION;
         } catch (SecurityException e) {
-            if (mVerboseLevel >= 1) System.out.println("              Oh no, can't set system settings-- were permissions revoked?");
+            if (mVerboseLevel >= 1) Log.i(TAG, "              Oh no, can't set system settings-- were permissions revoked?");
             Toast.makeText(TheService.this, " Oh no, can't set system settings-- were permissions revoked?\nHere, please grant the permission.", Toast.LENGTH_LONG).show();
             Intent grantIntent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
             grantIntent.setData(Uri.parse("package:"+getPackageName()));
-            if (mVerboseLevel >= 1) System.out.println("              grantIntent = "+grantIntent);
-            if (mVerboseLevel >= 1) System.out.println("              calling startActivity with ACTION_MANAGE_WRITE_SETTINGS");
+            if (mVerboseLevel >= 1) Log.i(TAG, "              grantIntent = "+grantIntent);
+            if (mVerboseLevel >= 1) Log.i(TAG, "              calling startActivity with ACTION_MANAGE_WRITE_SETTINGS");
             startActivity(grantIntent);
-            if (mVerboseLevel >= 1) System.out.println("              returned from startActivity with ACTION_MANAGE_WRITE_SETTINGS (but still didn't set USER_ROTATION like we wanted!)");
+            if (mVerboseLevel >= 1) Log.i(TAG, "              returned from startActivity with ACTION_MANAGE_WRITE_SETTINGS (but still didn't set USER_ROTATION like we wanted!)");
             // CBB: still didn't write the value.
             // What to do now?
             //     - try to write the value again? (endless loop possible)
@@ -1050,7 +1053,7 @@ public class TheService extends Service {
         WindowManager windowManager = (WindowManager)getSystemService(WINDOW_SERVICE); // there's no getWindowManager() in a service
         if (mStaticOverride) {
             int newScreenOrientationConstant = closestCompassPointToScreenOrientationConstant(mStaticClosestCompassPoint);
-            if (mVerboseLevel >= 1) System.out.println("              attempting to force orientation to "+screenOrientationConstantToString(newScreenOrientationConstant));
+            if (mVerboseLevel >= 1) Log.i(TAG, "              attempting to force orientation to "+screenOrientationConstantToString(newScreenOrientationConstant));
             if (mOrientationChanger.getVisibility() != View.VISIBLE
              || mOrientationLayout.screenOrientation != newScreenOrientationConstant
              || mOrientationChangerCurrentBackgroundColor != (mStaticRed ? 0x44ff0000 : 0x00000000)) {
@@ -1060,19 +1063,19 @@ public class TheService extends Service {
                 windowManager.updateViewLayout(mOrientationChanger, mOrientationLayout);
                 mOrientationChanger.setVisibility(View.VISIBLE);
             } else {
-                if (mVerboseLevel >= 1) System.out.println("                  (no need)");
+                if (mVerboseLevel >= 1) Log.i(TAG, "                  (no need)");
             }
         } else {
-            if (mVerboseLevel >= 1) System.out.println("              attempting to unforce orientation");
+            if (mVerboseLevel >= 1) Log.i(TAG, "              attempting to unforce orientation");
             if (mOrientationChanger.getVisibility() != View.GONE) {
                 mOrientationChanger.setVisibility(View.GONE);
                 mOrientationLayout.screenOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
                 windowManager.updateViewLayout(mOrientationChanger, mOrientationLayout);
             } else {
-                if (mVerboseLevel >= 1) System.out.println("                  (no need)");
+                if (mVerboseLevel >= 1) Log.i(TAG, "                  (no need)");
             }
         }
 
-        if (mVerboseLevel >= 1) System.out.println("            out doTheAutoRotateThingNow");
+        if (mVerboseLevel >= 1) Log.i(TAG, "            out doTheAutoRotateThingNow");
     }  // doTheAutoRotateThingNow
 }

@@ -47,6 +47,7 @@ import android.provider.Settings;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CompoundButton;
+import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -91,6 +92,17 @@ public class TheActivity extends Activity {
                 //System.out.println("                  intent.getIntExtra(\"new degrees\") = "+newDegrees);
                 TextView theAccelerometerOrientationDegreesTextView = (TextView)findViewById(R.id.theAccelerometerOrientationDegreesTextView);
                 theAccelerometerOrientationDegreesTextView.setText("  accelerometer degrees (most recent update): "+oldDegrees+" -> "+newDegrees);
+
+                if (true) {
+                    ImageView theDialImageView = (ImageView)findViewById(R.id.theDialImageView);
+
+                    // TODO: adjust by current orientation!
+                    theDialImageView.setRotation(90 - newDegrees);
+
+                    theDialImageView.setScaleX(1.f);
+                    theDialImageView.setScaleY(1.f);
+                }
+
                 //System.out.println("                out onReceive: "+intent.getAction());
             } else if (intent.getAction().equals("mStaticClosestCompassPoint changed")) {
                 System.out.println("                in onReceive: "+intent.getAction());
@@ -195,6 +207,7 @@ public class TheActivity extends Activity {
         Switch thePromptFirstSwitch = (Switch)findViewById(R.id.thePromptFirstSwitch);
         Switch theOverrideSwitch = (Switch)findViewById(R.id.theOverrideSwitch);
         Switch theRedSwitch = (Switch)findViewById(R.id.theRedSwitch);
+        ImageView theDialImageView = (ImageView)findViewById(R.id.theDialImageView);
         Switch theMonitorSwitch = (Switch)findViewById(R.id.theMonitorSwitch);
         TextView thePolledValuesHeaderTextView = (TextView)findViewById(R.id.thePolledValuesHeaderTextView);
         TextView thePolledStatusTextView = (TextView)findViewById(R.id.thePolledStatusTextView);

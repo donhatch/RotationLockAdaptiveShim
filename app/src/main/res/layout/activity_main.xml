@@ -67,6 +67,15 @@ tools:context=".TheActivity" >
         android:layout_alignRight="@id/theOverrideSwitch"
         android:id="@+id/theRedSwitch" />
 
+    <ImageView
+        android:src="@drawable/mygeomatic_rapporteur_5_svg_hi"
+        android:rotation="90"
+        android:scaleX=".75"
+        android:scaleY=".75"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/theDialImageView" />
+
     <TextView
         android:text="Listened values:"
         android:layout_width="wrap_content"

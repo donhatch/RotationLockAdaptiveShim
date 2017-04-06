@@ -16,7 +16,6 @@
 // TODO: enhanve ui functionality
 //         - display a dial with current orientation
 //         - make values turn red when they change and then fade to black? hmm
-// TODO: use import consistently  (done in TheService, not in TheActivity)
 // TODO: actually make it work correctly when activity restarts due to orientation: remove the thing from the manifest? maybe worth a try
 // TODO: maybe quick back and forth should turn the prompt back on?  (no I think that might be bad since indistinguishable from a shake)
 // TODO: if permission got revoked and we re-do the double-opt-in-dance, we end up not having written the value... I think? have to think about the consequences. maybe not too bad.
@@ -31,12 +30,26 @@
 
 package com.example.donhatch.rotationlockadaptiveshim;
 
+import android.app.Activity;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.res.Configuration;
+import android.database.ContentObserver;
 import android.net.Uri;
+import android.os.Bundle;
+import android.os.Handler;
 import android.provider.Settings;
+import android.view.View;
+import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.RelativeLayout;
+import android.widget.Switch;
+import android.widget.TextView;
+import android.widget.Toast;
 
-public class TheActivity extends android.app.Activity {
+public class TheActivity extends Activity {
 
     private static void CHECK(boolean condition) {
         if (!condition) {
@@ -52,7 +65,7 @@ public class TheActivity extends android.app.Activity {
 
     public static TheActivity theRunningActivity = null; // actually not sure there is guaranteed to be at most one
 
-    private android.os.Handler mPollingHandler = new android.os.Handler();
+    private Handler mPollingHandler = new Handler();
     private Runnable mPollingRunnable = new Runnable() {
         @Override
         public void run() {
@@ -64,16 +77,16 @@ public class TheActivity extends android.app.Activity {
         };
     };
 
-    private android.content.BroadcastReceiver mBroadcastReceiver = new android.content.BroadcastReceiver() {
+    private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
         @Override
-        public void onReceive(android.content.Context context, android.content.Intent intent) {
+        public void onReceive(Context context, Intent intent) {
             if (intent.getAction().equals("degrees changed")) {
                 //System.out.println("                in onReceive: "+intent.getAction());
                 int oldDegrees = intent.getIntExtra("old degrees", -100);
                 int newDegrees = intent.getIntExtra("new degrees", -100);
                 //System.out.println("                  intent.getIntExtra(\"old degrees\") = "+oldDegrees);
                 //System.out.println("                  intent.getIntExtra(\"new degrees\") = "+newDegrees);
-                android.widget.TextView theAccelerometerOrientationDegreesTextView = (android.widget.TextView)findViewById(R.id.theAccelerometerOrientationDegreesTextView);
+                TextView theAccelerometerOrientationDegreesTextView = (TextView)findViewById(R.id.theAccelerometerOrientationDegreesTextView);
                 theAccelerometerOrientationDegreesTextView.setText("  accelerometer degrees (most recent update): "+oldDegrees+" -> "+newDegrees);
                 //System.out.println("                out onReceive: "+intent.getAction());
             } else if (intent.getAction().equals("mStaticClosestCompassPoint changed")) {
@@ -83,7 +96,7 @@ public class TheActivity extends android.app.Activity {
                 System.out.println("                  intent.getIntExtra(\"old mStaticClosestCompassPoint\") = "+oldClosestCompassPoint);
                 System.out.println("                  intent.getIntExtra(\"new mStaticClosestCompassPoint\") = "+newClosestCompassPoint);
                 /* (it's commented out in the layout too, made things too crowded)
-                android.widget.TextView theClosestCompassPointTextView = (android.widget.TextView)findViewById(R.id.theClosestCompassPointTextView);
+                TextView theClosestCompassPointTextView = (TextView)findViewById(R.id.theClosestCompassPointTextView);
                 theClosestCompassPointTextView.setText("  TheService.mStaticClosestCompassPoint: "+oldClosestCompassPoint+" -> "+newClosestCompassPoint);
                 */
                 System.out.println("                out onReceive: "+intent.getAction());
@@ -91,7 +104,7 @@ public class TheActivity extends android.app.Activity {
                 System.out.println("                in onReceive: "+intent.getAction());
                 boolean newStaticPromptFirst = intent.getBooleanExtra("new mStaticPromptFirst", true);
                 System.out.println("                  setting thePromptFirstSwitch.setChecked("+newStaticPromptFirst+")");
-                android.widget.Switch thePromptFirstSwitch = (android.widget.Switch)findViewById(R.id.thePromptFirstSwitch);
+                Switch thePromptFirstSwitch = (Switch)findViewById(R.id.thePromptFirstSwitch);
                 thePromptFirstSwitch.setChecked(newStaticPromptFirst);
                 System.out.println("                out onReceive: "+intent.getAction());
             } else {
@@ -103,7 +116,7 @@ public class TheActivity extends android.app.Activity {
         }
     };  // mBroadcastReceiver
 
-    private android.database.ContentObserver mAccelerometerRotationObserver = new android.database.ContentObserver(new android.os.Handler()) {
+    private ContentObserver mAccelerometerRotationObserver = new ContentObserver(new Handler()) {
         // Per https://developer.android.com/reference/android/database/ContentObserver.html :
         // Delegate to ensure correct operation on older versions of the framework
         // that didn't have the onChange(boolean, Uri) method. (XXX do I need to worry about this? is framework runtime, or my compiletime?)
@@ -114,7 +127,7 @@ public class TheActivity extends android.app.Activity {
             System.out.println("            out TheActivity mAccelerometerRotationObserver onChange(selfChange="+selfChange+")");
         }
         @Override
-        public void onChange(boolean selfChange, android.net.Uri uri) {
+        public void onChange(boolean selfChange, Uri uri) {
             System.out.println("            in TheActivity mAccelerometerRotationObserver onChange(selfChange="+selfChange+", uri="+uri+")");
             try {
                 System.out.println("              Settings.System.ACCELEROMETER_ROTATION: "+Settings.System.getInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION));
@@ -131,7 +144,7 @@ public class TheActivity extends android.app.Activity {
             System.out.println("            out TheActivity mAccelerometerRotationObserver onChange(selfChange="+selfChange+", uri="+uri+")");
         }
     };  // mAccelerometerRotationObserver
-    android.database.ContentObserver mUserRotationObserver = new android.database.ContentObserver(new android.os.Handler()) {
+    ContentObserver mUserRotationObserver = new ContentObserver(new Handler()) {
         // Per https://developer.android.com/reference/android/database/ContentObserver.html :
         // Delegate to ensure correct operation on older versions of the framework
         // that didn't have the onChange(boolean, Uri) method. (XXX do I need to worry about this? is framework runtime, or my compiletime?)
@@ -142,7 +155,7 @@ public class TheActivity extends android.app.Activity {
             System.out.println("            out TheActivity mUserRotationObserver onChange(selfChange="+selfChange+")");
         }
         @Override
-        public void onChange(boolean selfChange, android.net.Uri uri) {
+        public void onChange(boolean selfChange, Uri uri) {
             System.out.println("            in TheActivity mUserRotationObserver onChange(selfChange="+selfChange+", uri="+uri+")");
             try {
                 System.out.println("              (Settings.System.ACCELEROMETER_ROTATION: "+Settings.System.getInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION)+")");
@@ -167,21 +180,21 @@ public class TheActivity extends android.app.Activity {
 
 
     @Override
-    protected void onCreate(android.os.Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState) {
         System.out.println("    in onCreate");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         // TODO: members
-        android.widget.Switch theServiceSwitch = (android.widget.Switch)findViewById(R.id.theServiceSwitch);
-        android.widget.Button theAppSettingsButton = (android.widget.Button)findViewById(R.id.theAppSettingsButton);
-        android.widget.Switch theWhackAMoleSwitch = (android.widget.Switch)findViewById(R.id.theWhackAMoleSwitch);
-        android.widget.Switch theAutoRotateSwitch = (android.widget.Switch)findViewById(R.id.theAutoRotateSwitch);
-        android.widget.Switch thePromptFirstSwitch = (android.widget.Switch)findViewById(R.id.thePromptFirstSwitch);
-        android.widget.Switch theOverrideSwitch = (android.widget.Switch)findViewById(R.id.theOverrideSwitch);
-        android.widget.Switch theRedSwitch = (android.widget.Switch)findViewById(R.id.theRedSwitch);
-        android.widget.Switch theMonitorSwitch = (android.widget.Switch)findViewById(R.id.theMonitorSwitch);
-        android.widget.TextView thePolledValuesHeaderTextView = (android.widget.TextView)findViewById(R.id.thePolledValuesHeaderTextView);
-        android.widget.TextView thePolledStatusTextView = (android.widget.TextView)findViewById(R.id.thePolledStatusTextView);
+        Switch theServiceSwitch = (Switch)findViewById(R.id.theServiceSwitch);
+        Button theAppSettingsButton = (Button)findViewById(R.id.theAppSettingsButton);
+        Switch theWhackAMoleSwitch = (Switch)findViewById(R.id.theWhackAMoleSwitch);
+        Switch theAutoRotateSwitch = (Switch)findViewById(R.id.theAutoRotateSwitch);
+        Switch thePromptFirstSwitch = (Switch)findViewById(R.id.thePromptFirstSwitch);
+        Switch theOverrideSwitch = (Switch)findViewById(R.id.theOverrideSwitch);
+        Switch theRedSwitch = (Switch)findViewById(R.id.theRedSwitch);
+        Switch theMonitorSwitch = (Switch)findViewById(R.id.theMonitorSwitch);
+        TextView thePolledValuesHeaderTextView = (TextView)findViewById(R.id.thePolledValuesHeaderTextView);
+        TextView thePolledStatusTextView = (TextView)findViewById(R.id.thePolledStatusTextView);
 
         theWhackAMoleSwitch.setChecked(TheService.mStaticWhackAMole);
         theAutoRotateSwitch.setChecked(TheService.mStaticAutoRotate);
@@ -193,8 +206,8 @@ public class TheActivity extends android.app.Activity {
         thePolledStatusTextView.setEnabled(mPolling);
 
         if (true) {
-            theWhackAMoleSwitch.setOnCheckedChangeListener(new android.widget.CompoundButton.OnCheckedChangeListener() {
-                public void onCheckedChanged(android.widget.CompoundButton buttonView, boolean isChecked) {
+            theWhackAMoleSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                     System.out.println("            in theWhackAMoleSwitch onCheckedChanged(isChecked=" + isChecked + ")");
                     TheService.mStaticWhackAMole = isChecked;
                     if (isChecked) {
@@ -204,9 +217,9 @@ public class TheActivity extends android.app.Activity {
                         } catch (SecurityException e) {
                             // XXX dup code
                             System.out.println("          Oh no, can't set system settings-- were permissions revoked?");
-                            android.widget.Toast.makeText(TheActivity.this, " Oh no, can't set system settings-- were permissions revoked?\nHere, please grant the permission.", android.widget.Toast.LENGTH_SHORT).show();
-                            android.content.Intent grantIntent = new android.content.Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
-                            grantIntent.setData(android.net.Uri.parse("package:"+getPackageName()));
+                            Toast.makeText(TheActivity.this, " Oh no, can't set system settings-- were permissions revoked?\nHere, please grant the permission.", Toast.LENGTH_SHORT).show();
+                            Intent grantIntent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
+                            grantIntent.setData(Uri.parse("package:"+getPackageName()));
                             System.out.println("              grantIntent = "+grantIntent);
                             System.out.println("              calling startActivity with ACTION_MANAGE_WRITE_SETTINGS");
                             startActivity(grantIntent);
@@ -220,13 +233,13 @@ public class TheActivity extends android.app.Activity {
         if (true) {
             // I had a "force stop" button, but it's almost as easy to just let the user get to it through the "app settings" button, it's 2 clicks.  Force stop is probably hard to implement.
             // http://android.stackexchange.com/questions/33801/what-does-the-force-stop-button-mean#answer-48167
-            theAppSettingsButton.setOnClickListener(new android.view.View.OnClickListener() {
+            theAppSettingsButton.setOnClickListener(new View.OnClickListener() {
                 @Override
-                public void onClick(android.view.View v) {
+                public void onClick(View v) {
                     System.out.println("            in theAppSettingsButton onClick");
                     startActivityForResult(
-                        new android.content.Intent(
-                            android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                        new Intent(
+                            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
                             Uri.parse("package:"+getPackageName())),
                         0);
                     System.out.println("            out theAppSettingsButton onClick");
@@ -234,8 +247,8 @@ public class TheActivity extends android.app.Activity {
             });
         }
         if (true) {
-            theAutoRotateSwitch.setOnCheckedChangeListener(new android.widget.CompoundButton.OnCheckedChangeListener() {
-                public void onCheckedChanged(android.widget.CompoundButton buttonView, boolean isChecked) {
+            theAutoRotateSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                     System.out.println("            in theAutoRotateSwitch onCheckedChanged(isChecked=" + isChecked + ")");
                     TheService.mStaticAutoRotate = isChecked;
                     if (isChecked) {
@@ -252,8 +265,8 @@ public class TheActivity extends android.app.Activity {
             });
         }
         if (true) {
-            thePromptFirstSwitch.setOnCheckedChangeListener(new android.widget.CompoundButton.OnCheckedChangeListener() {
-                public void onCheckedChanged(android.widget.CompoundButton buttonView, boolean isChecked) {
+            thePromptFirstSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                     System.out.println("            in thePromptFirstSwitch onCheckedChanged(isChecked=" + isChecked + ")");
                     TheService.mStaticPromptFirst = isChecked;
                     // No immediate effect; this setting just modifies the behavior of autorotate
@@ -262,8 +275,8 @@ public class TheActivity extends android.app.Activity {
             });
         }
         if (true) {
-            theOverrideSwitch.setOnCheckedChangeListener(new android.widget.CompoundButton.OnCheckedChangeListener() {
-                public void onCheckedChanged(android.widget.CompoundButton buttonView, boolean isChecked) {
+            theOverrideSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                     System.out.println("            in theOverrideSwitch onCheckedChanged(isChecked=" + isChecked + ")");
                     TheService.mStaticOverride = isChecked;
                     // No immediate effect; this setting just modifies the behavior of autorotate
@@ -273,8 +286,8 @@ public class TheActivity extends android.app.Activity {
             });
         }
         if (true) {
-            theRedSwitch.setOnCheckedChangeListener(new android.widget.CompoundButton.OnCheckedChangeListener() {
-                public void onCheckedChanged(android.widget.CompoundButton buttonView, boolean isChecked) {
+            theRedSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                     System.out.println("            in theRedSwitch onCheckedChanged(isChecked=" + isChecked + ")");
                     TheService.mStaticRed = isChecked;
                     // No immediate effect; this setting just modifies the behavior of autorotate
@@ -284,12 +297,12 @@ public class TheActivity extends android.app.Activity {
             });
         }
         if (true) {
-            theMonitorSwitch.setOnCheckedChangeListener(new android.widget.CompoundButton.OnCheckedChangeListener() {
-                public void onCheckedChanged(android.widget.CompoundButton buttonView, boolean isChecked) {
+            theMonitorSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                     System.out.println("            in theMonitorSwitch onCheckedChanged(isChecked=" + isChecked + ")");
                     mPolling = isChecked;
-                    android.widget.TextView thePolledValuesHeaderTextView = (android.widget.TextView)findViewById(R.id.thePolledValuesHeaderTextView);
-                    android.widget.TextView thePolledStatusTextView = (android.widget.TextView)findViewById(R.id.thePolledStatusTextView);
+                    TextView thePolledValuesHeaderTextView = (TextView)findViewById(R.id.thePolledValuesHeaderTextView);
+                    TextView thePolledStatusTextView = (TextView)findViewById(R.id.thePolledStatusTextView);
                     thePolledValuesHeaderTextView.setEnabled(mPolling);
                     thePolledStatusTextView.setEnabled(mPolling);
                     mPollingHandler.removeCallbacks(mPollingRunnable);  // ok if it wasn't scheduled
@@ -303,41 +316,41 @@ public class TheActivity extends android.app.Activity {
             });
         }
         if (true) {
-            theServiceSwitch.setOnCheckedChangeListener(new android.widget.CompoundButton.OnCheckedChangeListener() {
-                public void onCheckedChanged(android.widget.CompoundButton buttonView, boolean isChecked) {
+            theServiceSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                     System.out.println("            in theServiceSwitch onCheckedChanged(isChecked=" + isChecked + ")");
                     if (mSettingCheckedFromProgram) {
                         System.out.println("              (from program; not doing anything)");
                     } else {
                         if (isChecked) {
                             System.out.println("              calling startService");
-                            startService(new android.content.Intent(TheActivity.this, TheService.class));
+                            startService(new Intent(TheActivity.this, TheService.class));
                             System.out.println("              returned from startService");
                             if (false) {
                                 // Make sure we can't mess up service's notion of whether it's running,
                                 // by sending a whole flurry of stuff.
                                 // NOTE: this does seem to confuse the notification icon! or, it did, before I started checking for mSettingCheckedFromProgram
-                                startService(new android.content.Intent(TheActivity.this, TheService.class));
-                                stopService(new android.content.Intent(TheActivity.this, TheService.class));
-                                stopService(new android.content.Intent(TheActivity.this, TheService.class));
-                                startService(new android.content.Intent(TheActivity.this, TheService.class));
-                                startService(new android.content.Intent(TheActivity.this, TheService.class));
+                                startService(new Intent(TheActivity.this, TheService.class));
+                                stopService(new Intent(TheActivity.this, TheService.class));
+                                stopService(new Intent(TheActivity.this, TheService.class));
+                                startService(new Intent(TheActivity.this, TheService.class));
+                                startService(new Intent(TheActivity.this, TheService.class));
                             }
                             System.out.println("              setting text to \"Service is on  \"");
                             buttonView.setText("Service is on  "); // we assume startService is reliable
                         } else {
                             System.out.println("              calling stopService");
-                            stopService(new android.content.Intent(TheActivity.this, TheService.class));
+                            stopService(new Intent(TheActivity.this, TheService.class));
                             System.out.println("              returned from stopService");
                             if (false) {
                                 // Make sure we can't mess up service's notion of whether it's running,
                                 // by sending a whole flurry of stuff
                                 // NOTE: this does seem to confuse the notification icon!
-                                stopService(new android.content.Intent(TheActivity.this, TheService.class));
-                                startService(new android.content.Intent(TheActivity.this, TheService.class));
-                                startService(new android.content.Intent(TheActivity.this, TheService.class));
-                                stopService(new android.content.Intent(TheActivity.this, TheService.class));
-                                stopService(new android.content.Intent(TheActivity.this, TheService.class));
+                                stopService(new Intent(TheActivity.this, TheService.class));
+                                startService(new Intent(TheActivity.this, TheService.class));
+                                startService(new Intent(TheActivity.this, TheService.class));
+                                stopService(new Intent(TheActivity.this, TheService.class));
+                                stopService(new Intent(TheActivity.this, TheService.class));
                             }
                             System.out.println("              setting text to \"Service is off \"");
                             buttonView.setText("Service is off "); // we assume stopService is reliable
@@ -352,7 +365,7 @@ public class TheActivity extends android.app.Activity {
         // (Can also manually grant/ungrant by Settings -> Apps -> <this app> -> Modify system settings -> Yes/No, *if* activity is not running. (Force Stop first if it is))
         // Actually I think I can grant/ungrant on the fly, but the Settings switch gets out of sync with what it really is.  This is a reported bug, I think.
         if (!android.provider.Settings.System.canWrite(this)) {
-            android.content.Intent grantIntent = new android.content.Intent(android.provider.Settings.ACTION_MANAGE_WRITE_SETTINGS, android.net.Uri.parse("package:"+getPackageName()));
+            Intent grantIntent = new Intent(android.provider.Settings.ACTION_MANAGE_WRITE_SETTINGS, android.net.Uri.parse("package:"+getPackageName()));
             System.out.println("              grantIntent = "+grantIntent);
             System.out.println("              calling startActivity with ACTION_MANAGE_WRITE_SETTINGS");
             startActivity(grantIntent);
@@ -362,7 +375,7 @@ public class TheActivity extends android.app.Activity {
         }
 
         if (!android.provider.Settings.canDrawOverlays(this)) {
-            android.content.Intent grantIntent = new android.content.Intent(android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION, android.net.Uri.parse("package:"+getPackageName()));
+            Intent grantIntent = new Intent(android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION, android.net.Uri.parse("package:"+getPackageName()));
             System.out.println("              grantIntent = "+grantIntent);
             System.out.println("              calling startActivity with ACTION_MANAGE_OVERLAY_PERMISSION");
             startActivity(grantIntent); // XXX that example uses startActivityForResult. maybe use that when needed on the fly?
@@ -378,7 +391,7 @@ public class TheActivity extends android.app.Activity {
     }
 
     private void updateAccelerometerOrientationDegreesTextView() {
-        android.widget.TextView theAccelerometerOrientationDegreesTextView = (android.widget.TextView)findViewById(R.id.theAccelerometerOrientationDegreesTextView);
+        TextView theAccelerometerOrientationDegreesTextView = (TextView)findViewById(R.id.theAccelerometerOrientationDegreesTextView);
 
         // Can I just query the current value of the accelerometer, without registering a changed-listener??
 
@@ -447,7 +460,7 @@ public class TheActivity extends android.app.Activity {
     }
 
     private void updateAccelerometerRotationTextView() {
-        android.widget.TextView theAccelerometerRotationTextView = (android.widget.TextView)findViewById(R.id.theAccelerometerRotationTextView);
+        TextView theAccelerometerRotationTextView = (TextView)findViewById(R.id.theAccelerometerRotationTextView);
         try {
             int accelerometerRotation = Settings.System.getInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION);
             theAccelerometerRotationTextView.setText("  Settings.System.ACCELEROMETER_ROTATION: "+accelerometerRotation);
@@ -457,7 +470,7 @@ public class TheActivity extends android.app.Activity {
         }
     }
     private void updateUserRotationTextView() {
-        android.widget.TextView theUserRotationTextView = (android.widget.TextView)findViewById(R.id.theUserRotationTextView);
+        TextView theUserRotationTextView = (TextView)findViewById(R.id.theUserRotationTextView);
         try {
             int userRotation = Settings.System.getInt(getContentResolver(), Settings.System.USER_ROTATION);
             theUserRotationTextView.setText("  Settings.System.USER_ROTATION: "+TheService.surfaceRotationConstantToString(userRotation));
@@ -467,13 +480,13 @@ public class TheActivity extends android.app.Activity {
         }
     }
     private void updateConfigurationOrientationTextView() {
-        android.widget.TextView theConfigurationOrientationTextView = (android.widget.TextView)findViewById(R.id.theConfigurationOrientationTextView);
+        TextView theConfigurationOrientationTextView = (TextView)findViewById(R.id.theConfigurationOrientationTextView);
         //theConfigurationOrientationTextView.setText("  getResources().getConfiguration().orientation = " + TheService.orientationConstantToString(getResources().getConfiguration().orientation));
         // CBB: this is a lie, but it is probably the same as the truth.  should really use newConfig.orientation, except at beginning at which time we should use and say getResources().getConfiguration().orientation
         theConfigurationOrientationTextView.setText("  onConfigurationChanged newConfig.orientation = " + TheService.orientationConstantToString(getResources().getConfiguration().orientation));
     }
     private void updatePolledStatusTextView() {
-        android.widget.TextView thePolledStatusTextView = (android.widget.TextView)findViewById(R.id.thePolledStatusTextView);
+        TextView thePolledStatusTextView = (TextView)findViewById(R.id.thePolledStatusTextView);
         int accelerometerRotation = -1;
         boolean gotAccelerometerRotation = false;
         int userRotation = -1;
@@ -498,7 +511,7 @@ public class TheActivity extends android.app.Activity {
         message += ("  getWindowManager().getDefaultDisplay().getRotation() = " + TheService.surfaceRotationConstantToString(getWindowManager().getDefaultDisplay().getRotation()));
         thePolledStatusTextView.setText(message);
 
-        android.widget.TextView thePolledValuesHeader = (android.widget.TextView)findViewById(R.id.thePolledValuesHeaderTextView);
+        TextView thePolledValuesHeader = (TextView)findViewById(R.id.thePolledValuesHeaderTextView);
         mNumUpdates++;
         thePolledValuesHeader.setText("Polled values:  ("+mNumUpdates+" update"+(mNumUpdates==1?"":"s")+")");
     }
@@ -507,7 +520,7 @@ public class TheActivity extends android.app.Activity {
     protected void onStart() {
         System.out.println("        in onStart");
         super.onStart();
-        android.widget.Switch theServiceSwitch = (android.widget.Switch)findViewById(R.id.theServiceSwitch);
+        Switch theServiceSwitch = (Switch)findViewById(R.id.theServiceSwitch);
 
         boolean serviceIsRunning = TheService.theRunningService != null;
         System.out.println("          calling theServiceSwitch.setChecked("+serviceIsRunning+")");
@@ -533,7 +546,7 @@ public class TheActivity extends android.app.Activity {
         super.onResume();
 
         {
-            android.support.v4.content.LocalBroadcastManager.getInstance(this).registerReceiver(mBroadcastReceiver, new android.content.IntentFilter("degrees changed") {{
+            android.support.v4.content.LocalBroadcastManager.getInstance(this).registerReceiver(mBroadcastReceiver, new IntentFilter("degrees changed") {{
                 addAction("mStaticPromptFirst changed");
                 addAction("mStaticClosestCompassPoint changed");
             }});
@@ -597,17 +610,17 @@ public class TheActivity extends android.app.Activity {
     // Note, in order for this to be called (rather than the system stopping and restarting
     // the activity), the manifest must have "orientation|screenSize" in android:configChanges
     @Override
-    public void onConfigurationChanged(android.content.res.Configuration newConfig) {
+    public void onConfigurationChanged(Configuration newConfig) {
         System.out.println("in onConfigurationChanged");
         super.onConfigurationChanged(newConfig);
         System.out.println("  newConfig = "+newConfig);
         System.out.println("  newConfig.orientation = "+TheService.orientationConstantToString(newConfig.orientation));
 
         {
-            android.widget.Switch theOverrideSwitch = (android.widget.Switch)findViewById(R.id.theOverrideSwitch);
-            android.widget.Switch theRedSwitch = (android.widget.Switch)findViewById(R.id.theRedSwitch);
+            Switch theOverrideSwitch = (Switch)findViewById(R.id.theOverrideSwitch);
+            Switch theRedSwitch = (Switch)findViewById(R.id.theRedSwitch);
             RelativeLayout.LayoutParams redSwitchLayoutParams = ((RelativeLayout.LayoutParams)theRedSwitch.getLayoutParams());
-            if (newConfig.orientation == android.content.res.Configuration.ORIENTATION_PORTRAIT) {
+            if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT) {
                 // put red switch below override switch, right-aligned with it
                 System.out.println("  putting red switch below and right-aligned with override switch");
                 redSwitchLayoutParams.removeRule(RelativeLayout.RIGHT_OF);
@@ -616,7 +629,7 @@ public class TheActivity extends android.app.Activity {
                 redSwitchLayoutParams.addRule(RelativeLayout.ALIGN_RIGHT, theOverrideSwitch.getId());
                 //layout_below = theOverrideSwitch;
                 //theRedSwitch.alignRight = theOverrideSwitch;
-            } else if (newConfig.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) {
+            } else if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
                 // put red switch to right of override switch, top-aligned with it
                 //theRedSwitch.layout_toRightOf = theOverrideSwitch;
                 //theRedSwitch.alignTop = theOverrideSwitch;

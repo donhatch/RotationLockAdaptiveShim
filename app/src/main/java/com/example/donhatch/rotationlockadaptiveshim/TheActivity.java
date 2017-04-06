@@ -1,4 +1,5 @@
 //
+// BUG: dial rotation wrong initially
 // BUG: why does there seem to be a delay after I click "yes" and before it rotates? seems more responsive when it's not prompting
 // BUG: when turning *off* overlay and it's red, it flashes off-on-off
 // BUG: if service is started while permissions aren't there (say, were revoked),
@@ -6,6 +7,7 @@
 // BUG: if permission revoked in midstream and double-opt-in-dance is done,
 //       if activity isn't up, and it's the first time,
 //       the system settings screen is (sometimes) delayed until after the toast disappears!
+// TODO: smooth out degrees signal
 // TODO: better communication from activity to service:
 //         - when override or red toggled, should update the overlay immediately
 // TODO: better communication from service to activity:
@@ -14,9 +16,11 @@
 //         - Put title at top of activity screen
 //         - uncrowd ui
 //         - put bottom stuff in "advanced" or "debug" or "devel" section, closed by default
+//         - put current line ("up" if static dial, towards screen top if moving dial) and current effective quadrant bounds on dial, in red probably
+//         - maybe option for different dial display style, where numbers stay with screen and only up vector moves?  (would have to reverse the numbers on the dial)
 // TODO: enhance ui functionality
-//         - display a dial with current orientation
-//         - make values turn red when they change and then fade to black? hmm
+//         - toggle switch to turn on/off dial?
+//         - make listened/polled values turn red when they change and then fade to black? hmm
 // TODO: actually make it work correctly when activity restarts due to orientation: remove the thing from the manifest? maybe worth a try
 // TODO: if permission got revoked and we re-do the double-opt-in-dance, we end up not having written the value... I think? have to think about the consequences. maybe not too bad.
 // TODO: ask question on stackoverflow about interaction between
@@ -44,6 +48,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.Settings;
+import android.view.Surface;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CompoundButton;
@@ -64,8 +69,10 @@ public class TheActivity extends Activity {
     // We set this temporarily while setting the checkbox from the program,
     // so that the onCheckedChanged listener can tell that's what happened.
     private boolean mSettingCheckedFromProgram = false;
+
     private long mNumUpdates = 0;
     private boolean mPolling = false;  // TODO: make this a shared preference so it will persist?
+    private int mMostRecentConfigurationOrientation = -1;  // from most recent onConfigurationChanged, or getResources().getConfiguration().orientation initially
 
     public static TheActivity theRunningActivity = null; // actually not sure there is guaranteed to be at most one
 
@@ -88,17 +95,33 @@ public class TheActivity extends Activity {
                 //System.out.println("                in onReceive: "+intent.getAction());
                 int oldDegrees = intent.getIntExtra("old degrees", -100);
                 int newDegrees = intent.getIntExtra("new degrees", -100);
-                //System.out.println("                  intent.getIntExtra(\"old degrees\") = "+oldDegrees);
-                //System.out.println("                  intent.getIntExtra(\"new degrees\") = "+newDegrees);
+                double oldDegreesSmoothed = intent.getDoubleExtra("old degrees smoothed", -100.);
+                double newDegreesSmoothed = intent.getDoubleExtra("new degrees smoothed", -100.);
+                //System.out.println("                  intent.getDoubleExtra(\"old degrees\") = "+oldDegrees);
+                //System.out.println("                  intent.getDoubleExtra(\"new degrees\") = "+newDegrees);
+                //System.out.println("                  intent.getDoubleExtra(\"old degrees smoothed\") = "+oldDegreesSmoothed);
+                //System.out.println("                  intent.getDoubleExtra(\"new degrees smoothed\") = "+newDegreesSmoothed);
                 TextView theAccelerometerOrientationDegreesTextView = (TextView)findViewById(R.id.theAccelerometerOrientationDegreesTextView);
                 theAccelerometerOrientationDegreesTextView.setText("  accelerometer degrees (most recent update): "+oldDegrees+" -> "+newDegrees);
 
                 if (true) {
                     ImageView theDialImageView = (ImageView)findViewById(R.id.theDialImageView);
 
-                    // TODO: adjust by current orientation!
-                    theDialImageView.setRotation(90 - newDegrees);
+                    double newDialRotation = 90. - newDegreesSmoothed;
 
+                    int currentDisplayRotation = getWindowManager().getDefaultDisplay().getRotation();
+                    // sign determined by dog science
+                    switch (currentDisplayRotation) {
+                        case Surface.ROTATION_0: newDialRotation -= 0; break;
+                        case Surface.ROTATION_90: newDialRotation -= 90; break;
+                        case Surface.ROTATION_180: newDialRotation -= 180; break;
+                        case Surface.ROTATION_270: newDialRotation -= 270; break;
+                        default: CHECK(false);
+                    }
+
+                    theDialImageView.setRotation((float)newDialRotation);
+
+                    // XXX not sure what I want here
                     theDialImageView.setScaleX(1.f);
                     theDialImageView.setScaleY(1.f);
                 }
@@ -493,12 +516,14 @@ public class TheActivity extends Activity {
             theUserRotationTextView.setText("  Settings.System.USER_ROTATION setting not found!?");
         }
     }
+
+    // set the text view to mMostRecentConfigurationOrientation.
     private void updateConfigurationOrientationTextView() {
         TextView theConfigurationOrientationTextView = (TextView)findViewById(R.id.theConfigurationOrientationTextView);
-        //theConfigurationOrientationTextView.setText("  getResources().getConfiguration().orientation = " + TheService.orientationConstantToString(getResources().getConfiguration().orientation));
-        // CBB: this is a lie, but it is probably the same as the truth.  should really use newConfig.orientation, except at beginning at which time we should use and say getResources().getConfiguration().orientation
-        theConfigurationOrientationTextView.setText("  onConfigurationChanged newConfig.orientation = " + TheService.orientationConstantToString(getResources().getConfiguration().orientation));
+        // XXX this is a lie the first time-- maybe make that a parameter
+        theConfigurationOrientationTextView.setText("  onConfigurationChanged newConfig.orientation = " + TheService.orientationConstantToString(mMostRecentConfigurationOrientation));
     }
+
     private void updatePolledStatusTextView() {
         TextView thePolledStatusTextView = (TextView)findViewById(R.id.thePolledStatusTextView);
         int accelerometerRotation = -1;
@@ -520,6 +545,7 @@ public class TheActivity extends Activity {
         message += "\n";
         message += (gotUserRotation ? "  Settings.System.USER_ROTATION: "+TheService.surfaceRotationConstantToString(userRotation) : "[no Settings.System.USER_ROTATION]");
         message += "\n";
+        // XXX assert it's equal to mMostRecentConfigurationOrientation?  not sure, they might be slightly out of sync temporarily
         message += ("  getResources().getConfiguration().orientation = " + TheService.orientationConstantToString(getResources().getConfiguration().orientation));
         message += "\n";
         message += ("  getWindowManager().getDefaultDisplay().getRotation() = " + TheService.surfaceRotationConstantToString(getWindowManager().getDefaultDisplay().getRotation()));
@@ -584,6 +610,8 @@ public class TheActivity extends Activity {
           }
         }
 
+        mMostRecentConfigurationOrientation = getResources().getConfiguration().orientation;
+
         updateAccelerometerOrientationDegreesTextView();
         updateAccelerometerRotationTextView();
         updateUserRotationTextView();
@@ -630,6 +658,9 @@ public class TheActivity extends Activity {
         System.out.println("  newConfig = "+newConfig);
         System.out.println("  newConfig.orientation = "+TheService.orientationConstantToString(newConfig.orientation));
 
+        mMostRecentConfigurationOrientation = newConfig.orientation;
+        updateConfigurationOrientationTextView();
+
         {
             Switch theOverrideSwitch = (Switch)findViewById(R.id.theOverrideSwitch);
             Switch theRedSwitch = (Switch)findViewById(R.id.theRedSwitch);
@@ -654,9 +685,6 @@ public class TheActivity extends Activity {
                 redSwitchLayoutParams.addRule(RelativeLayout.ALIGN_TOP, theOverrideSwitch.getId());
             }
         }
-
-        // CBB: should get it from newConfig! probably same answer but maybe not if several changes happen in rapid succession?
-        updateConfigurationOrientationTextView();
 
         System.out.println("out onConfigurationChanged");
     }

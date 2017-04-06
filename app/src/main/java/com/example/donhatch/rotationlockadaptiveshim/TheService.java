@@ -49,6 +49,27 @@ public class TheService extends Service {
             throw new AssertionError("CHECK failed");
         }
     }
+    // return from plus or minus some multiple of 360 so it's as close as possible to closeTo
+    private static double adjustDegrees(double from, double closeTo) {
+        while (from < closeTo - 180.) from += 360.;
+        while (from > closeTo + 180.) from -= 360.;
+        return from;
+    }
+    private static double clamp(double x, double a, double b) {
+        return x <= a ? a : x >= b ? b : x;
+    }
+    private static double pullDegreesAlmostTo(double oldDegrees, double almostNewDegrees, double slack)
+    {
+        oldDegrees = adjustDegrees(oldDegrees, almostNewDegrees);
+        double answer = clamp(oldDegrees, almostNewDegrees - slack, almostNewDegrees + slack);
+        if (answer >= 360.) {
+            answer -= 360.;
+        } else if (answer < 0.) {
+            answer += 360.;
+        }
+        return answer;
+    }
+
 
     public static TheService theRunningService = null;
     public boolean mHasBeenDestroyed = false;
@@ -59,6 +80,7 @@ public class TheService extends Service {
 
     // These are static to avoid having to think about when the service isn't running.
     public static int mStaticDegrees = -1; // most recent value passed to onOrientationChanged listener of any TheService instance.
+    public static double mStaticDegreesSmoothed = -1.; // most recent value passed to onOrientationChanged listener of any TheService instance.
     public static boolean mStaticDegreesIsValid = false;
     public static int mStaticClosestCompassPoint = -1; // means invalid
     private OrientationEventListener mOrientationEventListener;
@@ -155,6 +177,7 @@ public class TheService extends Service {
     // this one has a public setter/getter
     private static boolean mStaticRed = false; // TODO: make this a shared preference? the activity is the one who sets this
 
+    // XXX TODO: call it SurfaceRotationConstant instead?
     private static int closestCompassPointToUserRotation(int closestCompassPoint) {
         switch (closestCompassPoint) {
             case 0: return Surface.ROTATION_0;
@@ -687,9 +710,17 @@ public class TheService extends Service {
                         if (mVerboseLevel == 1) System.out.println("        out onOrientationChanged(degrees="+degrees+")"); // upgrade verbosity threshold from 2 to 1
                     }
                 }
+
+                // XXX ARGH! I think this should be done *before* the closestCompassPoint determination?
                 int oldDegrees = mStaticDegrees;
+                double oldDegreesSmoothed = mStaticDegreesSmoothed;
+
+                double slack = 2.5;
                 int newDegrees = degrees;
+                double newDegreesSmoothed = pullDegreesAlmostTo(oldDegreesSmoothed, (double)newDegrees, slack);
+
                 mStaticDegrees = newDegrees;
+                mStaticDegreesSmoothed = newDegreesSmoothed;
                 mStaticDegreesIsValid = true;
                 {
                     // Pretty lame to do this if there's no activity listening,
@@ -699,6 +730,8 @@ public class TheService extends Service {
                     Intent intent = new Intent("degrees changed");
                     intent.putExtra("old degrees", oldDegrees);
                     intent.putExtra("new degrees", newDegrees);
+                    intent.putExtra("old degrees smoothed", oldDegreesSmoothed);
+                    intent.putExtra("new degrees smoothed", newDegreesSmoothed);
                     LocalBroadcastManager.getInstance(TheService.this).sendBroadcast(intent);
                 }
 

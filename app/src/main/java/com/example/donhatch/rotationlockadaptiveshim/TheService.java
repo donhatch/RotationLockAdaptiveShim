@@ -172,6 +172,35 @@ public class TheService extends Service {
         }
     };  // mUserRotationObserver
 
+    private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (mVerboseLevel >= 1) Log.i(TAG, "        in onReceive(intent.getAction()="+intent.getAction()+")");
+            if (intent.getAction().equals(Intent.ACTION_SCREEN_OFF)) {
+                if (mVerboseLevel >= 1) Log.i(TAG, "          ACTION_SCREEN_OFF: disabling orientation event listener");
+                mOrientationEventListener.disable();
+            } else if (intent.getAction().equals(Intent.ACTION_SCREEN_ON)) {
+                // same thing we do on create (dup code)
+                if (mOrientationEventListener.canDetectOrientation() == true) {
+                    if (mVerboseLevel >= 1) Log.i(TAG, "          ACTION_SCREEN_ON and can detect orientation, enabling orientation event listener");
+                    mOrientationEventListener.enable();
+                } else {
+                    if (mVerboseLevel >= 1) Log.i(TAG, "          ACTION_SCREEN_ON but cannot detect orientation, disabling orientation event listener");
+                    mOrientationEventListener.disable();
+                }
+            } else if (intent.getAction().equals(Intent.ACTION_USER_PRESENT)) {
+                if (mVerboseLevel >= 1) Log.i(TAG, "          ACTION_USER_PRESENT");
+                // XXX TODO: figure out whether there's something meaningful to do here
+            } else {
+                // This shouldn't happen
+                Log.i(TAG, "          received unexpected broadcast: "+intent.getAction()+" (this shouldn't happen)");
+                CHECK(false);
+            }
+            if (mVerboseLevel >= 1) Log.i(TAG, "        out onReceive(intent.getAction()="+intent.getAction()+")");
+        };
+    };  // mBroadcastReceiver
+
+
     public static boolean mStaticWhackAMole = true; // TODO: make this a shared preference? the activity is the one who sets this
     public static boolean mStaticAutoRotate = true; // TODO: make this a shared preference? the activity is the one who sets this
     public static boolean mStaticPromptFirst = true; // TODO: make this a shared preference? the activity is the one who sets this
@@ -765,33 +794,7 @@ public class TheService extends Service {
             intentFilter.addAction(Intent.ACTION_SCREEN_OFF);
             intentFilter.addAction(Intent.ACTION_SCREEN_ON);
             intentFilter.addAction(Intent.ACTION_USER_PRESENT);
-            registerReceiver(new BroadcastReceiver() {
-                @Override
-                public void onReceive(Context context, Intent intent) {
-                    if (mVerboseLevel >= 1) Log.i(TAG, "        in onReceive(intent.getAction()="+intent.getAction()+")");
-                    if (intent.getAction().equals(Intent.ACTION_SCREEN_OFF)) {
-                        if (mVerboseLevel >= 1) Log.i(TAG, "          ACTION_SCREEN_OFF: disabling orientation event listener");
-                        mOrientationEventListener.disable();
-                    } else if (intent.getAction().equals(Intent.ACTION_SCREEN_ON)) {
-                        // same thing we do on create (dup code)
-                        if (mOrientationEventListener.canDetectOrientation() == true) {
-                            if (mVerboseLevel >= 1) Log.i(TAG, "          ACTION_SCREEN_ON and can detect orientation, enabling orientation event listener");
-                            mOrientationEventListener.enable();
-                        } else {
-                            if (mVerboseLevel >= 1) Log.i(TAG, "          ACTION_SCREEN_ON but cannot detect orientation, disabling orientation event listener");
-                            mOrientationEventListener.disable();
-                        }
-                    } else if (intent.getAction().equals(Intent.ACTION_USER_PRESENT)) {
-                        if (mVerboseLevel >= 1) Log.i(TAG, "          ACTION_USER_PRESENT");
-                        // XXX TODO: figure out whether there's something meaningful to do here
-                    } else {
-                        // This shouldn't happen
-                        Log.i(TAG, "          received unexpected broadcast: "+intent.getAction()+" (this shouldn't happen)");
-                        CHECK(false);
-                    }
-                    if (mVerboseLevel >= 1) Log.i(TAG, "        out onReceive(intent.getAction()="+intent.getAction()+")");
-                };
-            }, intentFilter);
+            registerReceiver(mBroadcastReceiver, intentFilter);
         }
         if (mVerboseLevel >= 1) Log.i(TAG, "                        out TheService.onCreate");
     }  // onCreate
@@ -903,10 +906,19 @@ public class TheService extends Service {
 
         getContentResolver().unregisterContentObserver(mAccelerometerRotationObserver);
         mAccelerometerRotationObserver = null;
+
+        getContentResolver().unregisterContentObserver(mUserRotationObserver);
+        mUserRotationObserver = null;
+
         mOrientationEventListener.disable();
         mOrientationEventListener = null;
+
+        unregisterReceiver(mBroadcastReceiver);
+        mBroadcastReceiver = null;
+
         theRunningService = null;
         mHasBeenDestroyed = true;
+
         // Reasons we might be getting stopped while activity is still running:
         // - user toggled the switch in the activity
         // - something else called stopService

@@ -533,7 +533,7 @@ public class TheService extends Service {
                                         if (mVerboseLevel == 1) Log.i(TAG, "          attempting to pop up an AlertDialog");
 
                                         // Don't use an AlertDialog.Builder, since that's incompatible with custom onTouchEvent.
-                                        // (TODO:  although... could I use a View.OnTouchListener insted?)
+                                        // (TODO:  although... could I use a View.OnTouchListener instead?)
                                         final AlertDialog alertDialog = new AlertDialog(TheService.this) {
                                             @Override
                                             public boolean onTouchEvent(MotionEvent motionEvent) {
@@ -541,9 +541,10 @@ public class TheService extends Service {
                                                 if (mVerboseLevel == 1) Log.i(TAG, "              motionEvent.getActionMasked()="+motionEventActionMaskedConstantToString(motionEvent.getActionMasked()));
                                                 if (motionEvent.getActionMasked() == MotionEvent.ACTION_OUTSIDE) {
                                                     if (mVerboseLevel == 1) Log.i(TAG, "              touch outside dialog! cancelling");
-                                                    CHECK(mCleanupDialog != null); // XXX not completely confident in this
-                                                    mCleanupDialog.run();
-                                                    mCleanupDialog = null;
+                                                    if (mCleanupDialog != null) {
+                                                      mCleanupDialog.run();
+                                                      mCleanupDialog = null;
+                                                    }
                                                 } else {
                                                     if (mVerboseLevel == 1) Log.i(TAG, "              touch inside dialog; ignoring");
                                                 }
@@ -572,34 +573,38 @@ public class TheService extends Service {
                                                 if (mVerboseLevel == 1) Log.i(TAG, "              sending \"mStaticPromptFirst changed\" broadcast");
                                                 LocalBroadcastManager.getInstance(TheService.this).sendBroadcast(intent);
                                                 if (mVerboseLevel == 1) Log.i(TAG, "              sent \"mStaticPromptFirst changed\" broadcast");
-                                                mCleanupDialog.run();
-                                                mCleanupDialog = null;
+                                                if (mCleanupDialog != null) {
+                                                  mCleanupDialog.run();
+                                                  mCleanupDialog = null;
+                                                }
                                                 doTheAutoRotateThingNow();
                                                 if (mVerboseLevel == 1) Log.i(TAG, "            out alertDialog neutral button onClick");
-                                            };
+                                            }
                                         });
                                         alertDialog.setButton(AlertDialog.BUTTON_NEGATIVE, "No", new DialogInterface.OnClickListener() {
                                             @Override
                                             public void onClick(DialogInterface dialog, int id) {
                                                 if (mVerboseLevel == 1) Log.i(TAG, "            in alertDialog negative button onClick");
                                                 // XXX is this evidence for why it's good to always delay?
-                                                CHECK(mCleanupDialog != null);
-                                                mCleanupDialog.run();
-                                                mCleanupDialog = null;
+                                                if (mCleanupDialog != null) {
+                                                  mCleanupDialog.run();
+                                                  mCleanupDialog = null;
+                                                }
                                                 if (mVerboseLevel == 1) Log.i(TAG, "            out alertDialog negative button onClick");
-                                            };
+                                            }
                                         });
                                         alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, "Yes", new DialogInterface.OnClickListener() {
                                             @Override
                                             public void onClick(DialogInterface dialog, int id) {
                                                 if (mVerboseLevel == 1) Log.i(TAG, "            in alertDialog positive button onClick");
                                                 // XXX is this evidence for why it's good to always delay?
-                                                CHECK(mCleanupDialog != null);
-                                                mCleanupDialog.run();
-                                                mCleanupDialog = null;
+                                                if (mCleanupDialog != null) {
+                                                  mCleanupDialog.run();
+                                                  mCleanupDialog = null;
+                                                }
                                                 doTheAutoRotateThingNow();
                                                 if (mVerboseLevel == 1) Log.i(TAG, "            out alertDialog positive button onClick");
-                                            };
+                                            }
                                         });
 
 

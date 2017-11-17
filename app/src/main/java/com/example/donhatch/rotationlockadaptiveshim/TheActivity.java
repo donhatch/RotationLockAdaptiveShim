@@ -1,5 +1,6 @@
 //
-// BUG: dial rotation wrong initially
+// BUG: red line not in principled position. totally wrong when landscape.
+// BUG: in emulator, when screen layout changes, dial orientation doesn't get updated.  I didn't notice this on real device, because accelerometer event comes in almost immediately.
 // BUG: why does there seem to be a delay after I click "yes" and before it rotates? seems more responsive when it's not prompting
 // BUG: when turning *off* overlay and it's red, it flashes off-on-off
 // BUG: if service is started while permissions aren't there (say, were revoked),
@@ -34,7 +35,64 @@
 //       Is there a way to query the windowmanager's stack of views?
 // TODO: ask on stackoverflow whether there are any downsides
 //       to communicating by calling methods on the singleton
-//
+// TODO: ask on stackoverflow how to create matrix
+
+/*
+Q: how to test/exercise android's screen rotation behavior?
+tags: android
+
+I'd like to test android's behavior on all possible combinations of the following "inputs":
+
+- top activity's [`setRequestedOrientation()`](https://developer.android.com/reference/android/app/Activity.html#setRequestedOrientation(int)) ([15 possible values, not including `SCREEN_ORIENTATION_BEHIND`](https://developer.android.com/reference/android/R.attr.html#screenOrientation))
+- [`Settings.System.ACCELEROMETER_ROTATION`](https://developer.android.com/reference/android/provider/Settings.System.html#ACCELEROMETER_ROTATION) (2 possible values)
+- [`Settings.System.USER_ROTATION`](https://developer.android.com/reference/android/provider/Settings.System.html#USER_ROTATION) ([4 possible values](https://developer.android.com/reference/android/view/Surface.html#ROTATION_0))
+- device's physical orientation (queryable by [`OrientationEventListener`](https://developer.android.com/reference/android/view/OrientationEventListener.html)) (4 possible quadrants)
+
+Specifically, I want to see how the inputs affect the following "output":
+
+- `getWindowManager().getDefaultDisplay()`[`.getRotation()`](https://developer.android.com/reference/android/view/Display.html#getRotation()) ([4 possible values](https://developer.android.com/reference/android/view/Surface.html#ROTATION_0))
+
+So this will require testing at least all 15*2*4*4=480 possible input states.
+
+Additionally, since rotation behavior is often dependent on the *history*
+of the inputs (not just the *current* input values),
+I want to test (at least) all possible transitions from one input state to an "adjacent" input state,
+i.e. to an input state that differs from the given input state by one input parameter.
+The number of such input state transitions is:
+
+<pre>
+      (number of input states) * (number of states adjacent to a given input state)
+    = (15*2*4*4) * ((15-1) + (2-1) + (4-1) + (4-1))
+    = 480 * 21
+    = 10080
+</pre>
+
+Furthermore, sometimes output is dependent on the previous *output* as well as previous and current
+input (e.g. `SCREEN_ORIENTATION_LOCKED`, `SCREEN_ORIENTATION_SENSOR_LANDSCAPE`).
+The number of possible outputs for a given input state can be between 1 and 4,
+so this multiplies the number of transitions that must be tested by up to 4:
+
+<pre>
+    10080 * 4 = 40320
+</pre>
+
+That's a lot of transitions to test, so the testing would have to be programmatic/scripted.
+Three out of the four input params are straightforward to control programmatically;
+the one that's not straightforward to control is the device's physical orientation.
+
+So, how would one go about scripting it?  I can think of the following approaches.
+
+**Approach #1**:  Replace the (physical or emulated) device's accelerometer with a scriptable mock accelerometer
+for the duration of the test.   But, if I understand correctly, mock accelerometers do not exist.
+
+**Approach #2**:  Use the android emulator, and script pressing of the "rotate counterclockwise" and
+"rotate clockwise" buttons using an interaction automation tool on the host machine (e.g. applescript / autohotkey / xdotool).
+
+Any other ideas?
+
+*/
+
+
 
 package com.example.donhatch.rotationlockadaptiveshim;
 
@@ -45,6 +103,9 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Configuration;
 import android.database.ContentObserver;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -52,6 +113,7 @@ import android.provider.Settings;
 import android.util.Log;
 import android.view.Surface;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.ImageView;
@@ -91,6 +153,36 @@ public class TheActivity extends Activity {
             Log.i(TAG, "                out once-per-second poll (this should only happen when ui is visible)");
         };
     };
+
+    // https://stackoverflow.com/questions/6178896/how-to-draw-a-line-in-imageview-on-android
+    // This is actually pretty lame, since, it turns out, onDraw is only called once
+    // on startup, and subsequently it the drawn thing gets rotated.
+    public class MyImageView extends ImageView {
+        public MyImageView(Context context) {
+            super(context);
+            // TODO: Auto-generated constructor stub
+        }
+        @Override
+        protected void onDraw(Canvas canvas) {
+          Log.i(TAG, "                in MyImageView.onDraw");
+          super.onDraw(canvas);
+          Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+          paint.setColor(Color.RED);
+          paint.setStrokeWidth(5);
+          // XXX TODO got these by eyeballing. need to do something more principled.
+          canvas.drawLine(0, 1050,
+                          665, 1050,
+                          paint);
+          canvas.drawText("HEY HEY HEY", 20, 20, paint);
+          Log.i(TAG, "                out MyImageView.onDraw");
+        }
+        @Override
+        public void setRotation(float newRotation) {
+          Log.i(TAG, "                in MyImageView.setRotation(newRotation="+newRotation+")");
+          super.setRotation(newRotation);
+          Log.i(TAG, "                out MyImageView.setRotation(newRotation="+newRotation+")");
+        }
+    }  // class MyImageView
 
     private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
         @Override
@@ -220,12 +312,12 @@ public class TheActivity extends Activity {
         Log.i(TAG, " TheActivity ctor");
     }
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.i(TAG, "    in onCreate");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
         // TODO: members
         Switch theServiceSwitch = (Switch)findViewById(R.id.theServiceSwitch);
         Button theAppSettingsButton = (Button)findViewById(R.id.theAppSettingsButton);
@@ -247,6 +339,25 @@ public class TheActivity extends Activity {
         theMonitorSwitch.setChecked(mPolling);
         thePolledValuesHeaderTextView.setEnabled(mPolling);
         thePolledStatusTextView.setEnabled(mPolling);
+
+        if (true) {
+            // Replace the ImageView with a MyImageView.
+            RelativeLayout parentLayout = (RelativeLayout)theDialImageView.getParent();
+            int index = parentLayout.indexOfChild(theDialImageView);
+            parentLayout.removeView(theDialImageView);
+
+            theDialImageView = new MyImageView(this);
+            theDialImageView.setImageResource(R.drawable.mygeomatic_rapporteur_5_svg_hi);
+            theDialImageView.setId(R.id.theDialImageView);
+
+            RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(
+              ViewGroup.LayoutParams.WRAP_CONTENT,
+              ViewGroup.LayoutParams.WRAP_CONTENT);
+            parentLayout.addView(theDialImageView, index, params);
+        }
+
+        // Initial rotation was 0 pointing to left. Make it point up instead.
+        theDialImageView.setRotation(90.f);
 
         if (true) {
             theWhackAMoleSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {

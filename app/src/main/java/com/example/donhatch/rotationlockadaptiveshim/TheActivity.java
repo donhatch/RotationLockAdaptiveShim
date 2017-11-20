@@ -1,5 +1,6 @@
 //
-// BUG: red line not in principled position. totally wrong when landscape.
+// TODO: draw dial from scratch using fonts.  OR, fixed needle and rotating dial?
+// BUG: after switching orientation, dial rotation is 90 degrees wrong til it changes. need to update rotation immediately.
 // BUG: in emulator, when screen layout changes, dial orientation doesn't get updated.  I didn't notice this on real device, because accelerometer event comes in almost immediately.
 // BUG: why does there seem to be a delay after I click "yes" and before it rotates? seems more responsive when it's not prompting
 // BUG: when turning *off* overlay and it's red, it flashes off-on-off
@@ -8,6 +9,7 @@
 // BUG: if permission revoked in midstream and double-opt-in-dance is done,
 //       if activity isn't up, and it's the first time,
 //       the system settings screen is (sometimes) delayed until after the toast disappears!
+// TODO: dial drawing still not principled, probably hard coded to pixel2XL
 // TODO: better communication from activity to service:
 //         - when override toggled, should update the overlay immediately
 //         - when service first turned on, should apply the overlay immediately even if already rotated properly
@@ -167,6 +169,8 @@ public class TheActivity extends Activity {
           Log.i(TAG, "                in MyImageView1.onDraw");
           Log.i(TAG, "                  canvas.getWidth() = "+canvas.getWidth());
           Log.i(TAG, "                  canvas.getHeight() = "+canvas.getHeight());
+          // portrait: 1328x2100
+          // landscape: 2100x1230
           super.onDraw(canvas);
           canvas.drawColor(Color.WHITE);  // erase the dial image (sort of silly)
 
@@ -197,13 +201,15 @@ public class TheActivity extends Activity {
           // XXX TODO got these by eyeballing on my pixel 2 XL. need to do something more principled.
           float centerX = -1, centerY = -1, r = -1;
           if (mMostRecentConfigurationOrientation == Configuration.ORIENTATION_PORTRAIT) {
-            centerX = 665;
+            // pixel 2 XL: 1328x2100
+            centerX = canvas.getWidth() / 2; // 664
             centerY = 1050;
             r = centerX;
           } else if (mMostRecentConfigurationOrientation == Configuration.ORIENTATION_LANDSCAPE) {
+            // pixel 2 XL: 2100x1230
             centerX = 1050;
-            centerY = 615;
-            r = 615;
+            centerY = canvas.getHeight() / 2; // 615
+            r = centerY;
           } else {
             CHECK(false);
           }
@@ -268,13 +274,15 @@ public class TheActivity extends Activity {
           // XXX TODO got these by eyeballing on my pixel 2 XL. need to do something more principled.
           float centerX = -1, centerY = -1, r = -1;
           if (mMostRecentConfigurationOrientation == Configuration.ORIENTATION_PORTRAIT) {
-            centerX = 665;
+            // pixel 2 XL: 1328x2100
+            centerX = canvas.getWidth() / 2; // 664
             centerY = 1050;
             r = centerX;
           } else if (mMostRecentConfigurationOrientation == Configuration.ORIENTATION_LANDSCAPE) {
+            // pixel 2 XL: 2100x1230
             centerX = 1050;
-            centerY = 615;
-            r = 615;
+            centerY = canvas.getHeight() / 2; // 615
+            r = centerY;
           } else {
             CHECK(false);
           }
@@ -310,6 +318,8 @@ public class TheActivity extends Activity {
                 theAccelerometerOrientationDegreesTextView.setText("  accelerometer degrees (most recent update): "+oldDegrees+" -> "+newDegrees);
 
                 if (true) {
+                    ImageView theDialImageView1 = (ImageView)findViewById(R.id.theDialImageView1);
+                    ImageView theDialImageView = (ImageView)findViewById(R.id.theDialImageView);
                     ImageView theDialImageView2 = (ImageView)findViewById(R.id.theDialImageView2);
                     if (newDegrees == -1) {
                         theDialImageView2.setVisibility(View.INVISIBLE);
@@ -329,7 +339,14 @@ public class TheActivity extends Activity {
                             default: CHECK(false);
                         }
 
-                        theDialImageView2.setRotation((float)newDialRotation);
+                        if (false) {
+                          // Rotate the needle (theDialImageView2) to "up"
+                          theDialImageView2.setRotation((float)newDialRotation);
+                        } else {
+                          // Keep the needle fixed, but rotate the dial
+                          theDialImageView1.setRotation((float)newDialRotation);
+                          theDialImageView.setRotation((float)newDialRotation);
+                        }
 
                         // XXX not sure what I want here
                         theDialImageView2.setScaleX(1.f);

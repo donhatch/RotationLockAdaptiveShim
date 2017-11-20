@@ -194,13 +194,23 @@ public class TheActivity extends Activity {
           greenPaint.setColor(Color.GREEN);
           greenPaint.setARGB(255, 192, 255, 192);
 
-          // XXX TODO got these by eyeballing. need to do something more principled.
-          float centerX = 665;
-          float centerY = 1050;
-          float r = centerX;
+          // XXX TODO got these by eyeballing on my pixel 2 XL. need to do something more principled.
+          float centerX = -1, centerY = -1, r = -1;
+          if (mMostRecentConfigurationOrientation == Configuration.ORIENTATION_PORTRAIT) {
+            centerX = 665;
+            centerY = 1050;
+            r = centerX;
+          } else if (mMostRecentConfigurationOrientation == Configuration.ORIENTATION_LANDSCAPE) {
+            centerX = 1050;
+            centerY = 615;
+            r = 615;
+          } else {
+            CHECK(false);
+          }
+
           //double hysteresis = 0.;
           double hysteresis = 22.5; // XXX must match what's in TheService, should be a member var or constant
-          //double hysteresis = 45; // XXX must match what's in TheService, should be a member var or constant
+          //double hysteresis = 45;
           canvas.drawArc(centerX-r, centerY-r,
                          centerX+r, centerY+r,
                          0.f, 360.f,
@@ -254,12 +264,25 @@ public class TheActivity extends Activity {
           Paint blackPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
           blackPaint.setColor(Color.BLACK);
           blackPaint.setStrokeWidth(10);
-          // XXX TODO got these by eyeballing. need to do something more principled.
-          float centerX = 665;
-          float centerY = 1050;
-          canvas.drawLine(0, centerY,
+
+          // XXX TODO got these by eyeballing on my pixel 2 XL. need to do something more principled.
+          float centerX = -1, centerY = -1, r = -1;
+          if (mMostRecentConfigurationOrientation == Configuration.ORIENTATION_PORTRAIT) {
+            centerX = 665;
+            centerY = 1050;
+            r = centerX;
+          } else if (mMostRecentConfigurationOrientation == Configuration.ORIENTATION_LANDSCAPE) {
+            centerX = 1050;
+            centerY = 615;
+            r = 615;
+          } else {
+            CHECK(false);
+          }
+
+          canvas.drawLine(centerX-r, centerY,
                           centerX, centerY,
                           blackPaint);
+
           Log.i(TAG, "                out MyImageView2.onDraw");
         }
         @Override
@@ -400,17 +423,19 @@ public class TheActivity extends Activity {
     };  // mUserRotationObserver
 
     public TheActivity() {
-        Log.i(TAG, " TheActivity ctor");
-        Log.i(TAG, " TheActivity ctor");
+        Log.i(TAG, "in TheActivity ctor");
+        Log.i(TAG, "out TheActivity ctor");
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.i(TAG, "    in onCreate");
+        Log.i(TAG, "      savedInstanceState = "+savedInstanceState);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // TODO: members
+        RelativeLayout theRelativeLayout = (RelativeLayout)findViewById(R.id.theRelativeLayout);
+        CHECK(theRelativeLayout != null); // was failing when there was an out of date layout-land/activity_main.xml
         Switch theServiceSwitch = (Switch)findViewById(R.id.theServiceSwitch);
         Button theAppSettingsButton = (Button)findViewById(R.id.theAppSettingsButton);
         Switch theWhackAMoleSwitch = (Switch)findViewById(R.id.theWhackAMoleSwitch);
@@ -434,10 +459,9 @@ public class TheActivity extends Activity {
 
         if (true) {
             // Replace theDialImageView1 with a MyImageView1
-            RelativeLayout parentLayout = (RelativeLayout)findViewById(R.id.theRelativeLayout);
             ImageView theDialImageView1 = (ImageView)findViewById(R.id.theDialImageView1);
-            int index = parentLayout.indexOfChild(theDialImageView1);
-            parentLayout.removeView(theDialImageView1);
+            int index = theRelativeLayout.indexOfChild(theDialImageView1);
+            theRelativeLayout.removeView(theDialImageView1);
 
             theDialImageView1 = new MyImageView1(this);
             theDialImageView1.setImageResource(R.drawable.mygeomatic_rapporteur_5_svg_hi); // for size
@@ -446,14 +470,13 @@ public class TheActivity extends Activity {
             RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(
               ViewGroup.LayoutParams.WRAP_CONTENT,
               ViewGroup.LayoutParams.WRAP_CONTENT);
-            parentLayout.addView(theDialImageView1, index, params);
+            theRelativeLayout.addView(theDialImageView1, index, params);
         }
         if (true) {
             // Replace theDialImageView2 with a MyImageView1
-            RelativeLayout parentLayout = (RelativeLayout)findViewById(R.id.theRelativeLayout);
             ImageView theDialImageView2 = (ImageView)findViewById(R.id.theDialImageView2);
-            int index = parentLayout.indexOfChild(theDialImageView2);
-            parentLayout.removeView(theDialImageView2);
+            int index = theRelativeLayout.indexOfChild(theDialImageView2);
+            theRelativeLayout.removeView(theDialImageView2);
 
             theDialImageView2 = new MyImageView2(this);
             theDialImageView2.setImageResource(R.drawable.mygeomatic_rapporteur_5_svg_hi); // for size
@@ -462,7 +485,7 @@ public class TheActivity extends Activity {
             RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(
               ViewGroup.LayoutParams.WRAP_CONTENT,
               ViewGroup.LayoutParams.WRAP_CONTENT);
-            parentLayout.addView(theDialImageView2, index, params);
+            theRelativeLayout.addView(theDialImageView2, index, params);
         }
 
         if (true) {
@@ -782,7 +805,6 @@ public class TheActivity extends Activity {
         Log.i(TAG, "        in onStart");
         super.onStart();
         Switch theServiceSwitch = (Switch)findViewById(R.id.theServiceSwitch);
-
         boolean serviceIsRunning = TheService.theRunningService != null;
         Log.i(TAG, "          calling theServiceSwitch.setChecked("+serviceIsRunning+")");
         mSettingCheckedFromProgram = true;

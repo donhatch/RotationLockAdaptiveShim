@@ -157,32 +157,118 @@ public class TheActivity extends Activity {
     // https://stackoverflow.com/questions/6178896/how-to-draw-a-line-in-imageview-on-android
     // This is actually pretty lame, since, it turns out, onDraw is only called once
     // on startup, and subsequently it the drawn thing gets rotated.
-    public class MyImageView extends ImageView {
-        public MyImageView(Context context) {
+    public class MyImageView1 extends ImageView {
+        public MyImageView1(Context context) {
             super(context);
             // TODO: Auto-generated constructor stub
         }
         @Override
         protected void onDraw(Canvas canvas) {
-          Log.i(TAG, "                in MyImageView.onDraw");
+          Log.i(TAG, "                in MyImageView1.onDraw");
+          Log.i(TAG, "                  canvas.getWidth() = "+canvas.getWidth());
+          Log.i(TAG, "                  canvas.getHeight() = "+canvas.getHeight());
           super.onDraw(canvas);
-          Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-          paint.setColor(Color.RED);
-          paint.setStrokeWidth(5);
+          canvas.drawColor(Color.WHITE);  // erase the dial image (sort of silly)
+
+          Paint redPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+          redPaint.setColor(Color.RED);
+          redPaint.setARGB(255, 255, 192, 192);
+
+          Paint orangeishYellowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+          orangeishYellowPaint.setColor(Color.YELLOW);
+          //orangeishYellowPaint.setARGB(255, 255, 224, 192);
+          //orangeishYellowPaint.setARGB(255, 255, 240, 192);
+          orangeishYellowPaint.setARGB(255, 255, 248, 192);
+
+          Paint yellowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+          yellowPaint.setColor(Color.YELLOW);
+          yellowPaint.setARGB(255, 255, 255, 192);
+
+          Paint greenishYellowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+          greenishYellowPaint.setColor(Color.YELLOW);
+          //greenishYellowPaint.setARGB(255, 224, 255, 192);
+          //greenishYellowPaint.setARGB(255, 240, 255, 192);
+          greenishYellowPaint.setARGB(255, 248, 255, 192);
+
+          Paint greenPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+          greenPaint.setColor(Color.GREEN);
+          greenPaint.setARGB(255, 192, 255, 192);
+
           // XXX TODO got these by eyeballing. need to do something more principled.
-          canvas.drawLine(0, 1050,
-                          665, 1050,
-                          paint);
-          canvas.drawText("HEY HEY HEY", 20, 20, paint);
-          Log.i(TAG, "                out MyImageView.onDraw");
+          float centerX = 665;
+          float centerY = 1050;
+          float r = centerX;
+          //double hysteresis = 0.;
+          double hysteresis = 22.5; // XXX must match what's in TheService, should be a member var or constant
+          //double hysteresis = 45; // XXX must match what's in TheService, should be a member var or constant
+          canvas.drawArc(centerX-r, centerY-r,
+                         centerX+r, centerY+r,
+                         0.f, 360.f,
+                         /*useCenter=*/true,
+                         redPaint);
+
+          if (false) {
+              // Solid yellow
+              canvas.drawArc(centerX-r, centerY-r,
+                             centerX+r, centerY+r,
+                             (float)(135. - hysteresis), (float)(90. + 2*hysteresis),
+                             /*useCenter=*/true,
+                             yellowPaint);
+          } else {
+              // Two subtlely different shades of yellow, transitioning at 45 degrees
+              canvas.drawArc(centerX-r, centerY-r,
+                             centerX+r, centerY+r,
+                             (float)(135. - hysteresis), (float)(90. + 2*hysteresis),
+                             /*useCenter=*/true,
+                             orangeishYellowPaint);
+              canvas.drawArc(centerX-r, centerY-r,
+                             centerX+r, centerY+r,
+                             135.f, 90.f,
+                             /*useCenter=*/true,
+                             greenishYellowPaint);
+          }
+
+          canvas.drawArc(centerX-r, centerY-r,
+                         centerX+r, centerY+r,
+                         (float)(135. + hysteresis), (float)(90. - 2*hysteresis),
+                         /*useCenter=*/true,
+                         greenPaint);
+          Log.i(TAG, "                out MyImageView1.onDraw");
         }
         @Override
         public void setRotation(float newRotation) {
-          Log.i(TAG, "                in MyImageView.setRotation(newRotation="+newRotation+")");
+          Log.i(TAG, "                in MyImageView1.setRotation(newRotation="+newRotation+")");
           super.setRotation(newRotation);
-          Log.i(TAG, "                out MyImageView.setRotation(newRotation="+newRotation+")");
+          Log.i(TAG, "                out MyImageView1.setRotation(newRotation="+newRotation+")");
         }
-    }  // class MyImageView
+    }  // class MyImageView1
+    public class MyImageView2 extends ImageView {
+        public MyImageView2(Context context) {
+            super(context);
+            // TODO: Auto-generated constructor stub
+        }
+        @Override
+        protected void onDraw(Canvas canvas) {
+          Log.i(TAG, "                in MyImageView2.onDraw");
+          //super.onDraw(canvas); // don't bother, since it's the dial image which we don't want here
+          Paint blackPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+          blackPaint.setColor(Color.BLACK);
+          blackPaint.setStrokeWidth(10);
+          // XXX TODO got these by eyeballing. need to do something more principled.
+          float centerX = 665;
+          float centerY = 1050;
+          canvas.drawLine(0, centerY,
+                          centerX, centerY,
+                          blackPaint);
+          Log.i(TAG, "                out MyImageView2.onDraw");
+        }
+        @Override
+        public void setRotation(float newRotation) {
+          //Log.i(TAG, "                in MyImageView2.setRotation(newRotation="+newRotation+")");
+          super.setRotation(newRotation);
+          //Log.i(TAG, "                out MyImageView2.setRotation(newRotation="+newRotation+")");
+        }
+    }  // class MyImageView2
 
     private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
         @Override
@@ -201,25 +287,31 @@ public class TheActivity extends Activity {
                 theAccelerometerOrientationDegreesTextView.setText("  accelerometer degrees (most recent update): "+oldDegrees+" -> "+newDegrees);
 
                 if (true) {
-                    ImageView theDialImageView = (ImageView)findViewById(R.id.theDialImageView);
+                    ImageView theDialImageView2 = (ImageView)findViewById(R.id.theDialImageView2);
+                    if (newDegrees == -1) {
+                        theDialImageView2.setVisibility(View.INVISIBLE);
+                    } else {
+                        theDialImageView2.setVisibility(View.VISIBLE);
 
-                    double newDialRotation = 90. - newDegreesSmoothed;
+                        //double newDialRotation = 90. - newDegreesSmoothed;  // XXX what was I thinking?  doesn't match behavior
+                        double newDialRotation = 90. - newDegrees;
 
-                    int currentDisplayRotation = getWindowManager().getDefaultDisplay().getRotation();
-                    // sign determined by dog science
-                    switch (currentDisplayRotation) {
-                        case Surface.ROTATION_0: newDialRotation -= 0; break;
-                        case Surface.ROTATION_90: newDialRotation -= 90; break;
-                        case Surface.ROTATION_180: newDialRotation -= 180; break;
-                        case Surface.ROTATION_270: newDialRotation -= 270; break;
-                        default: CHECK(false);
+                        int currentDisplayRotation = getWindowManager().getDefaultDisplay().getRotation();
+                        // sign determined by dog science
+                        switch (currentDisplayRotation) {
+                            case Surface.ROTATION_0: newDialRotation -= 0; break;
+                            case Surface.ROTATION_90: newDialRotation -= 90; break;
+                            case Surface.ROTATION_180: newDialRotation -= 180; break;
+                            case Surface.ROTATION_270: newDialRotation -= 270; break;
+                            default: CHECK(false);
+                        }
+
+                        theDialImageView2.setRotation((float)newDialRotation);
+
+                        // XXX not sure what I want here
+                        theDialImageView2.setScaleX(1.f);
+                        theDialImageView2.setScaleY(1.f);
                     }
-
-                    theDialImageView.setRotation((float)newDialRotation);
-
-                    // XXX not sure what I want here
-                    theDialImageView.setScaleX(1.f);
-                    theDialImageView.setScaleY(1.f);
                 }
 
                 //Log.i(TAG, "                out onReceive: "+intent.getAction());
@@ -341,23 +433,37 @@ public class TheActivity extends Activity {
         thePolledStatusTextView.setEnabled(mPolling);
 
         if (true) {
-            // Replace the ImageView with a MyImageView.
-            RelativeLayout parentLayout = (RelativeLayout)theDialImageView.getParent();
-            int index = parentLayout.indexOfChild(theDialImageView);
-            parentLayout.removeView(theDialImageView);
+            // Replace theDialImageView1 with a MyImageView1
+            RelativeLayout parentLayout = (RelativeLayout)findViewById(R.id.theRelativeLayout);
+            ImageView theDialImageView1 = (ImageView)findViewById(R.id.theDialImageView1);
+            int index = parentLayout.indexOfChild(theDialImageView1);
+            parentLayout.removeView(theDialImageView1);
 
-            theDialImageView = new MyImageView(this);
-            theDialImageView.setImageResource(R.drawable.mygeomatic_rapporteur_5_svg_hi);
-            theDialImageView.setId(R.id.theDialImageView);
-
+            theDialImageView1 = new MyImageView1(this);
+            theDialImageView1.setImageResource(R.drawable.mygeomatic_rapporteur_5_svg_hi); // for size
+            theDialImageView1.setRotation(90.f);
+            theDialImageView1.setId(R.id.theDialImageView1);
             RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(
               ViewGroup.LayoutParams.WRAP_CONTENT,
               ViewGroup.LayoutParams.WRAP_CONTENT);
-            parentLayout.addView(theDialImageView, index, params);
+            parentLayout.addView(theDialImageView1, index, params);
         }
+        if (true) {
+            // Replace theDialImageView2 with a MyImageView1
+            RelativeLayout parentLayout = (RelativeLayout)findViewById(R.id.theRelativeLayout);
+            ImageView theDialImageView2 = (ImageView)findViewById(R.id.theDialImageView2);
+            int index = parentLayout.indexOfChild(theDialImageView2);
+            parentLayout.removeView(theDialImageView2);
 
-        // Initial rotation was 0 pointing to left. Make it point up instead.
-        theDialImageView.setRotation(90.f);
+            theDialImageView2 = new MyImageView2(this);
+            theDialImageView2.setImageResource(R.drawable.mygeomatic_rapporteur_5_svg_hi); // for size
+            theDialImageView2.setRotation(90.f);
+            theDialImageView2.setId(R.id.theDialImageView2);
+            RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(
+              ViewGroup.LayoutParams.WRAP_CONTENT,
+              ViewGroup.LayoutParams.WRAP_CONTENT);
+            parentLayout.addView(theDialImageView2, index, params);
+        }
 
         if (true) {
             theWhackAMoleSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {

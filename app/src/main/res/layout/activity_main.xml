@@ -1,95 +1,122 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-xmlns:tools="http://schemas.android.com/tools"
-android:layout_width="match_parent"
-android:layout_height="match_parent"
-android:paddingBottom="@dimen/activity_vertical_margin"
-android:paddingLeft="@dimen/activity_horizontal_margin"
-android:paddingRight="@dimen/activity_horizontal_margin"
-android:paddingTop="@dimen/activity_vertical_margin"
-tools:context=".TheActivity" >
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/theRelativeLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    tools:context=".TheActivity">
 
     <!-- first so it's under everything else -->
+
+    <!-- per https://stackoverflow.com/questions/6101874/android-center-an-image#answer-6101923:
+         In LinearLayout, use: android:layout_gravity="center".
+
+         In RelativeLayout, use: android:layout_centerInParent="true"
+         nothing seems to work :-(
+     -->
+
     <ImageView
-        android:src="@drawable/mygeomatic_rapporteur_5_svg_hi"
+        android:id="@+id/theDialImageView1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:rotation="90"
         android:scaleX="1."
         android:scaleY="1."
+        android:src="@drawable/mygeomatic_rapporteur_5_svg_hi" />
+
+    <ImageView
+        android:id="@+id/theDialImageView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/theDialImageView" />
+        android:rotation="90"
+        android:scaleX="1."
+        android:scaleY="1."
+        android:src="@drawable/mygeomatic_rapporteur_5_svg_hi" />
+
+    <ImageView
+        android:id="@+id/theDialImageView2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:rotation="90"
+        android:scaleX="1."
+        android:scaleY="1."
+        android:src="@drawable/mygeomatic_rapporteur_5_svg_hi" />
 
     <Switch
-        android:text="Service is off "
+        android:id="@+id/theServiceSwitch"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
-        android:id="@+id/theServiceSwitch" />
+        android:text="Service is off " />
 
     <TextView
-        android:text="Service should:"
+        android:id="@+id/theServiceHeader"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@+id/theServiceSwitch"
-        android:id="@+id/theServiceHeader" />
+        android:text="Service should:" />
 
     <Button
-        android:text="App Settings"
+        android:id="@+id/theAppSettingsButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentRight="true"
-        android:id="@+id/theAppSettingsButton" />
+        android:text="App Settings" />
 
     <Switch
-        android:text="  Whack-a-mole system autorotate "
+        android:id="@+id/theWhackAMoleSwitch"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@+id/theServiceHeader"
-        android:id="@+id/theWhackAMoleSwitch" />
+        android:text="  Whack-a-mole system autorotate " />
 
     <Switch
-        android:text="  Auto rotate "
+        android:id="@+id/theAutoRotateSwitch"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@+id/theWhackAMoleSwitch"
-        android:id="@+id/theAutoRotateSwitch" />
+        android:text="  Auto rotate " />
 
     <Switch
-        android:text="  but ask first "
+        android:id="@+id/thePromptFirstSwitch"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@+id/theWhackAMoleSwitch"
         android:layout_toRightOf="@+id/theAutoRotateSwitch"
-        android:id="@+id/thePromptFirstSwitch" />
+        android:text="  but ask first " />
 
     <Switch
-        android:text="  Override home screen's and other apps' prefs "
+        android:id="@+id/theOverrideSwitch"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@+id/theAutoRotateSwitch"
-        android:id="@+id/theOverrideSwitch" />
+        android:text="  Override home screen's and other apps' prefs " />
 
     <Switch
-        android:text="    using red overlay "
+        android:id="@+id/theRedSwitch"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@id/theOverrideSwitch"
         android:layout_alignRight="@id/theOverrideSwitch"
-        android:id="@+id/theRedSwitch" />
+        android:layout_below="@id/theOverrideSwitch"
+        android:text="    using red overlay " />
 
     <TextView
-        android:text="Listened values:"
+        android:id="@+id/theListenedValuesHeader"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_above="@+id/theAccelerometerOrientationDegreesTextView"
-        android:id="@+id/theListenedValuesHeader" />
+        android:text="Listened values:" />
 
     <TextView
-        android:text="  accelerometer degrees: ???"
+        android:id="@+id/theAccelerometerOrientationDegreesTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_above="@+id/theAccelerometerRotationTextView"
-        android:id="@+id/theAccelerometerOrientationDegreesTextView" />
+        android:text="  accelerometer degrees: ???" />
 
     <!-- note, if you uncomment this, make sure to adjust layout_above of the guy above this one
     <TextView
@@ -101,45 +128,45 @@ tools:context=".TheActivity" >
     -->
 
     <TextView
-        android:text="accelerometer rotation"
+        android:id="@+id/theAccelerometerRotationTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_above="@+id/theUserRotationTextView"
-        android:id="@+id/theAccelerometerRotationTextView" />
+        android:text="accelerometer rotation" />
 
     <TextView
-        android:text="user rotation"
+        android:id="@+id/theUserRotationTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_above="@+id/theConfigurationOrientationTextView"
-        android:id="@+id/theUserRotationTextView" />
+        android:text="user rotation" />
 
     <TextView
-        android:text="onConfigurationChanged newConfig.orientation"
+        android:id="@+id/theConfigurationOrientationTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_above="@+id/theMonitorSwitch"
-        android:id="@+id/theConfigurationOrientationTextView" />
+        android:text="onConfigurationChanged newConfig.orientation" />
 
     <Switch
-        android:text="Poll values once per second while ui is showing "
+        android:id="@+id/theMonitorSwitch"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_above="@+id/thePolledValuesHeaderTextView"
-        android:id="@+id/theMonitorSwitch" />
+        android:text="Poll values once per second while ui is showing " />
 
     <TextView
-        android:text="Polled values:"
+        android:id="@+id/thePolledValuesHeaderTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_above="@+id/thePolledStatusTextView"
-        android:id="@+id/thePolledValuesHeaderTextView" />
+        android:text="Polled values:" />
 
     <TextView
-        android:text="polled status"
+        android:id="@+id/thePolledStatusTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:id="@+id/thePolledStatusTextView" />
+        android:text="polled status" />
 
 </RelativeLayout>

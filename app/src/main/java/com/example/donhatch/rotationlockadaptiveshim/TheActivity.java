@@ -1,5 +1,4 @@
 //
-// TODO: draw dial from scratch using fonts.  OR, fixed needle and rotating dial?
 // BUG: after switching orientation, dial rotation is 90 degrees wrong til it changes. need to update rotation immediately.
 // BUG: in emulator, when screen layout changes, dial orientation doesn't get updated.  I didn't notice this on real device, because accelerometer event comes in almost immediately.
 // BUG: why does there seem to be a delay after I click "yes" and before it rotates? seems more responsive when it's not prompting

@@ -346,10 +346,6 @@ public class TheActivity extends Activity {
                           theDialImageView1.setRotation((float)newDialRotation);
                           theDialImageView.setRotation((float)newDialRotation);
                         }
-
-                        // XXX not sure what I want here
-                        theDialImageView2.setScaleX(1.f);
-                        theDialImageView2.setScaleY(1.f);
                     }
                 }
 
@@ -459,7 +455,9 @@ public class TheActivity extends Activity {
         Switch thePromptFirstSwitch = (Switch)findViewById(R.id.thePromptFirstSwitch);
         Switch theOverrideSwitch = (Switch)findViewById(R.id.theOverrideSwitch);
         Switch theRedSwitch = (Switch)findViewById(R.id.theRedSwitch);
+        ImageView theDialImageView1 = (ImageView)findViewById(R.id.theDialImageView1);
         ImageView theDialImageView = (ImageView)findViewById(R.id.theDialImageView);
+        ImageView theDialImageView2 = (ImageView)findViewById(R.id.theDialImageView2);
         Switch theMonitorSwitch = (Switch)findViewById(R.id.theMonitorSwitch);
         TextView thePolledValuesHeaderTextView = (TextView)findViewById(R.id.thePolledValuesHeaderTextView);
         TextView thePolledStatusTextView = (TextView)findViewById(R.id.thePolledStatusTextView);
@@ -475,7 +473,6 @@ public class TheActivity extends Activity {
 
         if (true) {
             // Replace theDialImageView1 with a MyImageView1
-            ImageView theDialImageView1 = (ImageView)findViewById(R.id.theDialImageView1);
             int index = theRelativeLayout.indexOfChild(theDialImageView1);
             theRelativeLayout.removeView(theDialImageView1);
 
@@ -486,11 +483,11 @@ public class TheActivity extends Activity {
             RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(
               ViewGroup.LayoutParams.WRAP_CONTENT,
               ViewGroup.LayoutParams.WRAP_CONTENT);
+            params.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
             theRelativeLayout.addView(theDialImageView1, index, params);
         }
         if (true) {
             // Replace theDialImageView2 with a MyImageView1
-            ImageView theDialImageView2 = (ImageView)findViewById(R.id.theDialImageView2);
             int index = theRelativeLayout.indexOfChild(theDialImageView2);
             theRelativeLayout.removeView(theDialImageView2);
 
@@ -501,7 +498,18 @@ public class TheActivity extends Activity {
             RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(
               ViewGroup.LayoutParams.WRAP_CONTENT,
               ViewGroup.LayoutParams.WRAP_CONTENT);
+            params.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
             theRelativeLayout.addView(theDialImageView2, index, params);
+        }
+        if (true) {
+            // XXX not sure what I want here
+            float scale = .79f;
+            theDialImageView1.setScaleX(scale);
+            theDialImageView1.setScaleY(scale);
+            theDialImageView.setScaleX(scale);
+            theDialImageView.setScaleY(scale);
+            theDialImageView2.setScaleX(scale);
+            theDialImageView2.setScaleY(scale);
         }
 
         if (true) {

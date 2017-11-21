@@ -1,5 +1,5 @@
 //
-// BUG: after switching orientation, dial rotation is 90 degrees wrong til it changes. need to update rotation immediately.
+// BUG: after switching orientation, dial rotation is 90 degrees wrong til it changes. need to update rotation immediately.  (very obvious in emulator)
 // BUG: in emulator, when screen layout changes, dial orientation doesn't get updated.  I didn't notice this on real device, because accelerometer event comes in almost immediately.
 // BUG: why does there seem to be a delay after I click "yes" and before it rotates? seems more responsive when it's not prompting
 // BUG: when turning *off* overlay and it's red, it flashes off-on-off
@@ -8,7 +8,6 @@
 // BUG: if permission revoked in midstream and double-opt-in-dance is done,
 //       if activity isn't up, and it's the first time,
 //       the system settings screen is (sometimes) delayed until after the toast disappears!
-// TODO: dial drawing still not principled, probably hard coded to pixel2XL
 // TODO: better communication from activity to service:
 //         - when override toggled, should update the overlay immediately
 //         - when service first turned on, should apply the overlay immediately even if already rotated properly
@@ -197,21 +196,9 @@ public class TheActivity extends Activity {
           greenPaint.setColor(Color.GREEN);
           greenPaint.setARGB(255, 192, 255, 192);
 
-          // XXX TODO got these by eyeballing on my pixel 2 XL. need to do something more principled.
-          float centerX = -1, centerY = -1, r = -1;
-          if (mMostRecentConfigurationOrientation == Configuration.ORIENTATION_PORTRAIT) {
-            // pixel 2 XL: 1328x2100
-            centerX = canvas.getWidth() / 2; // 664
-            centerY = 1050;
-            r = centerX;
-          } else if (mMostRecentConfigurationOrientation == Configuration.ORIENTATION_LANDSCAPE) {
-            // pixel 2 XL: 2100x1230
-            centerX = 1050;
-            centerY = canvas.getHeight() / 2; // 615
-            r = centerY;
-          } else {
-            CHECK(false);
-          }
+          float centerX = canvas.getWidth() / 2;
+          float centerY = canvas.getHeight() / 2;
+          float r = Math.min(centerX, centerY);
 
           //double hysteresis = 0.;
           double hysteresis = 22.5; // XXX must match what's in TheService, should be a member var or constant
@@ -270,21 +257,9 @@ public class TheActivity extends Activity {
           blackPaint.setColor(Color.BLACK);
           blackPaint.setStrokeWidth(10);
 
-          // XXX TODO got these by eyeballing on my pixel 2 XL. need to do something more principled.
-          float centerX = -1, centerY = -1, r = -1;
-          if (mMostRecentConfigurationOrientation == Configuration.ORIENTATION_PORTRAIT) {
-            // pixel 2 XL: 1328x2100
-            centerX = canvas.getWidth() / 2; // 664
-            centerY = 1050;
-            r = centerX;
-          } else if (mMostRecentConfigurationOrientation == Configuration.ORIENTATION_LANDSCAPE) {
-            // pixel 2 XL: 2100x1230
-            centerX = 1050;
-            centerY = canvas.getHeight() / 2; // 615
-            r = centerY;
-          } else {
-            CHECK(false);
-          }
+          float centerX = canvas.getWidth() / 2;
+          float centerY = canvas.getHeight() / 2;
+          float r = Math.min(centerX, centerY);
 
           canvas.drawLine(centerX-r, centerY,
                           centerX, centerY,

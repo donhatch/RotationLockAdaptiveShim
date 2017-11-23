@@ -23,30 +23,30 @@
         android:id="@+id/theDialImageView1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
         android:rotation="90"
         android:scaleX="1."
         android:scaleY="1."
-        android:layout_alignParentRight="true"
         android:src="@drawable/mygeomatic_rapporteur_5_svg_hi" />
 
     <ImageView
         android:id="@+id/theDialImageView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
         android:rotation="90"
         android:scaleX="1."
         android:scaleY="1."
-        android:layout_alignParentRight="true"
         android:src="@drawable/mygeomatic_rapporteur_5_svg_hi" />
 
     <ImageView
         android:id="@+id/theDialImageView2"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
         android:rotation="90"
         android:scaleX="1."
         android:scaleY="1."
-        android:layout_alignParentRight="true"
         android:src="@drawable/mygeomatic_rapporteur_5_svg_hi" />
 
     <Switch

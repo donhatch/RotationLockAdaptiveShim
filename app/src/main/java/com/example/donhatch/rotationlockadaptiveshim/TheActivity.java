@@ -124,8 +124,7 @@ import android.widget.Toast;
 
 public class TheActivity extends Activity {
 
-    private static final String TAG = "RotationLockAdaptiveShim activity";
-
+    private static final String TAG = "RLAS activity";  // was "RotationLockAdaptiveShim activity" but got warnings
     private static void CHECK(boolean condition) {
         if (!condition) {
             throw new AssertionError("CHECK failed");
@@ -269,9 +268,9 @@ public class TheActivity extends Activity {
         }
         @Override
         public void setRotation(float newRotation) {
-          //Log.i(TAG, "                in MyImageView2.setRotation(newRotation="+newRotation+")");
+          Log.i(TAG, "                in MyImageView2.setRotation(newRotation="+newRotation+")");
           super.setRotation(newRotation);
-          //Log.i(TAG, "                out MyImageView2.setRotation(newRotation="+newRotation+")");
+          Log.i(TAG, "                out MyImageView2.setRotation(newRotation="+newRotation+")");
         }
     }  // class MyImageView2
 
@@ -560,9 +559,7 @@ public class TheActivity extends Activity {
             theOverrideSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                     Log.i(TAG, "            in theOverrideSwitch onCheckedChanged(isChecked=" + isChecked + ")");
-                    TheService.mStaticOverride = isChecked;
-                    // No immediate effect; this setting just modifies the behavior of autorotate
-                    // XXX TODO: but it should have immediate effect
+                    TheService.setOverride(isChecked);
                     Log.i(TAG, "            out theOverrideSwitch onCheckedChanged(isChecked=" + isChecked + ")");
                 }
             });

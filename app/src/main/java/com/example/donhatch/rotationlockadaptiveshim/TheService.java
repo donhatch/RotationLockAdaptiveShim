@@ -45,7 +45,7 @@ import android.widget.Toast;
 
 public class TheService extends Service {
 
-    private static final String TAG = "RotationLockAdaptiveShim service";
+    private static final String TAG = "RLAS service";  // was "RotationLockAdaptiveShim service" but got warnings
 
     private static void CHECK(boolean condition) {
         if (!condition) {
@@ -207,7 +207,7 @@ public class TheService extends Service {
     public static boolean mStaticOverride = true; // TODO: make this a shared preference? the activity is the one who sets this
 
     // this one has a public setter/getter
-    private static boolean mStaticRed = false; // TODO: make this a shared preference? the activity is the one who sets this
+    private static boolean mStaticRed = true; // TODO: make this a shared preference? the activity is the one who sets this
 
     // XXX TODO: call it SurfaceRotationConstant instead?
     private static int closestCompassPointToUserRotation(int closestCompassPoint) {
@@ -801,6 +801,9 @@ public class TheService extends Service {
             intentFilter.addAction(Intent.ACTION_USER_PRESENT);
             registerReceiver(mBroadcastReceiver, intentFilter);
         }
+
+        updateOverrideIfNecessary();
+
         if (mVerboseLevel >= 1) Log.i(TAG, "                        out TheService.onCreate");
     }  // onCreate
 
@@ -937,17 +940,29 @@ public class TheService extends Service {
         return mStaticRed;
     }
 
-    // TODO: animate the red!
+    public static void setOverride(boolean newOverride) {
+      // TODO: should this method be responsible for noticing it's the same as previous?
+      mStaticOverride = newOverride;
+      if (theRunningService != null) {
+        theRunningService.updateOverrideIfNecessary();
+      }
+    }
+
+    // TODO: animate the red!   (TODO: what was I talking about?)
     public static void setRed(boolean newRed) {
+        Log.i(TAG, "                in setRed");
+        Log.i(TAG, "                  theRunningService = "+theRunningService);
         mStaticRed = newRed;
         if (theRunningService != null) {
             final int oldColor = theRunningService.mOrientationChangerCurrentBackgroundColor;
             final int newColor = (mStaticRed ? 0x44ff0000 : 0x00000000); // faint translucent red color if mStaticRed
             theRunningService.mOrientationChangerCurrentBackgroundColor = newColor;
-            if (false) {
+            if (true) {
+                Log.i(TAG, "                      instantly setting background color to "+String.format("%#x", newColor));
                 theRunningService.mOrientationChanger.setBackgroundColor(theRunningService.mOrientationChangerCurrentBackgroundColor);
             } else {
                 // Fade it in
+                Log.i(TAG, "                      fading background color to "+String.format("%#x", newColor));
                 final long fadeMillis = 100;
                 final int n = 10; // too small and it's jittery.  too big and it makes it take a long time.
                 final Handler handler = new Handler();
@@ -974,7 +989,45 @@ public class TheService extends Service {
                 runnable.run();
             }
         }
-    }
+        Log.i(TAG, "                out setRed");
+    }  // setRed
+
+    private void updateOverrideIfNecessary() {
+      if (mVerboseLevel >= 1) Log.i(TAG, "                in updateOverrideIfNecessary");
+      // TODO: need to listen to changes on mStaticOverride, and do the following when it changes too
+      WindowManager windowManager = (WindowManager)getSystemService(WINDOW_SERVICE); // there's no getWindowManager() in a service
+      if (mStaticOverride) {
+          int newScreenOrientationConstant;
+          if (mStaticClosestCompassPoint != -1) {
+            newScreenOrientationConstant = closestCompassPointToScreenOrientationConstant(mStaticClosestCompassPoint);
+          } else {
+            newScreenOrientationConstant = mOrientationLayout.screenOrientation;  // so that this doesn't cause us to change anything
+          }
+
+          if (mVerboseLevel >= 1) Log.i(TAG, "              attempting to force orientation to "+screenOrientationConstantToString(newScreenOrientationConstant));
+          if (mOrientationChanger.getVisibility() != View.VISIBLE
+           || mOrientationLayout.screenOrientation != newScreenOrientationConstant
+           || mOrientationChangerCurrentBackgroundColor != (mStaticRed ? 0x44ff0000 : 0x00000000)) {
+              mOrientationChangerCurrentBackgroundColor = (mStaticRed ? 0x44ff0000 : 0x00000000); // faint translucent red color if mStaticRed
+              mOrientationChanger.setBackgroundColor(mOrientationChangerCurrentBackgroundColor);
+              mOrientationLayout.screenOrientation = newScreenOrientationConstant;
+              windowManager.updateViewLayout(mOrientationChanger, mOrientationLayout);
+              mOrientationChanger.setVisibility(View.VISIBLE);
+          } else {
+              if (mVerboseLevel >= 1) Log.i(TAG, "                  (no need)");
+          }
+      } else {
+          if (mVerboseLevel >= 1) Log.i(TAG, "              attempting to unforce orientation");
+          if (mOrientationChanger.getVisibility() != View.GONE) {
+              mOrientationChanger.setVisibility(View.GONE);
+              mOrientationLayout.screenOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
+              windowManager.updateViewLayout(mOrientationChanger, mOrientationLayout);
+          } else {
+              if (mVerboseLevel >= 1) Log.i(TAG, "                  (no need)");
+          }
+      }
+      if (mVerboseLevel >= 1) Log.i(TAG, "                out updateOverrideIfNecessary");
+    }  // updateOverrideIfNecessary
 
     // Syncs system USER_ROTATION to mStaticClosestCompassPoint, which must be valid.
     // Also whacks ACCELEROMETER_ROTATION if set (but it shouldn't be).
@@ -1066,32 +1119,7 @@ public class TheService extends Service {
             //     - just leave it; it will get resolved eventually (if permission eventually granted)
         }
 
-        // TODO: need to listen to changes on mStaticOverride, and do the following when it changes too
-        WindowManager windowManager = (WindowManager)getSystemService(WINDOW_SERVICE); // there's no getWindowManager() in a service
-        if (mStaticOverride) {
-            int newScreenOrientationConstant = closestCompassPointToScreenOrientationConstant(mStaticClosestCompassPoint);
-            if (mVerboseLevel >= 1) Log.i(TAG, "              attempting to force orientation to "+screenOrientationConstantToString(newScreenOrientationConstant));
-            if (mOrientationChanger.getVisibility() != View.VISIBLE
-             || mOrientationLayout.screenOrientation != newScreenOrientationConstant
-             || mOrientationChangerCurrentBackgroundColor != (mStaticRed ? 0x44ff0000 : 0x00000000)) {
-                mOrientationChangerCurrentBackgroundColor = (mStaticRed ? 0x44ff0000 : 0x00000000); // faint translucent red color if mStaticRed
-                mOrientationChanger.setBackgroundColor(mOrientationChangerCurrentBackgroundColor);
-                mOrientationLayout.screenOrientation = newScreenOrientationConstant;
-                windowManager.updateViewLayout(mOrientationChanger, mOrientationLayout);
-                mOrientationChanger.setVisibility(View.VISIBLE);
-            } else {
-                if (mVerboseLevel >= 1) Log.i(TAG, "                  (no need)");
-            }
-        } else {
-            if (mVerboseLevel >= 1) Log.i(TAG, "              attempting to unforce orientation");
-            if (mOrientationChanger.getVisibility() != View.GONE) {
-                mOrientationChanger.setVisibility(View.GONE);
-                mOrientationLayout.screenOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
-                windowManager.updateViewLayout(mOrientationChanger, mOrientationLayout);
-            } else {
-                if (mVerboseLevel >= 1) Log.i(TAG, "                  (no need)");
-            }
-        }
+        updateOverrideIfNecessary();
 
         if (mVerboseLevel >= 1) Log.i(TAG, "            out doTheAutoRotateThingNow");
     }  // doTheAutoRotateThingNow

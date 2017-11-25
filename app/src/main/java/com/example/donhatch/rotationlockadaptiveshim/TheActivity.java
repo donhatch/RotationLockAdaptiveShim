@@ -1,3 +1,5 @@
+// BUG: upgrading targetSdkVersion from 25 to 26 makes the app icon a solid white circle?? wtf?
+
 // BUG: after switching orientation, dial rotation is 90 degrees wrong til it changes. need to update rotation immediately.  (very obvious in emulator)
 // BUG: in emulator, when screen layout changes, dial orientation doesn't get updated.  I didn't notice this on real device, because accelerometer event comes in almost immediately.
 // BUG: why does there seem to be a delay after I click "yes" and before it rotates? seems more responsive when it's not prompting

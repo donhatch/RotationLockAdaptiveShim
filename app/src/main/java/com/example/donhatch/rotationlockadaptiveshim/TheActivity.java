@@ -1017,7 +1017,7 @@ public class TheActivity extends Activity {
         //swtch.getThumbDrawable().setTintList(new ColorStateList(states, thumbColors));
         //swtch.getTrackDrawable().setTintList(new ColorStateList(states, trackColors));
         swtch.setThumbTintList(new ColorStateList(states, thumbColors));
-        swtch.setTrackTintList(new ColorStateList(states, thumbColors));
+        swtch.setTrackTintList(new ColorStateList(states, trackColors));
     };
     // use "on" colors for both off and on position
     private static void setSwitchTintOn(Switch swtch) {
@@ -1038,6 +1038,6 @@ public class TheActivity extends Activity {
         //swtch.getThumbDrawable().setTintList(new ColorStateList(states, thumbColors));
         //swtch.getTrackDrawable().setTintList(new ColorStateList(states, trackColors));
         swtch.setThumbTintList(new ColorStateList(states, thumbColors));
-        swtch.setTrackTintList(new ColorStateList(states, thumbColors));
+        swtch.setTrackTintList(new ColorStateList(states, trackColors));
     };
 }

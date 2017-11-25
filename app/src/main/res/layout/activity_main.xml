@@ -49,25 +49,35 @@
         android:scaleY="1."
         android:src="@drawable/mygeomatic_rapporteur_5_svg_hi" />
 
-    <Switch
-        android:id="@+id/theServiceSwitch"
+    <LinearLayout
+        android:id="@+id/theServiceSwitchContainer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:text="Service is off " />
-
-    <Switch
-        android:id="@+id/theServiceSwitch2"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/theServiceSwitch"
-        android:text="Service is off " />
+        android:orientation="vertical"
+        android:layout_alignParentTop="true" >
+        <Switch
+            android:id="@+id/theServiceSwitch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:text="Service is off "
+        />
+        <Switch
+            android:id="@+id/theServiceSwitch2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/theServiceSwitch"
+            android:text="Service is off "
+            android:visibility="gone"
+        />
+        <!-- set visibility to "visible" to experiment -->
+    </LinearLayout>
 
     <TextView
         android:id="@+id/theServiceHeader"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/theServiceSwitch2"
+        android:layout_below="@+id/theServiceSwitchContainer"
         android:text="Service should:" />
 
     <Button

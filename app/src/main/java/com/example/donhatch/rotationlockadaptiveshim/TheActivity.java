@@ -342,15 +342,35 @@ public class TheActivity extends Activity {
                 Log.i(TAG, "                out onReceive: "+intent.getAction());
             } else if (intent.getAction().equals("service started")) {
                 Log.i(TAG, "                in onReceive: "+intent.getAction());
-                Switch theServiceSwitch = (Switch)findViewById(R.id.theServiceSwitch);
-                theServiceSwitch.setText("Service is on  ");
-                setSwitchTintOn(theServiceSwitch);
+                Switch theServiceSwitches[] = {
+                  (Switch)findViewById(R.id.theServiceSwitch),
+                  (Switch)findViewById(R.id.theServiceSwitch2),
+                };
+                for (Switch theServiceSwitch : theServiceSwitches) {
+                  theServiceSwitch.setText("Service is on  ");
+                  CHECK(!mSettingCheckedFromProgram);
+                  mSettingCheckedFromProgram = true;
+                  theServiceSwitch.setChecked(true);
+                  CHECK(mSettingCheckedFromProgram);
+                  mSettingCheckedFromProgram = false;
+                  setSwitchTintOn(theServiceSwitch);
+                }
                 Log.i(TAG, "                out onReceive: "+intent.getAction());
             } else if (intent.getAction().equals("service destroyed")) {
                 Log.i(TAG, "                in onReceive: "+intent.getAction());
-                Switch theServiceSwitch = (Switch)findViewById(R.id.theServiceSwitch);
-                theServiceSwitch.setText("Service is off  ");
-                setSwitchTintOff(theServiceSwitch);
+                Switch theServiceSwitches[] = {
+                  (Switch)findViewById(R.id.theServiceSwitch),
+                  (Switch)findViewById(R.id.theServiceSwitch2),
+                };
+                for (Switch theServiceSwitch : theServiceSwitches) {
+                  theServiceSwitch.setText("Service is off  ");
+                  CHECK(!mSettingCheckedFromProgram);
+                  mSettingCheckedFromProgram = true;
+                  theServiceSwitch.setChecked(false);
+                  CHECK(mSettingCheckedFromProgram);
+                  mSettingCheckedFromProgram = false;
+                  setSwitchTintOff(theServiceSwitch);
+                }
                 Log.i(TAG, "                out onReceive: "+intent.getAction());
             } else {
                 Log.i(TAG, "                in onReceive: "+intent.getAction());
@@ -432,7 +452,10 @@ public class TheActivity extends Activity {
 
         RelativeLayout theRelativeLayout = (RelativeLayout)findViewById(R.id.theRelativeLayout);
         CHECK(theRelativeLayout != null); // was failing when there was an out of date layout-land/activity_main.xml
-        Switch theServiceSwitch = (Switch)findViewById(R.id.theServiceSwitch);
+        Switch theServiceSwitches[] = {
+          (Switch)findViewById(R.id.theServiceSwitch),
+          (Switch)findViewById(R.id.theServiceSwitch2),
+        };
         Button theAppSettingsButton = (Button)findViewById(R.id.theAppSettingsButton);
         Switch theWhackAMoleSwitch = (Switch)findViewById(R.id.theWhackAMoleSwitch);
         Switch theAutoRotateSwitch = (Switch)findViewById(R.id.theAutoRotateSwitch);
@@ -604,55 +627,57 @@ public class TheActivity extends Activity {
         }
 
         if (true) {
-            final Switch finalTheServiceSwitch = theServiceSwitch;
-            setSwitchTintOff(theServiceSwitch); // i.e. use "off" colors for both off and on position
-            theServiceSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-                public void onCheckedChanged(final CompoundButton buttonView, boolean isChecked) {
-                    Log.i(TAG, "            in theServiceSwitch onCheckedChanged(isChecked=" + isChecked + ")");
-                    if (mSettingCheckedFromProgram) {
-                        Log.i(TAG, "              (from program; not doing anything)");
-                    } else {
-                        if (isChecked) {
-                            Log.i(TAG, "              calling startService");
-                            startService(new Intent(TheActivity.this, TheService.class));
-                            Log.i(TAG, "              returned from startService");
-                            if (false) {
-                                // Make sure we can't mess up service's notion of whether it's running,
-                                // by sending a whole flurry of stuff.
-                                // NOTE: this does seem to confuse the notification icon! or, it did, before I started checking for mSettingCheckedFromProgram
-                                startService(new Intent(TheActivity.this, TheService.class));
-                                stopService(new Intent(TheActivity.this, TheService.class));
-                                stopService(new Intent(TheActivity.this, TheService.class));
-                                startService(new Intent(TheActivity.this, TheService.class));
-                                startService(new Intent(TheActivity.this, TheService.class));
-                            }
-                            if (false) { // too jumpy
-                              Log.i(TAG, "              setting text to \"Service is turning on  \"");
-                              buttonView.setText("Service is turning on  ");
-                            }
+            for (Switch theServiceSwitch : theServiceSwitches) {
+                final Switch finalTheServiceSwitch = theServiceSwitch;
+                setSwitchTintOff(theServiceSwitch); // i.e. use "off" colors for both off and on position
+                theServiceSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                    public void onCheckedChanged(final CompoundButton buttonView, boolean isChecked) {
+                        Log.i(TAG, "            in theServiceSwitch onCheckedChanged(isChecked=" + isChecked + ")");
+                        if (mSettingCheckedFromProgram) {
+                            Log.i(TAG, "              (from program; not doing anything)");
                         } else {
-                            Log.i(TAG, "              calling stopService");
-                            stopService(new Intent(TheActivity.this, TheService.class));
-                            Log.i(TAG, "              returned from stopService");
-                            if (false) {
-                                // Make sure we can't mess up service's notion of whether it's running,
-                                // by sending a whole flurry of stuff
-                                // NOTE: this does seem to confuse the notification icon!
-                                stopService(new Intent(TheActivity.this, TheService.class));
+                            if (isChecked) {
+                                Log.i(TAG, "              calling startService");
                                 startService(new Intent(TheActivity.this, TheService.class));
-                                startService(new Intent(TheActivity.this, TheService.class));
+                                Log.i(TAG, "              returned from startService");
+                                if (false) {
+                                    // Make sure we can't mess up service's notion of whether it's running,
+                                    // by sending a whole flurry of stuff.
+                                    // NOTE: this does seem to confuse the notification icon! or, it did, before I started checking for mSettingCheckedFromProgram
+                                    startService(new Intent(TheActivity.this, TheService.class));
+                                    stopService(new Intent(TheActivity.this, TheService.class));
+                                    stopService(new Intent(TheActivity.this, TheService.class));
+                                    startService(new Intent(TheActivity.this, TheService.class));
+                                    startService(new Intent(TheActivity.this, TheService.class));
+                                }
+                                if (false) { // too jumpy
+                                  Log.i(TAG, "              setting text to \"Service is turning on  \"");
+                                  buttonView.setText("Service is turning on  ");
+                                }
+                            } else {
+                                Log.i(TAG, "              calling stopService");
                                 stopService(new Intent(TheActivity.this, TheService.class));
-                                stopService(new Intent(TheActivity.this, TheService.class));
-                            }
-                            if (false) { // too jumpy
-                              Log.i(TAG, "              setting text to \"Service is turning off  \"");
-                              buttonView.setText("Service is turning off  ");
+                                Log.i(TAG, "              returned from stopService");
+                                if (false) {
+                                    // Make sure we can't mess up service's notion of whether it's running,
+                                    // by sending a whole flurry of stuff
+                                    // NOTE: this does seem to confuse the notification icon!
+                                    stopService(new Intent(TheActivity.this, TheService.class));
+                                    startService(new Intent(TheActivity.this, TheService.class));
+                                    startService(new Intent(TheActivity.this, TheService.class));
+                                    stopService(new Intent(TheActivity.this, TheService.class));
+                                    stopService(new Intent(TheActivity.this, TheService.class));
+                                }
+                                if (false) { // too jumpy
+                                  Log.i(TAG, "              setting text to \"Service is turning off  \"");
+                                  buttonView.setText("Service is turning off  ");
+                                }
                             }
                         }
+                        Log.i(TAG, "            out theServiceSwitch onCheckedChanged(isChecked=" + isChecked + ")");
                     }
-                    Log.i(TAG, "            out theServiceSwitch onCheckedChanged(isChecked=" + isChecked + ")");
-                }
-            });
+                });
+            }
         }
         // Double-opt-in dance needed to write settings.
         // It causes the appropriate permissions screen to come up if it's wrong.
@@ -817,21 +842,32 @@ public class TheActivity extends Activity {
     protected void onStart() {
         Log.i(TAG, "        in onStart");
         super.onStart();
-        Switch theServiceSwitch = (Switch)findViewById(R.id.theServiceSwitch);
+        Switch theServiceSwitches[] = {
+          (Switch)findViewById(R.id.theServiceSwitch),
+          (Switch)findViewById(R.id.theServiceSwitch2),
+        };
         boolean serviceIsRunning = TheService.theRunningService != null;
         Log.i(TAG, "          calling theServiceSwitch.setChecked("+serviceIsRunning+")");
-        mSettingCheckedFromProgram = true;
-        theServiceSwitch.setChecked(serviceIsRunning);
-        mSettingCheckedFromProgram = false;
+        for (Switch theServiceSwitch : theServiceSwitches) {
+            CHECK(!mSettingCheckedFromProgram);
+            mSettingCheckedFromProgram = true;
+            theServiceSwitch.setChecked(serviceIsRunning);
+            CHECK(mSettingCheckedFromProgram);
+            mSettingCheckedFromProgram = false;
+        }
         Log.i(TAG, "          returned from theServiceSwitch.setChecked("+serviceIsRunning+")");
         // That invoked the listener which set the label to "Service is on" or "Service is off";
         // overwrite it with something that says "initially".
         if (serviceIsRunning) {
             Log.i(TAG, "          setting text to \"Service is initially on  \"");
-            theServiceSwitch.setText("Service is initially on  ");
+            for (Switch theServiceSwitch : theServiceSwitches) {
+              theServiceSwitch.setText("Service is initially on  ");
+            }
         } else {
             Log.i(TAG, "          setting text to \"Service is initially off \"");
-            theServiceSwitch.setText("Service is initially off ");
+            for (Switch theServiceSwitch : theServiceSwitches) {
+              theServiceSwitch.setText("Service is initially off  ");
+            }
         }
         Log.i(TAG, "        out onStart");
     }

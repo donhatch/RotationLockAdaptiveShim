@@ -56,11 +56,18 @@
         android:layout_alignParentTop="true"
         android:text="Service is off " />
 
+    <Switch
+        android:id="@+id/theServiceSwitch2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/theServiceSwitch"
+        android:text="Service is off " />
+
     <TextView
         android:id="@+id/theServiceHeader"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/theServiceSwitch"
+        android:layout_below="@+id/theServiceSwitch2"
         android:text="Service should:" />
 
     <Button

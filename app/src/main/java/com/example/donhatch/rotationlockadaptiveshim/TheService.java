@@ -895,11 +895,16 @@ public class TheService extends Service {
             mCurrentSystemSettingACCELEROMETER_ROTATION = 0;
         }
 
-        {
-          Intent intent = new Intent("service started");
-          if (mVerboseLevel == 1) Log.i(TAG, "                              sending \"service started\" broadcast");
-          LocalBroadcastManager.getInstance(TheService.this).sendBroadcast(intent);
-        }
+        new Handler().postDelayed(new Runnable() {
+            private int i = 0;
+            @Override
+            public void run() {
+                Intent intent = new Intent("service started");
+                if (mVerboseLevel == 1) Log.i(TAG, "                              sending \"service started\" broadcast");
+                LocalBroadcastManager.getInstance(TheService.this).sendBroadcast(intent);
+            }
+        }, 250); // tiny delay before telling activity, to test synchronization behavior
+
 
         if (mVerboseLevel >= 1) Log.i(TAG, "                            out TheService.onStartCommand(startIntent, flags="+flags+", startId="+startId+")");
         return START_STICKY; // Continue running until explicitly stopped, and restart the app process with service only if it gets kill by e.g. stopsign button in Android Monitor in AS
@@ -938,11 +943,15 @@ public class TheService extends Service {
         // - in the latter case, we must tell the activity, otherwise the switch will not be in sync.
         //   XXX examine whether I've adressed that
             
-        {
-          Intent intent = new Intent("service destroyed");
-          if (mVerboseLevel == 1) Log.i(TAG, "                              sending \"service destroyed\" broadcast");
-          LocalBroadcastManager.getInstance(TheService.this).sendBroadcast(intent);
-        }
+        new Handler().postDelayed(new Runnable() {
+            private int i = 0;
+            @Override
+            public void run() {
+                Intent intent = new Intent("service destroyed");
+                if (mVerboseLevel == 1) Log.i(TAG, "                              sending \"service destroyed\" broadcast");
+                LocalBroadcastManager.getInstance(TheService.this).sendBroadcast(intent);
+            }
+        }, 250); // tiny delay before telling activity, to test synchronization behavior
         // XXX race? what if user is in the process of turning it on??
         if (mVerboseLevel >= 1) Log.i(TAG, "                        out TheService.onDestroy");
     }  // onDestroy

@@ -207,7 +207,7 @@ public class TheService extends Service {
     public static boolean mStaticOverride = true; // TODO: make this a shared preference? the activity is the one who sets this
 
     // this one has a public setter/getter
-    private static boolean mStaticRed = true; // TODO: make this a shared preference? the activity is the one who sets this
+    private static boolean mStaticRed = false; // TODO: make this a shared preference? the activity is the one who sets this
 
     // XXX TODO: call it SurfaceRotationConstant instead?
     private static int closestCompassPointToUserRotation(int closestCompassPoint) {
@@ -803,7 +803,6 @@ public class TheService extends Service {
         }
 
         updateOverrideIfNecessary();
-
         if (mVerboseLevel >= 1) Log.i(TAG, "                        out TheService.onCreate");
     }  // onCreate
 
@@ -896,6 +895,12 @@ public class TheService extends Service {
             mCurrentSystemSettingACCELEROMETER_ROTATION = 0;
         }
 
+        {
+          Intent intent = new Intent("service started");
+          if (mVerboseLevel == 1) Log.i(TAG, "                              sending \"service started\" broadcast");
+          LocalBroadcastManager.getInstance(TheService.this).sendBroadcast(intent);
+        }
+
         if (mVerboseLevel >= 1) Log.i(TAG, "                            out TheService.onStartCommand(startIntent, flags="+flags+", startId="+startId+")");
         return START_STICKY; // Continue running until explicitly stopped, and restart the app process with service only if it gets kill by e.g. stopsign button in Android Monitor in AS
     }  // onStartCommand
@@ -931,6 +936,13 @@ public class TheService extends Service {
         // - user toggled the switch in the activity
         // - something else called stopService
         // - in the latter case, we must tell the activity, otherwise the switch will not be in sync.
+        //   XXX examine whether I've adressed that
+            
+        {
+          Intent intent = new Intent("service destroyed");
+          if (mVerboseLevel == 1) Log.i(TAG, "                              sending \"service destroyed\" broadcast");
+          LocalBroadcastManager.getInstance(TheService.this).sendBroadcast(intent);
+        }
         // XXX race? what if user is in the process of turning it on??
         if (mVerboseLevel >= 1) Log.i(TAG, "                        out TheService.onDestroy");
     }  // onDestroy

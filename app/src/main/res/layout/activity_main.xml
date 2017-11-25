@@ -103,8 +103,8 @@
         android:id="@+id/theRedSwitch"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignRight="@id/theOverrideSwitch"
-        android:layout_below="@id/theOverrideSwitch"
+        android:layout_alignEnd="@+id/theOverrideSwitch"
+        android:layout_below="@+id/theOverrideSwitch"
         android:text="    using red overlay " />
 
     <TextView

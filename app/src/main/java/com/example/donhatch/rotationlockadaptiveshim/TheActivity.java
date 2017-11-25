@@ -1,4 +1,3 @@
-//
 // BUG: after switching orientation, dial rotation is 90 degrees wrong til it changes. need to update rotation immediately.  (very obvious in emulator)
 // BUG: in emulator, when screen layout changes, dial orientation doesn't get updated.  I didn't notice this on real device, because accelerometer event comes in almost immediately.
 // BUG: why does there seem to be a delay after I click "yes" and before it rotates? seems more responsive when it's not prompting
@@ -8,9 +7,6 @@
 // BUG: if permission revoked in midstream and double-opt-in-dance is done,
 //       if activity isn't up, and it's the first time,
 //       the system settings screen is (sometimes) delayed until after the toast disappears!
-// TODO: better communication from activity to service:
-//         - when override toggled, should update the overlay immediately
-//         - when service first turned on, should apply the overlay immediately even if already rotated properly
 // TODO: better communication from service to activity:
 //         - ui should monitor the overlay state: whether it's visible, and its getRequestedOrientation
 // TODO: enhance ui look
@@ -38,6 +34,7 @@
 // TODO: ask on stackoverflow how to create matrix
 
 /*
+wow, I asked this as https://stackoverflow.com/questions/43319781/how-to-test-exercise-androids-screen-rotation-behavior and got absolutely no response
 Q: how to test/exercise android's screen rotation behavior?
 tags: android
 
@@ -102,6 +99,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Configuration;
+import android.content.res.ColorStateList;
 import android.database.ContentObserver;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -155,7 +153,7 @@ public class TheActivity extends Activity {
 
     // https://stackoverflow.com/questions/6178896/how-to-draw-a-line-in-imageview-on-android
     // This is actually pretty lame, since, it turns out, onDraw is only called once
-    // on startup, and subsequently it the drawn thing gets rotated.
+    // on startup (and orientation change between portrait and landscape), and subsequently the drawn thing gets rotated.
     public class MyImageView1 extends ImageView {
         public MyImageView1(Context context) {
             super(context);
@@ -341,6 +339,18 @@ public class TheActivity extends Activity {
                 Log.i(TAG, "                  setting thePromptFirstSwitch.setChecked("+newStaticPromptFirst+")");
                 Switch thePromptFirstSwitch = (Switch)findViewById(R.id.thePromptFirstSwitch);
                 thePromptFirstSwitch.setChecked(newStaticPromptFirst);
+                Log.i(TAG, "                out onReceive: "+intent.getAction());
+            } else if (intent.getAction().equals("service started")) {
+                Log.i(TAG, "                in onReceive: "+intent.getAction());
+                Switch theServiceSwitch = (Switch)findViewById(R.id.theServiceSwitch);
+                theServiceSwitch.setText("Service is on  ");
+                setSwitchTintOn(theServiceSwitch);
+                Log.i(TAG, "                out onReceive: "+intent.getAction());
+            } else if (intent.getAction().equals("service destroyed")) {
+                Log.i(TAG, "                in onReceive: "+intent.getAction());
+                Switch theServiceSwitch = (Switch)findViewById(R.id.theServiceSwitch);
+                theServiceSwitch.setText("Service is off  ");
+                setSwitchTintOff(theServiceSwitch);
                 Log.i(TAG, "                out onReceive: "+intent.getAction());
             } else {
                 Log.i(TAG, "                in onReceive: "+intent.getAction());
@@ -592,9 +602,12 @@ public class TheActivity extends Activity {
                 }
             });
         }
+
         if (true) {
+            final Switch finalTheServiceSwitch = theServiceSwitch;
+            setSwitchTintOff(theServiceSwitch); // i.e. use "off" colors for both off and on position
             theServiceSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                public void onCheckedChanged(final CompoundButton buttonView, boolean isChecked) {
                     Log.i(TAG, "            in theServiceSwitch onCheckedChanged(isChecked=" + isChecked + ")");
                     if (mSettingCheckedFromProgram) {
                         Log.i(TAG, "              (from program; not doing anything)");
@@ -613,8 +626,10 @@ public class TheActivity extends Activity {
                                 startService(new Intent(TheActivity.this, TheService.class));
                                 startService(new Intent(TheActivity.this, TheService.class));
                             }
-                            Log.i(TAG, "              setting text to \"Service is on  \"");
-                            buttonView.setText("Service is on  "); // we assume startService is reliable
+                            if (false) { // too jumpy
+                              Log.i(TAG, "              setting text to \"Service is turning on  \"");
+                              buttonView.setText("Service is turning on  ");
+                            }
                         } else {
                             Log.i(TAG, "              calling stopService");
                             stopService(new Intent(TheActivity.this, TheService.class));
@@ -629,8 +644,10 @@ public class TheActivity extends Activity {
                                 stopService(new Intent(TheActivity.this, TheService.class));
                                 stopService(new Intent(TheActivity.this, TheService.class));
                             }
-                            Log.i(TAG, "              setting text to \"Service is off \"");
-                            buttonView.setText("Service is off "); // we assume stopService is reliable
+                            if (false) { // too jumpy
+                              Log.i(TAG, "              setting text to \"Service is turning off  \"");
+                              buttonView.setText("Service is turning off  ");
+                            }
                         }
                     }
                     Log.i(TAG, "            out theServiceSwitch onCheckedChanged(isChecked=" + isChecked + ")");
@@ -824,10 +841,13 @@ public class TheActivity extends Activity {
         Log.i(TAG, "            in onResume");
         super.onResume();
 
+        // see https://stackoverflow.com/questions/7887169/android-when-to-register-unregister-broadcast-receivers-created-in-an-activity for discussion of whether to do this in onStart/onStop or onPause/onResume . still not entirely clear
         {
             android.support.v4.content.LocalBroadcastManager.getInstance(this).registerReceiver(mBroadcastReceiver, new IntentFilter("degrees changed") {{
                 addAction("mStaticPromptFirst changed");
                 addAction("mStaticClosestCompassPoint changed");
+                addAction("service started");
+                addAction("service destroyed");
             }});
         }
 
@@ -892,7 +912,7 @@ public class TheActivity extends Activity {
     // the activity), the manifest must have "orientation|screenSize" in android:configChanges
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
-        Log.i(TAG, " onConfigurationChanged");
+        Log.i(TAG, "in onConfigurationChanged");
         super.onConfigurationChanged(newConfig);
         Log.i(TAG, "  newConfig = "+newConfig);
         Log.i(TAG, "  newConfig.orientation = "+TheService.orientationConstantToString(newConfig.orientation));
@@ -925,6 +945,63 @@ public class TheActivity extends Activity {
             }
         }
 
-        Log.i(TAG, " onConfigurationChanged");
+        Log.i(TAG, "out onConfigurationChanged");
     }
+
+    // Functions to make switches show "turning on", "turning off". Asked on stack overflow: https://stackoverflow.com/questions/47469451/how-to-make-an-android-switch-control-show-that-its-turning-on-or-turning-of?noredirect=1#comment81893491_47469451
+    // use "off" colors for both off and on position
+    private static void setSwitchTintOff(Switch swtch) {
+        Log.i(TAG, "in setSwitchTintOff");
+        Log.i(TAG, "  swtch.getThumbTintList() = "+swtch.getThumbTintList());
+        Log.i(TAG, "  swtch.getThumbTintMode() = "+swtch.getThumbTintMode());
+        Log.i(TAG, "  swtch.getTrackTintList() = "+swtch.getTrackTintList());
+        Log.i(TAG, "  swtch.getTrackTintMode() = "+swtch.getTrackTintMode());
+        Log.i(TAG, "out setSwitchTintOff");
+        int[][] states = new int[][] {
+            new int[] {-android.R.attr.state_checked},
+            new int[] {android.R.attr.state_checked},
+        };
+        int[] thumbColors = new int[] {
+            // 236,236,236 -> 231,231,231
+            // 239,239,239 -> 234,234,234
+            // 240,240,240 -> 235,235,235
+            // 241,241,241 -> 233,233,233
+            // 242,242,242 -> 237,237,237
+            // 243,243,243 -> 238,238,238
+            // 244,244,244 -> 239,239,239
+            // wtf: not monotonic??  want 236, but can't get it exactly??
+            Color.rgb(240,240,240), // off
+            Color.rgb(240,240,240), // off
+        };
+        int[] trackColors = new int[] {
+            // 0,0,0       -> 185,185,185
+            Color.rgb(0,0,0), // off
+            Color.rgb(0,0,0), // off
+        };
+        //swtch.getThumbDrawable().setTintList(new ColorStateList(states, thumbColors));
+        //swtch.getTrackDrawable().setTintList(new ColorStateList(states, trackColors));
+        swtch.setThumbTintList(new ColorStateList(states, thumbColors));
+        swtch.setTrackTintList(new ColorStateList(states, thumbColors));
+    };
+    // use "on" colors for both off and on position
+    private static void setSwitchTintOn(Switch swtch) {
+        int[][] states = new int[][] {
+            new int[] {-android.R.attr.state_checked},
+            new int[] {android.R.attr.state_checked},
+        };
+        int[] thumbColors = new int[] {
+            // 255,64,129 -> 250,23,126
+            Color.rgb(255,64,129), // on
+            Color.rgb(255,64,129), // on
+        };
+        int[] trackColors = new int[] {
+            // 255,65,130  -> 251,202,219
+            Color.rgb(255,65,130), // on
+            Color.rgb(255,65,130), // on
+        };
+        //swtch.getThumbDrawable().setTintList(new ColorStateList(states, thumbColors));
+        //swtch.getTrackDrawable().setTintList(new ColorStateList(states, trackColors));
+        swtch.setThumbTintList(new ColorStateList(states, thumbColors));
+        swtch.setTrackTintList(new ColorStateList(states, thumbColors));
+    };
 }

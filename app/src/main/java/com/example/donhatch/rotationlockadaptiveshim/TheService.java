@@ -28,6 +28,7 @@ import android.graphics.PixelFormat;
 import android.graphics.drawable.ColorDrawable;
 import android.hardware.SensorManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.provider.Settings;
@@ -390,6 +391,11 @@ public class TheService extends Service {
     @Override
     public void onCreate() {
         if (mVerboseLevel >= 1) Log.i(TAG, "                        in TheService.onCreate");
+        if (mVerboseLevel >= 1) Log.i(TAG, "                          Build.VERSION.SDK_INT = "+Build.VERSION.SDK_INT);  // what's on the current machine at runtime
+        if (mVerboseLevel >= 1) Log.i(TAG, "                          Build.VERSION_CODES.O = "+Build.VERSION_CODES.O);
+        if (mVerboseLevel >= 1) Log.i(TAG, "                          getApplicationContext().getApplicationInfo().targetSdkVersion = "+getApplicationContext().getApplicationInfo().targetSdkVersion);
+        // note that in real apps installed from store, I think it's always true that runtime version <= targetSdkVersion
+
         if (theRunningService != null) {
             // XXX do this via a Notification, I think
             // XXX have I decided this never happens?  Not sure.
@@ -450,14 +456,24 @@ public class TheService extends Service {
         mOrientationChanger.setVisibility(View.GONE);
         mOrientationChangerCurrentBackgroundColor = (mStaticRed ? 0x44ff0000 : 0x00000000); // faint translucent red color if mStaticRed
         mOrientationChanger.setBackgroundColor(mOrientationChangerCurrentBackgroundColor);
+
+        // Note, prior to api level 26, I used TYPE_SYSTEM_OVERLAY, which worked.
+        // But that's now deprecated, and with targetSdkLevel>=26, it makes the addView crash.
+        // So now I have to use TYPE_APPLICATION_OVERLAY+FLAG_NOT_TOUCHABLE instead, which seems to work.
+        // (the flag is apparently necessary to get touchthrough).
+        // Note that for TYPE_APPLICATION_OVERLAY to be defined requires compileSdkLevel>=26,
+        // but it works (on *runtime* level>=26, anyway) even if targetSdkLevel=25.
+        int type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY; // works for both now that I figured out the FLAG_NOT_TOUCHABLE thing
         mOrientationLayout = new WindowManager.LayoutParams(
-            /*_type=*/WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY,
-            /*_flags=*/0,
+            /*_type=*/type,
+            /*_flags=*/WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE, // required in order for touchthrough to work
             /*_format=*/PixelFormat.RGBA_8888);
         CHECK(mOrientationLayout.screenOrientation == ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
         {
             WindowManager windowManager = (WindowManager)getSystemService(Service.WINDOW_SERVICE);
+            if (mVerboseLevel >= 1) Log.i(TAG, "                          adding view mOrientationchanger");
             windowManager.addView(mOrientationChanger, mOrientationLayout);
+            if (mVerboseLevel >= 1) Log.i(TAG, "                          added view mOrientationchanger");
             CHECK(mOrientationChanger.getVisibility() == View.GONE);
         }
         mOrientationEventListener = new OrientationEventListener(this, SensorManager.SENSOR_DELAY_NORMAL) {
@@ -609,7 +625,13 @@ public class TheService extends Service {
 
 
                                         Window alertDialogWindow = alertDialog.getWindow();
-                                        alertDialogWindow.setType(WindowManager.LayoutParams.TYPE_SYSTEM_ALERT); // required when context=TheService.this, otherwise WindowManager.BadTokenException.
+
+                                        // This setType is required when context=TheService.this,
+                                        // otherwise the show() gives WindowManager.BadTokenException.
+                                        // prior to targetSdkVersion=26, I used TYPE_SYSTEM_ALERT, but that doesn't work any more;
+                                        // the new thing is TYPE_APPLICATION_OVERLAY instead.
+                                        alertDialogWindow.setType(WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY);
+
                                         // Kill the dimming of the activity or whatever's behind it
                                         alertDialogWindow.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
                                         // Kill the drop shadow too
@@ -627,6 +649,7 @@ public class TheService extends Service {
                                         } catch (WindowManager.BadTokenException e) {
                                             // This happens if I omit android.permission.SYSTEM_ALERT_WINDOW from AndroidManifest, or if user revoke or didn't grant "Draw over other apps".
                                             // TODO: need to do the double-opt-in dance here, similar to the WRITE_SETTINGS permission
+                                            // TODO: also fails if I try to pop up the dialog, on targetSdkLevel>=26.  ah, it's because TYPE_SYSTEM_ALERT is deprecated for non-system apps, use TYPE_APPLICATION_OVERLAY instead?
                                             CHECK(false);
                                         }
                                         // Make it expire in 3 seconds.
@@ -833,7 +856,8 @@ public class TheService extends Service {
             final Notification.Builder builder = new Notification.Builder(this)
                     .setContentTitle("Adaptive Rotation Lock Shim") // XXX R.string.notification_title
                     .setContentText("Tap for configuration options") // XXX R.string.notification_messsage
-                    .setSmallIcon(R.drawable.typewriter_el)
+                    //.setSmallIcon(R.drawable.typewriter_el)
+                    .setSmallIcon(R.mipmap.typewriter_el)
                     .setContentIntent(pendingIntent)
                     //.setOngoing(true) // XXX doesn't seem to help keep the icon up
                     .setWhen(System.currentTimeMillis()+10*60*1000)
@@ -1026,7 +1050,7 @@ public class TheService extends Service {
           }
 
           if (mVerboseLevel >= 1) Log.i(TAG, "              attempting to force orientation to "+screenOrientationConstantToString(newScreenOrientationConstant));
-          if (mOrientationChanger.getVisibility() != View.VISIBLE
+          if ((mOrientationChanger.getVisibility() != View.VISIBLE)
            || mOrientationLayout.screenOrientation != newScreenOrientationConstant
            || mOrientationChangerCurrentBackgroundColor != (mStaticRed ? 0x44ff0000 : 0x00000000)) {
               mOrientationChangerCurrentBackgroundColor = (mStaticRed ? 0x44ff0000 : 0x00000000); // faint translucent red color if mStaticRed

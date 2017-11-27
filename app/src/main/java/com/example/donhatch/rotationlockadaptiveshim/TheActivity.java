@@ -1,4 +1,11 @@
 // BUG: upgrading targetSdkVersion from 25 to 26 makes the app icon a solid white circle?? wtf?
+//     maybe relevant:
+//      https://stackoverflow.com/questions/45611508/icons-look-flat-in-action-bar#answer-46474450
+//     which references:
+//      https://stackoverflow.com/questions/45340740/squashed-icons-in-toolbar-after-change-to-android-sdk-26/45344964#45344964
+//     ah I see, I think it needs something in xxxhdpi.
+//     How did I generate the L icons to begin with?
+//     (I regenerated... argh, lost transparent backgrounds)
 
 // BUG: after switching orientation, dial rotation is 90 degrees wrong til it changes. need to update rotation immediately.  (very obvious in emulator)
 // BUG: in emulator, when screen layout changes, dial orientation doesn't get updated.  I didn't notice this on real device, because accelerometer event comes in almost immediately.
@@ -1000,6 +1007,7 @@ public class TheActivity extends Activity {
             new int[] {android.R.attr.state_checked},
         };
         int[] thumbColors = new int[] {
+	    // ???,???,??? -> 236,236,236
             // 236,236,236 -> 231,231,231
             // 239,239,239 -> 234,234,234
             // 240,240,240 -> 235,235,235
@@ -1008,7 +1016,7 @@ public class TheActivity extends Activity {
             // 243,243,243 -> 238,238,238
             // 244,244,244 -> 239,239,239
             // wtf: not monotonic??  want 236, but can't get it exactly??
-            Color.rgb(240,240,240), // off
+            Color.rgb(240,240,240), // off   <--- hmm, 241,241,241 = f1f1f1 comes out in some intermediate file as switch_thumb_normal_material_light ??
             Color.rgb(240,240,240), // off
         };
         int[] trackColors = new int[] {
@@ -1029,11 +1037,22 @@ public class TheActivity extends Activity {
         };
         int[] thumbColors = new int[] {
             // 255,64,129 -> 250,23,126
+            Color.rgb(255,64,129), // on    <--- AH HA!  THIS is exactly the value I see in Tools -> Android -> Theme Editor, for @color/colorAccent !  and that;s this in app/src/main/res/values/colors.xml: <color name="colorAccent">#FF4081</color>
+					   // hmm, see this: https://stackoverflow.com/questions/11253512/change-on-color-of-a-switch#comment-57432698
+                                           // and see this: https://android.jlelse.eu/customizing-switch-using-xml-ca0d37204a86
+	
             Color.rgb(255,64,129), // on
-            Color.rgb(255,64,129), // on
+
+
+            // note, that file contains:
+            /*
+	      <color name="colorPrimary">#3F51B5</color>    63,81,181
+	      <color name="colorPrimaryDark">#303F9F</color> 48,63,159
+	      <color name="colorAccent">#FF4081</color>     255,64,129
+            */
         };
         int[] trackColors = new int[] {
-            // 255,65,130  -> 251,202,219
+            // 255,65,130  -> 251,202,219    (may be the colorAccent color does it too, though)
             Color.rgb(255,65,130), // on
             Color.rgb(255,65,130), // on
         };

@@ -6,7 +6,7 @@
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <application
         android:allowBackup="true"
-        android:icon="@drawable/typewriter_el"
+        android:icon="@mipmap/typewriter_el"
         android:label="Adaptive Rotation Lock Shim"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">

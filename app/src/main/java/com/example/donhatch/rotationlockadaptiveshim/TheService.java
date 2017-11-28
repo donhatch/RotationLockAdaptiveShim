@@ -464,9 +464,14 @@ public class TheService extends Service {
         // Note that for TYPE_APPLICATION_OVERLAY to be defined requires compileSdkLevel>=26,
         // but it works (on *runtime* level>=26, anyway) even if targetSdkLevel=25.
         int type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY; // works for both now that I figured out the FLAG_NOT_TOUCHABLE thing
+        int flags = 0;
+        flags |= WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE; // required in order for touchthrough to work at all
+        flags |= WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE; // required in order for playstore's keyboard to function when under this overlay (wtf!?)
+        //flags |= WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL // irrelevant since FLAG_NOT_FOCUSABLE is set
+
         mOrientationLayout = new WindowManager.LayoutParams(
             /*_type=*/type,
-            /*_flags=*/WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE, // required in order for touchthrough to work
+            /*_flags=*/flags,
             /*_format=*/PixelFormat.RGBA_8888);
         CHECK(mOrientationLayout.screenOrientation == ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
         {

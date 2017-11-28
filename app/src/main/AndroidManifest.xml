@@ -3,6 +3,7 @@
     package="com.example.donhatch.rotationlockadaptiveshim">
 
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />
+    <!-- SYSTEM_ALERT_WINDOW is needed both when using TYPE_APPLICATION_OVERLAY and the pre-TYPE_APPLICATION_OVERLAY api. -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <application
         android:allowBackup="true"

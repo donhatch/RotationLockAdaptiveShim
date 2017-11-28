@@ -1002,14 +1002,14 @@ public class TheService extends Service {
             final int oldColor = theRunningService.mOrientationChangerCurrentBackgroundColor;
             final int newColor = (mStaticRed ? 0x44ff0000 : 0x00000000); // faint translucent red color if mStaticRed
             theRunningService.mOrientationChangerCurrentBackgroundColor = newColor;
-            if (true) {
+            if (false) {
                 Log.i(TAG, "                      instantly setting background color to "+String.format("%#x", newColor));
                 theRunningService.mOrientationChanger.setBackgroundColor(theRunningService.mOrientationChangerCurrentBackgroundColor);
             } else {
                 // Fade it in
                 Log.i(TAG, "                      fading background color to "+String.format("%#x", newColor));
-                final long fadeMillis = 100;
-                final int n = 10; // too small and it's jittery.  too big and it makes it take a long time.
+                final long fadeMillis = 500;
+                final int n = 20; // too small makes it juddery.  too big makes it take a long time.
                 final Handler handler = new Handler();
                 Runnable runnable = new Runnable() {
                     private int i = 0;

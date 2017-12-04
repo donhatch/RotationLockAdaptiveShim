@@ -47,6 +47,7 @@ import android.widget.Toast;
 public class TheService extends Service {
 
     private static final String TAG = "RLAS service";  // was "RotationLockAdaptiveShim service" but got warnings
+    private static final int TINY_DELAY = 500;
 
     private static void CHECK(boolean condition) {
         if (!condition) {
@@ -932,7 +933,8 @@ public class TheService extends Service {
                 if (mVerboseLevel == 1) Log.i(TAG, "                              sending \"service started\" broadcast");
                 LocalBroadcastManager.getInstance(TheService.this).sendBroadcast(intent);
             }
-        }, 250); // tiny delay before telling activity, to test synchronization behavior
+        }, TINY_DELAY); // tiny delay before telling activity, to test synchronization behavior
+
 
 
         if (mVerboseLevel >= 1) Log.i(TAG, "                            out TheService.onStartCommand(startIntent, flags="+flags+", startId="+startId+")");
@@ -980,7 +982,7 @@ public class TheService extends Service {
                 if (mVerboseLevel == 1) Log.i(TAG, "                              sending \"service destroyed\" broadcast");
                 LocalBroadcastManager.getInstance(TheService.this).sendBroadcast(intent);
             }
-        }, 250); // tiny delay before telling activity, to test synchronization behavior
+        }, TINY_DELAY); // tiny delay before telling activity, to test synchronization behavior
         // XXX race? what if user is in the process of turning it on??
         if (mVerboseLevel >= 1) Log.i(TAG, "                        out TheService.onDestroy");
     }  // onDestroy

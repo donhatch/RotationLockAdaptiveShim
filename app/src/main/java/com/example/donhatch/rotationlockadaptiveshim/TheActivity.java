@@ -362,7 +362,7 @@ public class TheActivity extends Activity {
                   theServiceSwitch.setChecked(true);
                   CHECK(mSettingCheckedFromProgram);
                   mSettingCheckedFromProgram = false;
-                  setSwitchTintOn(theServiceSwitch);
+                  setSwitchTints(theServiceSwitch, /*thumbOn=*/true, /*trackOn=*/true);
                 }
                 Log.i(TAG, "                out onReceive: "+intent.getAction());
             } else if (intent.getAction().equals("service destroyed")) {
@@ -372,13 +372,13 @@ public class TheActivity extends Activity {
                   (Switch)findViewById(R.id.theServiceSwitch2),
                 };
                 for (Switch theServiceSwitch : theServiceSwitches) {
-                  theServiceSwitch.setText("Service is off  ");
+                  theServiceSwitch.setText("Service is off ");
                   CHECK(!mSettingCheckedFromProgram);
                   mSettingCheckedFromProgram = true;
                   theServiceSwitch.setChecked(false);
                   CHECK(mSettingCheckedFromProgram);
                   mSettingCheckedFromProgram = false;
-                  setSwitchTintOff(theServiceSwitch);
+                  setSwitchTints(theServiceSwitch, /*thumbOn=*/false, /*trackOn=*/false);
                 }
                 Log.i(TAG, "                out onReceive: "+intent.getAction());
             } else {
@@ -638,7 +638,7 @@ public class TheActivity extends Activity {
         if (true) {
             for (Switch theServiceSwitch : theServiceSwitches) {
                 final Switch finalTheServiceSwitch = theServiceSwitch;
-                setSwitchTintOff(theServiceSwitch); // i.e. use "off" colors for both off and on position
+                setSwitchTints(finalTheServiceSwitch, /*thumbOn=*/false, /*trackOn=*/false);
                 theServiceSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                     public void onCheckedChanged(final CompoundButton buttonView, boolean isChecked) {
                         Log.i(TAG, "            in theServiceSwitch onCheckedChanged(isChecked=" + isChecked + ")");
@@ -647,6 +647,7 @@ public class TheActivity extends Activity {
                         } else {
                             if (isChecked) {
                                 Log.i(TAG, "              calling startService");
+                                setSwitchTints(finalTheServiceSwitch, /*thumbOn=*/false, /*trackOn=*/true);
                                 startService(new Intent(TheActivity.this, TheService.class));
                                 Log.i(TAG, "              returned from startService");
                                 if (false) {
@@ -665,6 +666,7 @@ public class TheActivity extends Activity {
                                 }
                             } else {
                                 Log.i(TAG, "              calling stopService");
+                                setSwitchTints(finalTheServiceSwitch, /*thumbOn=*/true, /*trackOn=*/false);
                                 stopService(new Intent(TheActivity.this, TheService.class));
                                 Log.i(TAG, "              returned from stopService");
                                 if (false) {
@@ -995,70 +997,51 @@ public class TheActivity extends Activity {
 
     // Functions to make switches show "turning on", "turning off". Asked on stack overflow: https://stackoverflow.com/questions/47469451/how-to-make-an-android-switch-control-show-that-its-turning-on-or-turning-of?noredirect=1#comment81893491_47469451
     // use "off" colors for both off and on position
-    private static void setSwitchTintOff(Switch swtch) {
-        Log.i(TAG, "in setSwitchTintOff");
-        Log.i(TAG, "  swtch.getThumbTintList() = "+swtch.getThumbTintList());
-        Log.i(TAG, "  swtch.getThumbTintMode() = "+swtch.getThumbTintMode());
-        Log.i(TAG, "  swtch.getTrackTintList() = "+swtch.getTrackTintList());
-        Log.i(TAG, "  swtch.getTrackTintMode() = "+swtch.getTrackTintMode());
-        Log.i(TAG, "out setSwitchTintOff");
-        int[][] states = new int[][] {
-            new int[] {-android.R.attr.state_checked},
-            new int[] {android.R.attr.state_checked},
+    private static void setSwitchTints(Switch swtch,
+                                      boolean thumbOn, // use "on" color for thumb? (for both on and off position)
+                                      boolean trackOn) { // use "on" color for track? (for both on and off position)
+        int[][] states = {
+            {-android.R.attr.state_checked},
+            {android.R.attr.state_checked},
         };
-        int[] thumbColors = new int[] {
-	    // ???,???,??? -> 236,236,236
-            // 236,236,236 -> 231,231,231
-            // 239,239,239 -> 234,234,234
-            // 240,240,240 -> 235,235,235
-            // 241,241,241 -> 233,233,233
-            // 242,242,242 -> 237,237,237
-            // 243,243,243 -> 238,238,238
-            // 244,244,244 -> 239,239,239
-            // wtf: not monotonic??  want 236, but can't get it exactly??
-            Color.rgb(240,240,240), // off   <--- hmm, 241,241,241 = f1f1f1 comes out in some intermediate file as switch_thumb_normal_material_light ??
-            Color.rgb(240,240,240), // off
+
+        // ???,???,??? -> 236,236,236
+        // 236,236,236 -> 231,231,231
+        // 239,239,239 -> 234,234,234
+        // 240,240,240 -> 235,235,235
+        // 241,241,241 -> 233,233,233
+        // 242,242,242 -> 237,237,237
+        // 243,243,243 -> 238,238,238
+        // 244,244,244 -> 239,239,239
+        // wtf: not monotonic??  want 236, but can't get it exactly??
+        int thumbColorOff = Color.rgb(240,240,240);  // <--- hmm, 241,241,241 = f1f1f1 comes out in some intermediate file as switch_thumb_normal_material_light ??
+
+        // 255,64,129 -> 250,23,126
+        int thumbColorOn = Color.rgb(255,64,129); // <--- AH HA!  THIS is exactly the value I see in Tools -> Android -> Theme Editor, for @color/colorAccent !  and that;s this in app/src/main/res/values/colors.xml: <color name="colorAccent">#FF4081</color>
+                        // hmm, see this: https://stackoverflow.com/questions/11253512/change-on-color-of-a-switch#comment-57432698
+                        // and see this: https://android.jlelse.eu/customizing-switch-using-xml-ca0d37204a86
+                        // note, that file contains:
+                        /*
+	                  <color name="colorPrimary">#3F51B5</color>    63,81,181
+	                  <color name="colorPrimaryDark">#303F9F</color> 48,63,159
+	                  <color name="colorAccent">#FF4081</color>     255,64,129
+                        */
+
+        // 0,0,0       -> 185,185,185
+        int trackColorOff = Color.rgb(0,0,0);
+
+        // 255,65,130  -> 251,202,219    (may be the colorAccent color does it too, though)
+        int trackColorOn = Color.rgb(255,65,130);
+
+        int[] thumbColors = {
+          thumbOn ? thumbColorOn : thumbColorOff,
+          thumbOn ? thumbColorOn : thumbColorOff,
         };
-        int[] trackColors = new int[] {
-            // 0,0,0       -> 185,185,185
-            Color.rgb(0,0,0), // off
-            Color.rgb(0,0,0), // off
+        int[] trackColors = {
+          trackOn ? trackColorOn : trackColorOff,
+          trackOn ? trackColorOn : trackColorOff,
         };
-        //swtch.getThumbDrawable().setTintList(new ColorStateList(states, thumbColors));
-        //swtch.getTrackDrawable().setTintList(new ColorStateList(states, trackColors));
         swtch.setThumbTintList(new ColorStateList(states, thumbColors));
         swtch.setTrackTintList(new ColorStateList(states, trackColors));
-    };
-    // use "on" colors for both off and on position
-    private static void setSwitchTintOn(Switch swtch) {
-        int[][] states = new int[][] {
-            new int[] {-android.R.attr.state_checked},
-            new int[] {android.R.attr.state_checked},
-        };
-        int[] thumbColors = new int[] {
-            // 255,64,129 -> 250,23,126
-            Color.rgb(255,64,129), // on    <--- AH HA!  THIS is exactly the value I see in Tools -> Android -> Theme Editor, for @color/colorAccent !  and that;s this in app/src/main/res/values/colors.xml: <color name="colorAccent">#FF4081</color>
-					   // hmm, see this: https://stackoverflow.com/questions/11253512/change-on-color-of-a-switch#comment-57432698
-                                           // and see this: https://android.jlelse.eu/customizing-switch-using-xml-ca0d37204a86
-	
-            Color.rgb(255,64,129), // on
-
-
-            // note, that file contains:
-            /*
-	      <color name="colorPrimary">#3F51B5</color>    63,81,181
-	      <color name="colorPrimaryDark">#303F9F</color> 48,63,159
-	      <color name="colorAccent">#FF4081</color>     255,64,129
-            */
-        };
-        int[] trackColors = new int[] {
-            // 255,65,130  -> 251,202,219    (may be the colorAccent color does it too, though)
-            Color.rgb(255,65,130), // on
-            Color.rgb(255,65,130), // on
-        };
-        //swtch.getThumbDrawable().setTintList(new ColorStateList(states, thumbColors));
-        //swtch.getTrackDrawable().setTintList(new ColorStateList(states, trackColors));
-        swtch.setThumbTintList(new ColorStateList(states, thumbColors));
-        swtch.setTrackTintList(new ColorStateList(states, trackColors));
-    };
+    }
 }

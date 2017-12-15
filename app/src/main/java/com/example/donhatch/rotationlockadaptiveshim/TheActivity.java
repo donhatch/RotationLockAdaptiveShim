@@ -730,11 +730,11 @@ public class TheActivity extends Activity {
                 });
             }
         }
-        // Double-opt-in dance needed to write settings.
-        // It causes the appropriate permissions screen to come up if it's wrong.
-        // (Can also manually grant/ungrant by Settings -> Apps -> <this app> -> Modify system settings -> Yes/No, *if* activity is not running. (Force Stop first if it is))
-        // Actually I think I can grant/ungrant on the fly, but the Settings switch gets out of sync with what it really is.  This is a reported bug, I think.
-        if (Build.VERSION.SDK_INT >=23) { // otherwise canWrite and canDrawOverlays don't exist, so I don't know what to do
+        if (Build.VERSION.SDK_INT >=23) { // canWrite/canDrawOverlays don't exist earlier, and the dance isn't needed there anyway
+          // Double-opt-in dance needed to write settings.
+          // It causes the appropriate permissions screen to come up if it's wrong.
+          // (Can also manually grant/ungrant by Settings -> Apps -> <this app> -> Modify system settings -> Yes/No, *if* activity is not running. (Force Stop first if it is))
+          // Actually I think I can grant/ungrant on the fly, but the Settings switch gets out of sync with what it really is.  This is a reported bug, I think.
           if (!android.provider.Settings.System.canWrite(this)) {
               Intent grantIntent = new Intent(android.provider.Settings.ACTION_MANAGE_WRITE_SETTINGS, android.net.Uri.parse("package:"+getPackageName()));
               Log.i(TAG, "              grantIntent = "+grantIntent);

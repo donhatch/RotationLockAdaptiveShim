@@ -19,11 +19,13 @@
          nothing seems to work :-(
      -->
 
+    <!-- use *both* alignParentRight and alignParentEnd, to avoid both kinds of warnings -->
     <ImageView
         android:id="@+id/theDialImageView1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
         android:rotation="90"
         android:scaleX="1."
         android:scaleY="1."
@@ -34,6 +36,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
         android:rotation="90"
         android:scaleX="1."
         android:scaleY="1."
@@ -44,6 +47,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
         android:rotation="90"
         android:scaleX="1."
         android:scaleY="1."
@@ -85,6 +89,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
         android:text="App Settings" />
 
     <Switch
@@ -101,12 +106,14 @@
         android:layout_below="@+id/theWhackAMoleSwitch"
         android:text="  Auto rotate " />
 
+    <!-- use *both* toRightOf and toEndOf, to suppress two kinds of warnings -->
     <Switch
         android:id="@+id/thePromptFirstSwitch"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@+id/theWhackAMoleSwitch"
         android:layout_toRightOf="@+id/theAutoRotateSwitch"
+        android:layout_toEndOf="@+id/theAutoRotateSwitch"
         android:text="  but ask first " />
 
     <Switch
@@ -116,13 +123,16 @@
         android:layout_below="@+id/theAutoRotateSwitch"
         android:text="  Override home screen's and other apps' prefs " />
 
+    <!-- use *both* alignEnd and alignRight, to suppress two kinds of warnings -->
     <Switch
         android:id="@+id/theRedSwitch"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignEnd="@+id/theOverrideSwitch"
+        android:layout_alignRight="@+id/theOverrideSwitch"
         android:layout_below="@+id/theOverrideSwitch"
         android:text="    using red overlay " />
+
 
     <TextView
         android:id="@+id/theListenedValuesHeader"

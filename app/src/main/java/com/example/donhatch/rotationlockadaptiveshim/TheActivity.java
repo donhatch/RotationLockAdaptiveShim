@@ -1,3 +1,4 @@
+// TODO: sort out the notification channel stuff (slowly drag notification to left to see what's going on, it's weird)
 // TODO: make it work properly when activity is destroyed&recreated on orientation change?
 //       - seems to be pretty good now?
 // TODO: look into the consequences of singleinstance and/or android:launchMode="singleTask" https://stackoverflow.com/questions/37709918/warning-do-not-place-android-context-classes-in-static-fields-this-is-a-memory/37709963#comment-77492138  will different values let me exercise possibilities I have not been able to exercise so far? like two activities at once

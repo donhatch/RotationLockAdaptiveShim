@@ -565,18 +565,26 @@ public class TheActivity extends Activity {
                     TheService.mStaticWhackAMole = isChecked;
                     if (isChecked) {
                         // TODO: do this through the service somehow?
-                        try {
-                          Settings.System.putInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0);
-                        } catch (SecurityException e) {
-                            // XXX dup code
-                            Log.i(TAG, "          Oh no, can't set system settings-- were permissions revoked?");
-                            Toast.makeText(TheActivity.this, " Oh no, can't set system settings-- were permissions revoked?\nHere, please grant the permission.", Toast.LENGTH_SHORT).show();
-                            Intent grantIntent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
-                            grantIntent.setData(Uri.parse("package:"+getPackageName()));
-                            Log.i(TAG, "              grantIntent = "+grantIntent);
-                            Log.i(TAG, "              calling startActivity with ACTION_MANAGE_WRITE_SETTINGS");
-                            startActivity(grantIntent);
-                            Log.i(TAG, "              returned from startActivity with ACTION_MANAGE_WRITE_SETTINGS");
+
+                        if (Build.VERSION.SDK_INT >= 23) {
+                            try {
+                              Settings.System.putInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0);
+                            } catch (SecurityException e) {
+                                // XXX dup code
+                                Log.i(TAG, "          Oh no, can't set system settings-- were permissions revoked?");
+                                Toast.makeText(TheActivity.this, " Oh no, can't set system settings-- were permissions revoked?\nHere, please grant the permission.", Toast.LENGTH_SHORT).show();
+                                Intent grantIntent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
+                                grantIntent.setData(Uri.parse("package:"+getPackageName()));
+                                Log.i(TAG, "              grantIntent = "+grantIntent);
+                                Log.i(TAG, "              calling startActivity with ACTION_MANAGE_WRITE_SETTINGS");
+                                startActivity(grantIntent);
+                                Log.i(TAG, "              returned from startActivity with ACTION_MANAGE_WRITE_SETTINGS");
+                            }
+                        } else {
+                            // ACTION_MANAGE_WRITE_SETTINGS doesn't exist; I guess the whole dance doesn't exist.
+                            // Just make the call and let it throw an exception if it's going to
+                            // (but it probably won't because permissions were more relaxed back then I think).
+                            Settings.System.putInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0);
                         }
                     }
                     Log.i(TAG, "            out theWhackAMoleSwitch onCheckedChanged(isChecked=" + isChecked + ")");

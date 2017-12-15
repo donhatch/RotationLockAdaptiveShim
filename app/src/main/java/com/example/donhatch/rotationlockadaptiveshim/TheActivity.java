@@ -121,6 +121,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.Settings;
@@ -230,43 +231,45 @@ public class TheActivity extends Activity {
           double hysteresis = 22.5; // XXX must match what's in TheService, should be a member var or constant
           //double hysteresis = 45;
 
-          // TODO: drawArc() requires minSdkLevel>=21, i.e. android 5.0 Lollipop.  If I want this to run on less than that, I'll have to bake this stuff into the image file instead, or something.
-          canvas.drawArc(centerX-r, centerY-r,
-                         centerX+r, centerY+r,
-                         0.f, 360.f,
-                         /*useCenter=*/true,
-                         redPaint);
+          // TODO: bake the colored sectors (the drawArc stuff) into the image file instead, so it will work on <21
+          if (Build.VERSION.SDK_INT >=21) { // (runtime) otherwise drawArc doesn't exist
+                canvas.drawArc(centerX-r, centerY-r,
+                               centerX+r, centerY+r,
+                               0.f, 360.f,
+                               /*useCenter=*/true,
+                               redPaint);
 
-          if (false) {
-              // Solid yellow
-              canvas.drawArc(centerX-r, centerY-r,
-                             centerX+r, centerY+r,
-                             (float)(135. - hysteresis), (float)(90. + 2*hysteresis),
-                             /*useCenter=*/true,
-                             yellowPaint);
-          } else {
-              // Two subtlely different shades of yellow, transitioning at 45 degrees
-              canvas.drawArc(centerX-r, centerY-r,
-                             centerX+r, centerY+r,
-                             (float)(135. - hysteresis), (float)(90. + 2*hysteresis),
-                             /*useCenter=*/true,
-                             orangeishYellowPaint);
-              canvas.drawArc(centerX-r, centerY-r,
-                             centerX+r, centerY+r,
-                             135.f, 90.f,
-                             /*useCenter=*/true,
-                             greenishYellowPaint);
+                if (false) {
+                    // Solid yellow
+                    canvas.drawArc(centerX-r, centerY-r,
+                                   centerX+r, centerY+r,
+                                   (float)(135. - hysteresis), (float)(90. + 2*hysteresis),
+                                   /*useCenter=*/true,
+                                   yellowPaint);
+                } else {
+                    // Two subtlely different shades of yellow, transitioning at 45 degrees
+                    canvas.drawArc(centerX-r, centerY-r,
+                                   centerX+r, centerY+r,
+                                   (float)(135. - hysteresis), (float)(90. + 2*hysteresis),
+                                   /*useCenter=*/true,
+                                   orangeishYellowPaint);
+                    canvas.drawArc(centerX-r, centerY-r,
+                                   centerX+r, centerY+r,
+                                   135.f, 90.f,
+                                   /*useCenter=*/true,
+                                   greenishYellowPaint);
+                }
+
+                canvas.drawArc(centerX-r, centerY-r,
+                               centerX+r, centerY+r,
+                               (float)(135. + hysteresis), (float)(90. - 2*hysteresis),
+                               /*useCenter=*/true,
+                               greenPaint);
+
+                canvas.drawLine(centerX-r, centerY,
+                                centerX, centerY,
+                                zeroLinePaint);
           }
-
-          canvas.drawArc(centerX-r, centerY-r,
-                         centerX+r, centerY+r,
-                         (float)(135. + hysteresis), (float)(90. - 2*hysteresis),
-                         /*useCenter=*/true,
-                         greenPaint);
-
-          canvas.drawLine(centerX-r, centerY,
-                          centerX, centerY,
-                          zeroLinePaint);
           Log.i(TAG, "                out MyImageView1.onDraw");
         }
         @Override
@@ -731,24 +734,26 @@ public class TheActivity extends Activity {
         // It causes the appropriate permissions screen to come up if it's wrong.
         // (Can also manually grant/ungrant by Settings -> Apps -> <this app> -> Modify system settings -> Yes/No, *if* activity is not running. (Force Stop first if it is))
         // Actually I think I can grant/ungrant on the fly, but the Settings switch gets out of sync with what it really is.  This is a reported bug, I think.
-        if (!android.provider.Settings.System.canWrite(this)) {
-            Intent grantIntent = new Intent(android.provider.Settings.ACTION_MANAGE_WRITE_SETTINGS, android.net.Uri.parse("package:"+getPackageName()));
-            Log.i(TAG, "              grantIntent = "+grantIntent);
-            Log.i(TAG, "              calling startActivity with ACTION_MANAGE_WRITE_SETTINGS");
-            startActivity(grantIntent);
-            Log.i(TAG, "              returned from startActivity with ACTION_MANAGE_WRITE_SETTINGS");
-        } else {
-            Log.i(TAG, "              can already modify system settings.  Cool.");
-        }
+        if (Build.VERSION.SDK_INT >=23) { // otherwise canWrite and canDrawOverlays don't exist, so I don't know what to do
+          if (!android.provider.Settings.System.canWrite(this)) {
+              Intent grantIntent = new Intent(android.provider.Settings.ACTION_MANAGE_WRITE_SETTINGS, android.net.Uri.parse("package:"+getPackageName()));
+              Log.i(TAG, "              grantIntent = "+grantIntent);
+              Log.i(TAG, "              calling startActivity with ACTION_MANAGE_WRITE_SETTINGS");
+              startActivity(grantIntent);
+              Log.i(TAG, "              returned from startActivity with ACTION_MANAGE_WRITE_SETTINGS");
+          } else {
+              Log.i(TAG, "              can already modify system settings.  Cool.");
+          }
 
-        if (!android.provider.Settings.canDrawOverlays(this)) {
-            Intent grantIntent = new Intent(android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION, android.net.Uri.parse("package:"+getPackageName()));
-            Log.i(TAG, "              grantIntent = "+grantIntent);
-            Log.i(TAG, "              calling startActivity with ACTION_MANAGE_OVERLAY_PERMISSION");
-            startActivity(grantIntent); // XXX that example uses startActivityForResult. maybe use that when needed on the fly?
-            Log.i(TAG, "              returned from startActivity with ACTION_MANAGE_OVERLAY_PERMISSION");
-        } else {
-            Log.i(TAG, "              can already draw overlays.  Cool.");
+          if (!android.provider.Settings.canDrawOverlays(this)) {
+              Intent grantIntent = new Intent(android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION, android.net.Uri.parse("package:"+getPackageName()));
+              Log.i(TAG, "              grantIntent = "+grantIntent);
+              Log.i(TAG, "              calling startActivity with ACTION_MANAGE_OVERLAY_PERMISSION");
+              startActivity(grantIntent); // XXX that example uses startActivityForResult. maybe use that when needed on the fly?
+              Log.i(TAG, "              returned from startActivity with ACTION_MANAGE_OVERLAY_PERMISSION");
+          } else {
+              Log.i(TAG, "              can already draw overlays.  Cool.");
+          }
         }
 
         CHECK(theRunningActivity == null); // XXX not confident in this
@@ -1102,7 +1107,9 @@ public class TheActivity extends Activity {
           trackOn ? trackColorOn : trackColorOff,
           trackOn ? trackColorOn : trackColorOff,
         };
-        swtch.setThumbTintList(new ColorStateList(states, thumbColors));
-        swtch.setTrackTintList(new ColorStateList(states, trackColors));
+        if (Build.VERSION.SDK_INT >=23) { // (runtime) otherwise these methods don't exist
+          swtch.setThumbTintList(new ColorStateList(states, thumbColors));
+          swtch.setTrackTintList(new ColorStateList(states, trackColors));
+        }
     }
 }

@@ -11,6 +11,7 @@
         android:label="Adaptive Rotation Lock Shim"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+
         <activity android:name=".TheActivity"
                   android:configChanges="keyboardHidden|orientation|screenSize"
             >
@@ -19,6 +20,17 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!--
+        <activity android:name=".TheActivity"
+            >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        -->
+
         <service android:name=".TheService">
         </service>
     </application>

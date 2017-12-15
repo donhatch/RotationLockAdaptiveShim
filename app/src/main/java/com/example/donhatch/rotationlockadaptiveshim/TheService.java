@@ -10,6 +10,7 @@ package com.example.donhatch.rotationlockadaptiveshim;
 
 import android.app.AlertDialog;
 import android.app.Notification;
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -22,6 +23,7 @@ import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.database.ContentObserver;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.hardware.SensorManager;
@@ -900,7 +902,7 @@ public class TheService extends Service {
         if (mVerboseLevel >= 1) Log.i(TAG, "                            in TheService.onStartCommand(startIntent, flags="+flags+", startId="+startId+")");
         if (mVerboseLevel >= 1) Log.i(TAG, "                              startIntent = "+startIntent);
 
-        if (true)
+        if (true)  // XXX this stopped working after I upgraded to android 8.1.0 ??? have to set it to false
         {
             // Use startForeground() to "put the service in a foreground state,
             // where the system considers it to be something the user is actively aware of
@@ -919,7 +921,35 @@ public class TheService extends Service {
             // http://stackoverflow.com/questions/7385443/flag-activity-clear-top-in-android#answer-7385849
             notificationIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
             PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
-            final Notification.Builder builder = new Notification.Builder(this)
+
+	    String NOTIFICATION_CHANNEL_ID = "hello, I am a notification channel id"; // XXX ?
+            if (Build.VERSION.SDK_INT >= 26) {  // runtime
+	      if (mVerboseLevel >= 1) Log.i(TAG, "                              doing the notification channel setup thing because runtime is "+Build.VERSION.SDK_INT+" >= 26");
+              // https://stackoverflow.com/questions/45711925/failed-to-post-notification-on-channel-null-target-api-is-26#answer-47135605
+              // Set up a notification channel.
+              // This is needed to avoid this warning toast on runtime 26:
+              //        Developer warning for package "com.example.donhatch.rotationlockadaptiveshim"
+              //        Failed to post notification on channel "null"
+              //        See log for more details
+              // and this crash on runtime 27:
+              //        android.app.RemoteServiceException: Bad notification for startForeground: java.lang.RuntimeException: invalid channel for service notification: Notification(channel=null pri=0 contentView=null vibrate=null sound=null defaults=0x0 flags=0x40 color=0x00000000 vis=PRIVATE)
+              int importance = NotificationManager.IMPORTANCE_LOW;
+              CharSequence channelName = "hello, I am a notification channel name";  // XXX ?
+	      NotificationChannel notificationChannel = new NotificationChannel(NOTIFICATION_CHANNEL_ID, channelName, importance);
+
+              if (false) {
+                // Note, the following is all from the example, I haven't looked into whether they have merit or whether there are more appropriate values.
+                //notificationChannel.enableLights(true);
+                //notificationChannel.setLightColor(Color.RED);
+                //notificationChannel.enableVibration(true);
+                //notificationChannel.setVibrationPattern(new long[]{100, 200, 300, 400, 500, 400, 300, 200, 400});
+              }
+
+	      // XXX why did the other one do it through getApplicationContext()? I'm confused
+	      NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+	      notificationManager.createNotificationChannel(notificationChannel);
+            }
+            final Notification.Builder builder = new Notification.Builder(this, NOTIFICATION_CHANNEL_ID)
                     .setContentTitle("Adaptive Rotation Lock Shim") // XXX R.string.notification_title
                     .setContentText("Tap for configuration options") // XXX R.string.notification_messsage
                     //.setSmallIcon(R.drawable.typewriter_el)

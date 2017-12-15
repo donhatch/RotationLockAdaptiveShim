@@ -1,4 +1,5 @@
 // TODO: make it work properly when activity is destroyed&recreated on orientation change?
+//       - seems to be pretty good now?
 // TODO: look into the consequences of singleinstance and/or android:launchMode="singleTask" https://stackoverflow.com/questions/37709918/warning-do-not-place-android-context-classes-in-static-fields-this-is-a-memory/37709963#comment-77492138  will it let me exercise possibilities I have not been able to exercise so far?
 
 // TODO: avoid drawArc since it requires minSdkVersion>=21; bake in the arcs instead
@@ -148,7 +149,7 @@ public class TheActivity extends Activity {
     private boolean mSettingCheckedFromProgram = false;
 
     private long mNumUpdates = 0;
-    private boolean mPolling = false;  // TODO: make this a shared preference so it will persist?
+    private boolean mPolling = false;  // TODO: make this a shared preference so it will persist more persistently?  (note that it *does* persist somewhat, even from one process to the next, as long as the system is keeping the bundle which contains toggle states, interesting)
     private int mMostRecentConfigurationOrientation = -1;  // from most recent onConfigurationChanged, or getResources().getConfiguration().orientation initially
 
     // This is no longer used by the service (good!) so doesn't need to be public.  It's now just used
@@ -159,11 +160,11 @@ public class TheActivity extends Activity {
     private Runnable mPollingRunnable = new Runnable() {
         @Override
         public void run() {
-            Log.i(TAG, "                in once-per-second poll (this should only happen when ui is visible)");
+            Log.i(TAG, "                in once-per-second poll (this should only happen when ui is visible), mNumUpdates is now "+mNumUpdates);
             updateAccelerometerOrientationDegreesTextView();
             updatePolledStatusTextView();
-            mPollingHandler.postDelayed(this, 1*1000);
-            Log.i(TAG, "                out once-per-second poll (this should only happen when ui is visible)");
+            mPollingHandler.postDelayed(this, 1*1000);  // call again 1 second later
+            Log.i(TAG, "                out once-per-second poll (this should only happen when ui is visible), mNumUpdates is now "+mNumUpdates);
         }
     };
 
@@ -640,6 +641,8 @@ public class TheActivity extends Activity {
             });
         }
         if (true) {
+            // Interesting, if we declare that we *don't* handle config changes,
+            // then we get a checked-changed after onStart returns and before onResume is called, causing us to get back to the right state! Cool!
             theMonitorSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                     Log.i(TAG, "            in theMonitorSwitch onCheckedChanged(isChecked=" + isChecked + ")");
@@ -648,10 +651,19 @@ public class TheActivity extends Activity {
                     TextView thePolledStatusTextView = findViewById(R.id.thePolledStatusTextView);
                     thePolledValuesHeaderTextView.setEnabled(mPolling);
                     thePolledStatusTextView.setEnabled(mPolling);
+                    Log.i(TAG, "                REMOVING POLLING CALLBACK IF ANY------------------------------------------------");
                     mPollingHandler.removeCallbacks(mPollingRunnable);  // ok if it wasn't scheduled
                     if (isChecked) {
                         // Presumably the activity is between onResume and onPause when this happens,
                         // so it's correct to start the periodic callback here.
+                        // ARGH! Actually that's not true.  We also get here from inside onRestoreInstanceState(),
+                        // which happens between onStart and onResume.
+                        // There's something about this in https://developer.android.com/topic/libraries/architecture/lifecycle.html#onStop-and-savedState.
+                        // We could use those facilities to query where we are in the lifecycle and only resume
+                        // if in state RESUMED... but that seems like too much of a hassle.
+                        // So for now, we just make sure to remove callbacks prior to every time we add them;
+                        // that makes sure we don't add them twice.
+                        Log.i(TAG, "                ADDING POLLING CALLBACK++++++++++++++++++++++++++++++++++++++++++++++++");
                         mPollingHandler.postDelayed(mPollingRunnable, 0);  // immediately
                     }
                     Log.i(TAG, "            out theMonitorSwitch onCheckedChanged(isChecked=" + isChecked + ")");
@@ -662,7 +674,6 @@ public class TheActivity extends Activity {
         if (true) {
             for (Switch theServiceSwitch : theServiceSwitches) {
                 final Switch finalTheServiceSwitch = theServiceSwitch;
-                setSwitchTints(finalTheServiceSwitch, /*thumbOn=*/false, /*trackOn=*/false);
                 theServiceSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                     public void onCheckedChanged(final CompoundButton buttonView, boolean isChecked) {
                         Log.i(TAG, "            in theServiceSwitch onCheckedChanged(isChecked=" + isChecked + ")");
@@ -889,6 +900,7 @@ public class TheActivity extends Activity {
             theServiceSwitch.setChecked(serviceIsRunning);
             CHECK(mSettingCheckedFromProgram);
             mSettingCheckedFromProgram = false;
+            setSwitchTints(theServiceSwitch, /*thumbOn=*/serviceIsRunning, /*trackOn=*/serviceIsRunning);
         }
         Log.i(TAG, "          returned from theServiceSwitch.setChecked("+serviceIsRunning+")");
         // That invoked the listener which set the label to "Service is on" or "Service is off";
@@ -905,6 +917,14 @@ public class TheActivity extends Activity {
             }
         }
         Log.i(TAG, "        out onStart");
+    }
+
+    // called only when there's a saved instance previously saved using onSaveInstanceState().
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        Log.i(TAG, "          in onRestoreInstanceState");  // shoehorned this in so indent is intermediate
+        super.onRestoreInstanceState(savedInstanceState);  // restores the state of the view hierarchy
+        Log.i(TAG, "          out onRestoreInstanceState");  // shoehorned this in so indent is intermediate
     }
 
     @Override
@@ -936,6 +956,12 @@ public class TheActivity extends Activity {
 
         {
           if (mPolling) {
+              // Yes, have to remove them, since they might have got added during onRestoreInstanceState.
+              // (another option would be to query whether the callback is installed, and/or keep track
+              // of whether it's installed).
+              Log.i(TAG, "                REMOVING POLLING CALLBACK IF ANY------------------------------------------------");
+              mPollingHandler.removeCallbacks(mPollingRunnable);  // ok if it wasn't scheduled
+              Log.i(TAG, "                ADDING POLLING CALLBACK++++++++++++++++++++++++++++++++++++++++++++++++");
               mPollingHandler.postDelayed(mPollingRunnable, 0);  // immediately
           }
         }
@@ -958,10 +984,18 @@ public class TheActivity extends Activity {
 
         getContentResolver().unregisterContentObserver(mAccelerometerRotationObserver); // ok if it wasn't registered, I think... although it should be
         getContentResolver().unregisterContentObserver(mUserRotationObserver); // ok if it wasn't registered, I think... although it should be
+        Log.i(TAG, "                REMOVING POLLING CALLBACK IF ANY------------------------------------------------");
         mPollingHandler.removeCallbacks(mPollingRunnable); // ok if it wasn't scheduled
 
         super.onPause();
         Log.i(TAG, "            out onPause");
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        Log.i(TAG, "          in onSaveInstanceState");  // shoehorned this in so indent is intermediate
+        super.onSaveInstanceState(outState);
+        Log.i(TAG, "          out onSaveInstanceState");  // shoehorned this in so indent is intermediate
     }
 
     @Override

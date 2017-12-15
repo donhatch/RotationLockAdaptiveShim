@@ -975,7 +975,7 @@ public class TheService extends Service {
             if (mVerboseLevel >= 1) Log.i(TAG, "                              returned from startForeground");
             if (false) {
                 if (mVerboseLevel >= 1) Log.i(TAG, "                              calling stopForeground");
-                stopForeground(STOP_FOREGROUND_REMOVE);
+                stopForeground(true); // use the boolean version, not the int one, for more backwards compatibility
                 if (mVerboseLevel >= 1) Log.i(TAG, "                              returned from stopForeground");
             }
 
@@ -1000,7 +1000,7 @@ public class TheService extends Service {
                             // do something unfriendly-- either undo startForeground() (I don't think so)
                             // or make it so stopForeground() no longer removes the notification (yeah I think so).
                             notificationManager.notify(AN_IDENTIFIER_FOR_THIS_NOTIFICATION_UNIQUE_WITHIN_THIS_APPLICATION, notification);
-                            //stopForeground(STOP_FOREGROUND_REMOVE);
+                            //stopForeground(true); // use the boolean version, not the int one, for more backwards compatibility
                         }
                         if (true) {
                             startForeground(AN_IDENTIFIER_FOR_THIS_NOTIFICATION_UNIQUE_WITHIN_THIS_APPLICATION, notification);

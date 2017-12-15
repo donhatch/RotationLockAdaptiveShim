@@ -44,6 +44,7 @@ import android.view.WindowManager;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
+@SuppressWarnings("ConstantIfStatement")
 public class TheService extends Service {
 
     private static final String TAG = "RLAS service";  // was "RotationLockAdaptiveShim service" but got warnings
@@ -488,12 +489,7 @@ public class TheService extends Service {
         //      - otherwise (targetSdkLevel<=25, runtime>=26), either will work   (but, weaning myself away from targetSdkLevel=25, so use TYPE_APPLICATION_OVERLAY... also this is impossible if downloaded from play store which enforces runtime<=targetSdkLevel... unless can play games with maxSdkLevel)
         int type;
         int flags;
-        boolean use_TYPE_APPLICATION_OVERLAY;
-        if (Build.VERSION.SDK_INT <= 25) { // what's running on current machine
-          use_TYPE_APPLICATION_OVERLAY = false;  // use TYPE_SYSTEM_OVERLAY
-        } else {
-          use_TYPE_APPLICATION_OVERLAY = true;   // use TYPE_APPLICATION_OVERLAY
-        }
+        boolean use_TYPE_APPLICATION_OVERLAY = Build.VERSION.SDK_INT >= 26; // what's on current machine
         if (false) {  // set to true to override, so can fill out matrix above
           use_TYPE_APPLICATION_OVERLAY = true;
         }

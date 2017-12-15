@@ -129,6 +129,7 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+@SuppressWarnings("ConstantIfStatement")
 public class TheActivity extends Activity {
 
     private static final String TAG = "RLAS activity";  // was "RotationLockAdaptiveShim activity" but got warnings

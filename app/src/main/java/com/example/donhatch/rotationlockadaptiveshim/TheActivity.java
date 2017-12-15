@@ -875,7 +875,7 @@ public class TheActivity extends Activity {
           findViewById(R.id.theServiceSwitch),
           findViewById(R.id.theServiceSwitch2),
         };
-        boolean serviceIsRunning = TheService.theRunningService != null;
+        boolean serviceIsRunning = TheService.isServiceRunning();
         Log.i(TAG, "          calling theServiceSwitch.setChecked("+serviceIsRunning+")");
         for (Switch theServiceSwitch : theServiceSwitches) {
             CHECK(!mSettingCheckedFromProgram);

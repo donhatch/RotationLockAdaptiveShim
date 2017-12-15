@@ -75,8 +75,17 @@ public class TheService extends Service {
         return answer;
     }
 
-    public static Object theRunningServiceLock = new Object();
-    public static TheService theRunningService = null;
+    private static final Object theRunningServiceLock = new Object();
+    // Formerly, I had `private static TheService theRunningService = null`,
+    // but I got "Warning: Do not place Android context classes in static fields; this is a memory leak (and also breaks Instant Run)".
+    // (in Analyze -> Inspect Code... -> Android Line: Performaice -> Static Field Leaks).
+    // (Weird that it complains because a TheService object has a mOrientationChanger field which is a LinearLayout,
+    // but not that TheService is itself a context)
+    // So instead, hold a weak reference and a boolean saying whether we've set it or not.
+    // It should *never* get unset from under us, since we set and unset it in onCreate() and onDestroy().
+    private static boolean theRunningServiceIsSet = false;  // all accesses must be protected by theRunningServiceLock
+    private static java.lang.ref.WeakReference<TheService> theRunningServiceWeakRef = null; // all accesses must be protected by theRunningServiceLock
+
     public boolean mHasBeenDestroyed = false;
     // omfg it has to be nonzero
     private final int AN_IDENTIFIER_FOR_THIS_NOTIFICATION_UNIQUE_WITHIN_THIS_APPLICATION = 1;
@@ -398,12 +407,17 @@ public class TheService extends Service {
         // note that in real apps installed from play store, I think it's always true that runtime version <= targetSdkVersion
 
         synchronized(theRunningServiceLock) {
-          if (theRunningService != null) {
+          if (theRunningServiceIsSet) {
+              CHECK(theRunningServiceWeakRef != null);
+              CHECK(theRunningServiceWeakRef.get() != null);
               // XXX do this via a Notification, I think
               // XXX have I decided this never happens?  Not sure.
               throw new AssertionError("TheService.onCreate called when there's already an existing service!");
           }
-          TheService.theRunningService = this;
+          CHECK(!theRunningServiceIsSet);
+          CHECK(theRunningServiceWeakRef == null);
+          theRunningServiceIsSet = true;
+          theRunningServiceWeakRef = new java.lang.ref.WeakReference<TheService>(this);
         }
 
         if (false) // set to true to experiment with renewing toasts to show it works.
@@ -1011,7 +1025,12 @@ public class TheService extends Service {
         mBroadcastReceiver = null;
 
         synchronized(theRunningServiceLock) {
-          theRunningService = null;
+          // Note, these CHECKs are relatively new; not sure they hold
+          CHECK(theRunningServiceIsSet);
+          CHECK(theRunningServiceWeakRef != null);
+          CHECK(theRunningServiceWeakRef.get() != null);
+          theRunningServiceIsSet = false;
+          theRunningServiceWeakRef = null;
         }
         mHasBeenDestroyed = true;
 
@@ -1034,6 +1053,18 @@ public class TheService extends Service {
         if (mVerboseLevel >= 1) Log.i(TAG, "                        out TheService.onDestroy");
     }  // onDestroy
 
+    public static boolean isServiceRunning() {
+        synchronized(theRunningServiceLock) {
+          if (theRunningServiceIsSet) {
+            CHECK(theRunningServiceWeakRef != null);
+            CHECK(theRunningServiceWeakRef.get() != null);
+          } else {
+            CHECK(theRunningServiceWeakRef == null);
+          }
+          return theRunningServiceIsSet;
+        }
+    }
+
     // XXX not sure this is the way I want to do things
     public static boolean getRed() {
         return mStaticRed;
@@ -1045,8 +1076,10 @@ public class TheService extends Service {
       // TODO: should this method be responsible for noticing it's the same as previous?
       mStaticOverride = newOverride;
       synchronized(theRunningServiceLock) {
-        if (theRunningService != null) {
-          theRunningService.updateOverrideIfNecessary();
+        if (theRunningServiceIsSet) {
+            CHECK(theRunningServiceWeakRef != null);
+            CHECK(theRunningServiceWeakRef.get() != null);
+            theRunningServiceWeakRef.get().updateOverrideIfNecessary();
         }
       }
     }
@@ -1054,10 +1087,13 @@ public class TheService extends Service {
     // TODO: animate the red!   (TODO: what was I talking about?)
     public static void setRed(boolean newRed) {
         Log.i(TAG, "                in setRed");
-        Log.i(TAG, "                  theRunningService = "+theRunningService);
         mStaticRed = newRed;
         synchronized(theRunningServiceLock) {
-          if (theRunningService != null) {
+          Log.i(TAG, "                  theRunningServiceIsSet = "+theRunningServiceIsSet);
+          if (theRunningServiceIsSet) {
+              CHECK(theRunningServiceWeakRef != null);
+              final TheService theRunningService = theRunningServiceWeakRef.get();
+              CHECK(theRunningService != null);
               final int oldColor = theRunningService.mOrientationChangerCurrentBackgroundColor;
               final int newColor = (mStaticRed ? 0x44ff0000 : 0x00000000); // faint translucent red color if mStaticRed
               theRunningService.mOrientationChangerCurrentBackgroundColor = newColor;

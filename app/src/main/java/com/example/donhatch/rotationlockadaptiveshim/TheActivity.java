@@ -202,6 +202,9 @@ public class TheActivity extends Activity {
           greenPaint.setColor(Color.GREEN);
           greenPaint.setARGB(255, 192, 255, 192);
 
+          Paint zeroLinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+          zeroLinePaint.setARGB(64, 0, 0, 0);  // transparent black
+
           float centerX = canvas.getWidth() / 2;
           float centerY = canvas.getHeight() / 2;
           float r = Math.min(centerX, centerY);
@@ -241,6 +244,10 @@ public class TheActivity extends Activity {
                          (float)(135. + hysteresis), (float)(90. - 2*hysteresis),
                          /*useCenter=*/true,
                          greenPaint);
+
+          canvas.drawLine(centerX-r, centerY,
+                          centerX, centerY,
+                          zeroLinePaint);
           Log.i(TAG, "                out MyImageView1.onDraw");
         }
         @Override

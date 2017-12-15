@@ -955,12 +955,12 @@ public class TheService extends Service {
                     //.setSmallIcon(R.drawable.typewriter_el)
                     .setSmallIcon(R.mipmap.typewriter_el)
                     .setContentIntent(pendingIntent)
-                    //.setOngoing(true) // XXX doesn't seem to help keep the icon up
-                    .setWhen(System.currentTimeMillis()+10*60*1000)
-                    .setShowWhen(true)
+                    .setOngoing(false) // irrelevant: apparently sets FLAG_ONGOING_EVENT (in accordance to documented behavior) but not FLAG_NO_CLEAR, despite documented behavior); however, neither has any affect since we're using startForeground which automatically makes the notification ongoing and non-clearable no matter what these flags say..
+                    .setWhen(System.currentTimeMillis()+10*60*1000)   // causes "in 9m" or something to be shown if setShowWhen is true.  60 seconds or less turns into "now". only gets updated very infrequently (once a minute?) so not all that useful.
+                    .setShowWhen(false) // default changed from true to false in (target=)Nougat, so say it explicitly
                     ;
             final Notification notification = builder.build();
-            //notification.flags |= Notification.FLAG_NO_CLEAR; // XXX doesn't seem to help keep the icon up
+
             if (mVerboseLevel >= 1) Log.i(TAG, "                              calling startForeground");
             startForeground(AN_IDENTIFIER_FOR_THIS_NOTIFICATION_UNIQUE_WITHIN_THIS_APPLICATION, notification);
             if (mVerboseLevel >= 1) Log.i(TAG, "                              returned from startForeground");

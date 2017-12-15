@@ -1,3 +1,4 @@
+// TODO: avoid drawArc since it requires minSdkVersion>=21; bake in the arcs instead
 // BUG: upgrading targetSdkVersion from 25 to 26 makes the app icon a solid white circle?? wtf?
 //     maybe relevant:
 //      https://stackoverflow.com/questions/45611508/icons-look-flat-in-action-bar#answer-46474450
@@ -222,6 +223,8 @@ public class TheActivity extends Activity {
           //double hysteresis = 0.;
           double hysteresis = 22.5; // XXX must match what's in TheService, should be a member var or constant
           //double hysteresis = 45;
+
+          // TODO: drawArc() requires minSdkLevel>=21, i.e. android 5.0 Lollipop.  If I want this to run on less than that, I'll have to bake this stuff into the image file instead, or something.
           canvas.drawArc(centerX-r, centerY-r,
                          centerX+r, centerY+r,
                          0.f, 360.f,

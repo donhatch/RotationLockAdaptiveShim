@@ -1,7 +1,7 @@
 // TODO: service icon isn't right, it's solid white (only on recent target and/or runtime I think?) (t27: r25 square, r26 circle, r27 circle)
 // TODO: sort out the notification channel stuff (slowly drag notification to left to see what's going on, it's weird)
 // TODO: make it work properly when activity is destroyed&recreated on orientation change?
-//       - seems to be pretty good now?
+//       - the onConfigurationChanged logic (i.e. reorganizing layout slightly) doesn't happen if I do it that way
 // TODO: look into the consequences of singleinstance and/or android:launchMode="singleTask" https://stackoverflow.com/questions/37709918/warning-do-not-place-android-context-classes-in-static-fields-this-is-a-memory/37709963#comment-77492138  will different values let me exercise possibilities I have not been able to exercise so far? like two activities at once
 
 // TODO: avoid drawArc since it requires minSdkVersion>=21; bake in the arcs instead
@@ -1040,20 +1040,28 @@ public class TheActivity extends Activity {
             if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT) {
                 // put red switch below override switch, right-aligned with it
                 Log.i(TAG, "  putting red switch below and right-aligned with override switch");
-                redSwitchLayoutParams.removeRule(RelativeLayout.RIGHT_OF);
-                redSwitchLayoutParams.removeRule(RelativeLayout.ALIGN_TOP);
+                redSwitchLayoutParams.removeRule(RelativeLayout.RIGHT_OF); // TODO: doesn't exist until 17
+                redSwitchLayoutParams.removeRule(RelativeLayout.END_OF); // TODO: doesn't exist until 17
+                redSwitchLayoutParams.removeRule(RelativeLayout.ALIGN_TOP); // TODO: doesn't exist until 17
                 redSwitchLayoutParams.addRule(RelativeLayout.BELOW, theOverrideSwitch.getId());
                 redSwitchLayoutParams.addRule(RelativeLayout.ALIGN_RIGHT, theOverrideSwitch.getId());
+                redSwitchLayoutParams.addRule(RelativeLayout.ALIGN_END, theOverrideSwitch.getId());
                 //layout_below = theOverrideSwitch;
                 //theRedSwitch.alignRight = theOverrideSwitch;
             } else if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                // TODO: want this to happen *every* time we find ourselves in landscape mode!
+                //    - in onConfigurationChanged, if we're handling config changes (works because of this code here)
+                //    - if we start in landscape mode (doesn't work)
+                //    - if we're not handling config changes (doesn't work)
                 // put red switch to right of override switch, top-aligned with it
                 //theRedSwitch.layout_toRightOf = theOverrideSwitch;
                 //theRedSwitch.alignTop = theOverrideSwitch;
                 Log.i(TAG, "  putting red switch to right and top-aligned with override switch");
-                redSwitchLayoutParams.removeRule(RelativeLayout.BELOW);
-                redSwitchLayoutParams.removeRule(RelativeLayout.ALIGN_RIGHT);
+                redSwitchLayoutParams.removeRule(RelativeLayout.BELOW); // TODO: doesn't exist until 17
+                redSwitchLayoutParams.removeRule(RelativeLayout.ALIGN_RIGHT); // TODO: doesn't exist until 17
+                redSwitchLayoutParams.removeRule(RelativeLayout.ALIGN_END); // TODO: doesn't exist until 17
                 redSwitchLayoutParams.addRule(RelativeLayout.RIGHT_OF, theOverrideSwitch.getId());
+                redSwitchLayoutParams.addRule(RelativeLayout.END_OF, theOverrideSwitch.getId());
                 redSwitchLayoutParams.addRule(RelativeLayout.ALIGN_TOP, theOverrideSwitch.getId());
             }
         }

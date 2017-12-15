@@ -465,22 +465,22 @@ public class TheService extends Service {
         // Note that for TYPE_APPLICATION_OVERLAY to be defined requires compileSdkLevel>=26,
         // but it works (on *runtime* level>=26, anyway, not on runtime 25) even if targetSdkLevel=25.  (So, Q: what will I lose if I say targetSdkLevel=25 instead of 26? only diff I've observed is it allows TYPE_SYSTEM_OVERLAY, which is a *good* thing I think? OH I know, it means playstore won't offer it on runtimes >=26.  so, yeah, stick with 26... I think?  (Q: can I play games with maxSdkLevel to get around that?))
         // Tested:
-        //   - TYPE_SYSTEM_OVERLAY with targetSdkLevel=25, runtime 25  (turn off "ask first" to avoid crashing on that)
+        //   - TYPE_SYSTEM_OVERLAY with targetSdkLevel=25, runtime 25
         //      - works (not sure if play store keyboard works since play store not on emulator)
-        //   - TYPE_SYSTEM_OVERLAY with targetSdkLevel=26, runtime 25  (turn off "ask first" to avoid crashing on that)
+        //   - TYPE_SYSTEM_OVERLAY with targetSdkLevel=26,27, runtime 25
         //      - works (not sure if play store keyboard works since play store not on emulator)
         //   - TYPE_APPLICATION_OVERLAY with targetSdkLevel=25, runtime 25
         //      - crashes: android.view.WindowManager$BadTokenException: Unable to add window android.view.ViewRootImpl$W@8e5af08 -- permission denied for window type 2038  # 2038 is TYPE_APPLICATION_OVERLAY
-        //   - TYPE_APPLICATION_OVERLAY with targetSdkLevel=26, runtime 25
+        //   - TYPE_APPLICATION_OVERLAY with targetSdkLevel=26,27, runtime 25
         //      - crashes: android.view.WindowManager$BadTokenException: Unable to add window android.view.ViewRootImpl$W@8e5af08 -- permission denied for window type 2038  # 2038 is TYPE_APPLICATION_OVERLAY
 
-        //   - TYPE_SYSTEM_OVERLAY with targetSdkLevel=25, runtime 26  (turn off "ask first" to avoid crashing on that)
+        //   - TYPE_SYSTEM_OVERLAY with targetSdkLevel=25, runtime 26
         //      - works
-        //   - TYPE_SYSTEM_OVERLAY with targetSdkLevel=26, runtime 26  (turn off "ask first" to avoid crashing on that)
+        //   - TYPE_SYSTEM_OVERLAY with targetSdkLevel=26,27, runtime 26
         //      - crashes: android.view.WindowManager$BadTokenException: Unable to add window android.view.ViewRootImpl$W@f27b55e -- permission denied for window type 2006  # 2006 is TYPE_SYSTEM_OVERLAY
         //   - TYPE_APPLICATION_OVERLAY with targetSdkLevel=25, runtime 26
         //      - works
-        //   - TYPE_APPLICATION_OVERLAY with targetSdkLevel=26, runtime 26
+        //   - TYPE_APPLICATION_OVERLAY with targetSdkLevel=26,27, runtime 26
         //      - works
         // CONCLUSION:  Since I want to keep targetSdkLevel up to date (I think), I need to make a runtime test:
         //      - if runtime<=25, *must* use TYPE_SYSTEM_OVERLAY
@@ -488,14 +488,17 @@ public class TheService extends Service {
         //      - otherwise (targetSdkLevel<=25, runtime>=26), either will work   (but, weaning myself away from targetSdkLevel=25, so use TYPE_APPLICATION_OVERLAY... also this is impossible if downloaded from play store which enforces runtime<=targetSdkLevel... unless can play games with maxSdkLevel)
         int type;
         int flags;
-        boolean doItTheOldWayThatCrashesOnRecentSdks;
+        boolean use_TYPE_APPLICATION_OVERLAY;
         if (Build.VERSION.SDK_INT <= 25) { // what's running on current machine
-          doItTheOldWayThatCrashesOnRecentSdks = true;  // use TYPE_SYSTEM_OVERLAY
+          use_TYPE_APPLICATION_OVERLAY = false;  // use TYPE_SYSTEM_OVERLAY
         } else {
-          doItTheOldWayThatCrashesOnRecentSdks = false;  // use TYPE_APPLICATION_OVERLAY
+          use_TYPE_APPLICATION_OVERLAY = true;   // use TYPE_APPLICATION_OVERLAY
         }
-        final boolean finalDoItTheOldWayThatCrashesOnRecentSdks = doItTheOldWayThatCrashesOnRecentSdks;
-        if (doItTheOldWayThatCrashesOnRecentSdks) {
+        if (false) {  // set to true to override, so can fill out matrix above
+          use_TYPE_APPLICATION_OVERLAY = true;
+        }
+        final boolean final_use_TYPE_APPLICATION_OVERLAY = use_TYPE_APPLICATION_OVERLAY;
+        if (!use_TYPE_APPLICATION_OVERLAY) {
           if (mVerboseLevel >= 1) Log.i(TAG, "                          using TYPE_SYSTEM_OVERLAY");
           type = WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY;
           flags = 0;
@@ -677,7 +680,7 @@ public class TheService extends Service {
                                         // (if both targetSdkVersion>=26 and runtime>=26);
                                         // the new thing is TYPE_APPLICATION_OVERLAY instead.
                                         // (I assume the same decision matrix holds for this as for the overlay, above).
-                                        if (finalDoItTheOldWayThatCrashesOnRecentSdks) {
+                                        if (!final_use_TYPE_APPLICATION_OVERLAY) {
                                           alertDialogWindow.setType(WindowManager.LayoutParams.TYPE_SYSTEM_ALERT);
                                         } else {
                                           alertDialogWindow.setType(WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY);

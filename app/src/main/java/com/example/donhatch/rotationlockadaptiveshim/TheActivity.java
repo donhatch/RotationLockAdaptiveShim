@@ -181,32 +181,38 @@ public class TheActivity extends Activity {
           super.onDraw(canvas);
           canvas.drawColor(Color.WHITE);  // erase the dial image (sort of silly)
 
-          Paint redPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-          redPaint.setColor(Color.RED);
-          redPaint.setARGB(255, 255, 192, 192);
+          Paint redPaint = new Paint(Paint.ANTI_ALIAS_FLAG) {{
+            setColor(Color.RED);
+            setARGB(255, 255, 192, 192);
+          }};
 
-          Paint orangeishYellowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-          orangeishYellowPaint.setColor(Color.YELLOW);
-          //orangeishYellowPaint.setARGB(255, 255, 224, 192);
-          //orangeishYellowPaint.setARGB(255, 255, 240, 192);
-          orangeishYellowPaint.setARGB(255, 255, 248, 192);
+          Paint orangeishYellowPaint = new Paint(Paint.ANTI_ALIAS_FLAG) {{
+            setColor(Color.YELLOW);
+            //setARGB(255, 255, 224, 192);
+            //setARGB(255, 255, 240, 192);
+            setARGB(255, 255, 248, 192);
+          }};
 
-          Paint yellowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-          yellowPaint.setColor(Color.YELLOW);
-          yellowPaint.setARGB(255, 255, 255, 192);
+          Paint yellowPaint = new Paint(Paint.ANTI_ALIAS_FLAG) {{
+            setColor(Color.YELLOW);
+            setARGB(255, 255, 255, 192);
+          }};
 
-          Paint greenishYellowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-          greenishYellowPaint.setColor(Color.YELLOW);
-          //greenishYellowPaint.setARGB(255, 224, 255, 192);
-          //greenishYellowPaint.setARGB(255, 240, 255, 192);
-          greenishYellowPaint.setARGB(255, 248, 255, 192);
+          Paint greenishYellowPaint = new Paint(Paint.ANTI_ALIAS_FLAG) {{
+            setColor(Color.YELLOW);
+            //setARGB(255, 224, 255, 192);
+            //setARGB(255, 240, 255, 192);
+            setARGB(255, 248, 255, 192);
+          }};
 
-          Paint greenPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-          greenPaint.setColor(Color.GREEN);
-          greenPaint.setARGB(255, 192, 255, 192);
+          Paint greenPaint = new Paint(Paint.ANTI_ALIAS_FLAG) {{
+            setColor(Color.GREEN);
+            setARGB(255, 192, 255, 192);
+          }};
 
-          Paint zeroLinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-          zeroLinePaint.setARGB(64, 0, 0, 0);  // transparent black
+          Paint zeroLinePaint = new Paint(Paint.ANTI_ALIAS_FLAG) {{
+            setARGB(64, 0, 0, 0);  // transparent black
+          }};
 
           float centerX = canvas.getWidth() / 2;
           float centerY = canvas.getHeight() / 2;
@@ -269,9 +275,10 @@ public class TheActivity extends Activity {
         protected void onDraw(Canvas canvas) {
           Log.i(TAG, "                in MyImageView2.onDraw");
           //super.onDraw(canvas); // don't bother, since it's the dial image which we don't want here
-          Paint blackPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-          blackPaint.setColor(Color.BLACK);
-          blackPaint.setStrokeWidth(10);
+          Paint blackPaint = new Paint(Paint.ANTI_ALIAS_FLAG) {{
+            setColor(Color.BLACK);
+            setStrokeWidth(10);
+          }};
 
           float centerX = canvas.getWidth() / 2;
           float centerY = canvas.getHeight() / 2;

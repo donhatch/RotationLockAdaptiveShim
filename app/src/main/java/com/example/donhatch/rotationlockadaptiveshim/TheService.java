@@ -922,7 +922,22 @@ public class TheService extends Service {
             notificationIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
             PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
 
+
+
 	    String NOTIFICATION_CHANNEL_ID = "hello, I am a notification channel id"; // XXX ?
+
+            // Don't use the Builder ctor that takes a channel id, since that will crash on runtime < 26.
+            // Instead, use the old ctor, and, if runtime>=26, use setChannelId.
+            final Notification.Builder builder = new Notification.Builder(this)
+                    .setContentTitle("Adaptive Rotation Lock Shim") // XXX R.string.notification_title
+                    .setContentText("Tap for configuration options") // XXX R.string.notification_messsage
+                    //.setSmallIcon(R.drawable.typewriter_el)
+                    .setSmallIcon(R.mipmap.typewriter_el)
+                    .setContentIntent(pendingIntent)
+                    //.setOngoing(false) // irrelevant: apparently sets FLAG_ONGOING_EVENT (in accordance to documented behavior) but not FLAG_NO_CLEAR, despite documented behavior); however, neither has any affect since we're using startForeground which automatically makes the notification ongoing and non-clearable no matter what these flags say..
+                    .setWhen(System.currentTimeMillis()+20*60*1000)   // causes "in 9m" or something to be shown if setShowWhen is true.  60 seconds or less turns into "now". only gets updated very infrequently (once a minute?) so not all that useful.
+                    .setShowWhen(false) // default changed from true to false in (target=)Nougat, so say it explicitly
+                    ;
             if (Build.VERSION.SDK_INT >= 26) {  // runtime
 	      if (mVerboseLevel >= 1) Log.i(TAG, "                              doing the notification channel setup thing because runtime is "+Build.VERSION.SDK_INT+" >= 26");
               // https://stackoverflow.com/questions/45711925/failed-to-post-notification-on-channel-null-target-api-is-26#answer-47135605
@@ -948,17 +963,9 @@ public class TheService extends Service {
 	      // XXX why did the other one do it through getApplicationContext()? I'm confused
 	      NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 	      notificationManager.createNotificationChannel(notificationChannel);
+
+              builder.setChannelId(NOTIFICATION_CHANNEL_ID);
             }
-            final Notification.Builder builder = new Notification.Builder(this, NOTIFICATION_CHANNEL_ID)
-                    .setContentTitle("Adaptive Rotation Lock Shim") // XXX R.string.notification_title
-                    .setContentText("Tap for configuration options") // XXX R.string.notification_messsage
-                    //.setSmallIcon(R.drawable.typewriter_el)
-                    .setSmallIcon(R.mipmap.typewriter_el)
-                    .setContentIntent(pendingIntent)
-                    //.setOngoing(false) // irrelevant: apparently sets FLAG_ONGOING_EVENT (in accordance to documented behavior) but not FLAG_NO_CLEAR, despite documented behavior); however, neither has any affect since we're using startForeground which automatically makes the notification ongoing and non-clearable no matter what these flags say..
-                    .setWhen(System.currentTimeMillis()+20*60*1000)   // causes "in 9m" or something to be shown if setShowWhen is true.  60 seconds or less turns into "now". only gets updated very infrequently (once a minute?) so not all that useful.
-                    .setShowWhen(false) // default changed from true to false in (target=)Nougat, so say it explicitly
-                    ;
             final Notification notification = builder.build();
 
             if (mVerboseLevel >= 1) Log.i(TAG, "                              calling startForeground");

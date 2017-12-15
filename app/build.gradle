@@ -30,6 +30,10 @@ dependencies {
     androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
-    compile 'com.android.support:appcompat-v7:25.1.0'
+    // When this gets out of date, Analyze starts warning that it should match compileSdkVersion;
+    // in that case, press the button (e.g. "change to 27.0.2"); then the build will fail
+    // because it's not found, but it will offer "Add Google Maven repository and sync project";
+    // do that, and then it's happy.
+    compile 'com.android.support:appcompat-v7:27.0.2'
     testCompile 'junit:junit:4.12'
 }

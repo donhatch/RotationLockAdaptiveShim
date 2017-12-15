@@ -515,8 +515,8 @@ public class TheService extends Service {
           flags = 0;
           flags |= WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE; // not sure whether this is needed for playstore's keyboard (there's no playstore on emulator) but it doesn't hurt
         } else {
+          // flow analysis apparently isn't smart enough to see that this block only happens when Build.VERSION.SDK_INT >= 26, wtf?  So help it.  According to the warning doc, TargetApi(11) means pretend minSdkLevel=11.
           if (mVerboseLevel >= 1) Log.i(TAG, "                          using TYPE_APPLICATION_OVERLAY with FLAG_NOT_TOUCHABLE|FLAG_NOT_FOCUSABLE");
-          // TODO: hmm, flow analysis isn't smart enough to see that I'm correctly using this, only when Build.VERSION.SDK_INT >= 26?  wtf?
           type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY; // works for both now that I figured out the FLAG_NOT_TOUCHABLE thing
           flags = 0;
           flags |= WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE; // required in order for touchthrough to work at all

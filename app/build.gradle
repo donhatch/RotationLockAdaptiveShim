@@ -2,10 +2,14 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 27
-    buildToolsVersion '26.0.3'
+    buildToolsVersion '27.0.1'
     defaultConfig {
         applicationId "com.example.donhatch.rotationlockadaptiveshim"
         minSdkVersion 15
+        // Note: targetSdkVersion 25 = 7.x.x = Nougat
+        // Note: targetSdkVersion 26 = 8.x.x = Oreo
+        // There are comments in Service.java saying what works and what doesn't
+        // with various combinations of targetSdkVersion and runtime version.
         targetSdkVersion 26
         versionCode 1
         versionName "1.0"

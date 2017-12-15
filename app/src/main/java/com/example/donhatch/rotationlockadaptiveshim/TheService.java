@@ -395,7 +395,7 @@ public class TheService extends Service {
         if (mVerboseLevel >= 1) Log.i(TAG, "                          Build.VERSION.SDK_INT = "+Build.VERSION.SDK_INT);  // what's on the current machine at runtime
         if (mVerboseLevel >= 1) Log.i(TAG, "                          Build.VERSION_CODES.O = "+Build.VERSION_CODES.O);
         if (mVerboseLevel >= 1) Log.i(TAG, "                          getApplicationContext().getApplicationInfo().targetSdkVersion = "+getApplicationContext().getApplicationInfo().targetSdkVersion);
-        // note that in real apps installed from store, I think it's always true that runtime version <= targetSdkVersion
+        // note that in real apps installed from play store, I think it's always true that runtime version <= targetSdkVersion
 
         if (theRunningService != null) {
             // XXX do this via a Notification, I think
@@ -463,12 +463,51 @@ public class TheService extends Service {
         // So now I have to use TYPE_APPLICATION_OVERLAY+FLAG_NOT_TOUCHABLE instead, which seems to work.
         // (the flag is apparently necessary to get touchthrough).
         // Note that for TYPE_APPLICATION_OVERLAY to be defined requires compileSdkLevel>=26,
-        // but it works (on *runtime* level>=26, anyway) even if targetSdkLevel=25.
-        int type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY; // works for both now that I figured out the FLAG_NOT_TOUCHABLE thing
-        int flags = 0;
-        flags |= WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE; // required in order for touchthrough to work at all
-        flags |= WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE; // required in order for playstore's keyboard to function when under this overlay (wtf!?)
-        //flags |= WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL // irrelevant since FLAG_NOT_FOCUSABLE is set
+        // but it works (on *runtime* level>=26, anyway, not on runtime 25) even if targetSdkLevel=25.  (So, Q: what will I lose if I say targetSdkLevel=25 instead of 26? only diff I've observed is it allows TYPE_SYSTEM_OVERLAY, which is a *good* thing I think? OH I know, it means playstore won't offer it on runtimes >=26.  so, yeah, stick with 26... I think?  (Q: can I play games with maxSdkLevel to get around that?))
+        // Tested:
+        //   - TYPE_SYSTEM_OVERLAY with targetSdkLevel=25, runtime 25  (turn off "ask first" to avoid crashing on that)
+        //      - works (not sure if play store keyboard works since play store not on emulator)
+        //   - TYPE_SYSTEM_OVERLAY with targetSdkLevel=26, runtime 25  (turn off "ask first" to avoid crashing on that)
+        //      - works (not sure if play store keyboard works since play store not on emulator)
+        //   - TYPE_APPLICATION_OVERLAY with targetSdkLevel=25, runtime 25
+        //      - crashes: android.view.WindowManager$BadTokenException: Unable to add window android.view.ViewRootImpl$W@8e5af08 -- permission denied for window type 2038  # 2038 is TYPE_APPLICATION_OVERLAY
+        //   - TYPE_APPLICATION_OVERLAY with targetSdkLevel=26, runtime 25
+        //      - crashes: android.view.WindowManager$BadTokenException: Unable to add window android.view.ViewRootImpl$W@8e5af08 -- permission denied for window type 2038  # 2038 is TYPE_APPLICATION_OVERLAY
+
+        //   - TYPE_SYSTEM_OVERLAY with targetSdkLevel=25, runtime 26  (turn off "ask first" to avoid crashing on that)
+        //      - works
+        //   - TYPE_SYSTEM_OVERLAY with targetSdkLevel=26, runtime 26  (turn off "ask first" to avoid crashing on that)
+        //      - crashes: android.view.WindowManager$BadTokenException: Unable to add window android.view.ViewRootImpl$W@f27b55e -- permission denied for window type 2006  # 2006 is TYPE_SYSTEM_OVERLAY
+        //   - TYPE_APPLICATION_OVERLAY with targetSdkLevel=25, runtime 26
+        //      - works
+        //   - TYPE_APPLICATION_OVERLAY with targetSdkLevel=26, runtime 26
+        //      - works
+        // CONCLUSION:  Since I want to keep targetSdkLevel up to date (I think), I need to make a runtime test:
+        //      - if runtime<=25, *must* use TYPE_SYSTEM_OVERLAY
+        //      - if both targetSdkLevel>=26 and runtime>=26, *must* use TYPE_APPLICATION_OVERLAY
+        //      - otherwise (targetSdkLevel<=25, runtime>=26), either will work   (but, weaning myself away from targetSdkLevel=25, so use TYPE_APPLICATION_OVERLAY... also this is impossible if downloaded from play store which enforces runtime<=targetSdkLevel... unless can play games with maxSdkLevel)
+        int type;
+        int flags;
+        boolean doItTheOldWayThatCrashesOnRecentSdks;
+        if (Build.VERSION.SDK_INT <= 25) { // what's running on current machine
+          doItTheOldWayThatCrashesOnRecentSdks = true;  // use TYPE_SYSTEM_OVERLAY
+        } else {
+          doItTheOldWayThatCrashesOnRecentSdks = false;  // use TYPE_APPLICATION_OVERLAY
+        }
+        final boolean finalDoItTheOldWayThatCrashesOnRecentSdks = doItTheOldWayThatCrashesOnRecentSdks;
+        if (doItTheOldWayThatCrashesOnRecentSdks) {
+          if (mVerboseLevel >= 1) Log.i(TAG, "                          using TYPE_SYSTEM_OVERLAY");
+          type = WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY;
+          flags = 0;
+          flags |= WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE; // not sure whether this is needed for playstore's keyboard (there's no playstore on emulator) but it doesn't hurt
+        } else {
+          if (mVerboseLevel >= 1) Log.i(TAG, "                          using TYPE_APPLICATION_OVERLAY with FLAG_NOT_TOUCHABLE|FLAG_NOT_FOCUSABLE");
+          type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY; // works for both now that I figured out the FLAG_NOT_TOUCHABLE thing
+          flags = 0;
+          flags |= WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE; // required in order for touchthrough to work at all
+          flags |= WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE; // required in order for playstore's keyboard to function when under this overlay (wtf!?)
+          //flags |= WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL // irrelevant since FLAG_NOT_FOCUSABLE is set
+        }
 
         mOrientationLayout = new WindowManager.LayoutParams(
             /*_type=*/type,
@@ -477,9 +516,9 @@ public class TheService extends Service {
         CHECK(mOrientationLayout.screenOrientation == ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
         {
             WindowManager windowManager = (WindowManager)getSystemService(Service.WINDOW_SERVICE);
-            if (mVerboseLevel >= 1) Log.i(TAG, "                          adding view mOrientationchanger");
-            windowManager.addView(mOrientationChanger, mOrientationLayout);
-            if (mVerboseLevel >= 1) Log.i(TAG, "                          added view mOrientationchanger");
+            if (mVerboseLevel >= 1) Log.i(TAG, "                          adding view mOrientationchanger, cross your fingers");
+            windowManager.addView(mOrientationChanger, mOrientationLayout);  // THIS is where it crashes if using TYPE_APPLICATION_OVERLAY and targetSdkLevel and/or runtime is <=25
+            if (mVerboseLevel >= 1) Log.i(TAG, "                          added view mOrientationchanger; it worked!");
             CHECK(mOrientationChanger.getVisibility() == View.GONE);
         }
         mOrientationEventListener = new OrientationEventListener(this, SensorManager.SENSOR_DELAY_NORMAL) {
@@ -634,9 +673,15 @@ public class TheService extends Service {
 
                                         // This setType is required when context=TheService.this,
                                         // otherwise the show() gives WindowManager.BadTokenException.
-                                        // prior to targetSdkVersion=26, I used TYPE_SYSTEM_ALERT, but that doesn't work any more;
+                                        // prior to targetSdkVersion=26, I used TYPE_SYSTEM_ALERT, but that doesn't work any more
+                                        // (if both targetSdkVersion>=26 and runtime>=26);
                                         // the new thing is TYPE_APPLICATION_OVERLAY instead.
-                                        alertDialogWindow.setType(WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY);
+                                        // (I assume the same decision matrix holds for this as for the overlay, above).
+                                        if (finalDoItTheOldWayThatCrashesOnRecentSdks) {
+                                          alertDialogWindow.setType(WindowManager.LayoutParams.TYPE_SYSTEM_ALERT);
+                                        } else {
+                                          alertDialogWindow.setType(WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY);
+                                        }
 
                                         // Kill the dimming of the activity or whatever's behind it
                                         alertDialogWindow.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);

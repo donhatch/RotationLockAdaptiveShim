@@ -1,6 +1,6 @@
 // TODO: make it work properly when activity is destroyed&recreated on orientation change?
 //       - seems to be pretty good now?
-// TODO: look into the consequences of singleinstance and/or android:launchMode="singleTask" https://stackoverflow.com/questions/37709918/warning-do-not-place-android-context-classes-in-static-fields-this-is-a-memory/37709963#comment-77492138  will it let me exercise possibilities I have not been able to exercise so far?
+// TODO: look into the consequences of singleinstance and/or android:launchMode="singleTask" https://stackoverflow.com/questions/37709918/warning-do-not-place-android-context-classes-in-static-fields-this-is-a-memory/37709963#comment-77492138  will different values let me exercise possibilities I have not been able to exercise so far? like two activities at once
 
 // TODO: avoid drawArc since it requires minSdkVersion>=21; bake in the arcs instead
 // BUG: upgrading targetSdkVersion from 25 to 26 makes the app icon a solid white circle?? wtf?
@@ -1009,6 +1009,7 @@ public class TheActivity extends Activity {
     protected void onDestroy() {
         Log.i(TAG, "    in onDestroy");
         super.onDestroy();
+        CHECK(theRunningActivity == this); // XXX not confident in this
         if (theRunningActivity == this) theRunningActivity = null;
         Log.i(TAG, "    out onDestroy");
     }

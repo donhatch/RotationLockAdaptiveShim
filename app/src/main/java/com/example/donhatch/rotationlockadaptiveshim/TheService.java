@@ -22,10 +22,8 @@ import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.database.ContentObserver;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
-import android.graphics.drawable.ColorDrawable;
 import android.hardware.SensorManager;
 import android.net.Uri;
 import android.os.Build;
@@ -901,7 +899,7 @@ public class TheService extends Service {
             // Questions:
             //   - how do I keep the icon from going away when user opens the activity by clicking on the notification?
             Intent notificationIntent = new Intent(this, TheActivity.class);
-            http://stackoverflow.com/questions/7385443/flag-activity-clear-top-in-android#answer-7385849
+            // http://stackoverflow.com/questions/7385443/flag-activity-clear-top-in-android#answer-7385849
             notificationIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
             PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
             final Notification.Builder builder = new Notification.Builder(this)

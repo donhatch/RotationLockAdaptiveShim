@@ -508,7 +508,7 @@ public class TheActivity extends Activity {
         thePromptFirstSwitch.setChecked(TheService.mStaticPromptFirst);
         theOverrideSwitch.setChecked(TheService.mStaticOverride);
         theRedSwitch.setChecked(TheService.getRed());
-        theMonitorSwitch.setChecked(mPolling);
+        theMonitorSwitch.setChecked(mPolling); // before listener installed; otherwise we'd get a callback immediately
         thePolledValuesHeaderTextView.setEnabled(mPolling);
         thePolledStatusTextView.setEnabled(mPolling);
 

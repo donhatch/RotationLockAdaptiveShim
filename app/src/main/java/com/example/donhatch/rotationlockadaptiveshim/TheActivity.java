@@ -1041,11 +1041,11 @@ public class TheActivity extends Activity {
                 // put red switch below override switch, right-aligned with it
                 Log.i(TAG, "  putting red switch below and right-aligned with override switch");
                 redSwitchLayoutParams.addRule(RelativeLayout.RIGHT_OF, 0); // i.e. removeRule, but works with runtime<17
-                redSwitchLayoutParams.addRule(RelativeLayout.END_OF, 0); // i.e. removeRule, but works with runtime<17
+                if (Build.VERSION.SDK_INT >= 17) redSwitchLayoutParams.addRule(RelativeLayout.END_OF, 0); // i.e. removeRule, but works with runtime<17
                 redSwitchLayoutParams.addRule(RelativeLayout.ALIGN_TOP, 0); // i.e. removeRule, but works with runtime<17
                 redSwitchLayoutParams.addRule(RelativeLayout.BELOW, theOverrideSwitch.getId());
                 redSwitchLayoutParams.addRule(RelativeLayout.ALIGN_RIGHT, theOverrideSwitch.getId());
-                redSwitchLayoutParams.addRule(RelativeLayout.ALIGN_END, theOverrideSwitch.getId());
+                if (Build.VERSION.SDK_INT >= 17) redSwitchLayoutParams.addRule(RelativeLayout.ALIGN_END, theOverrideSwitch.getId());
                 //layout_below = theOverrideSwitch;
                 //theRedSwitch.alignRight = theOverrideSwitch;
             } else if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
@@ -1059,9 +1059,9 @@ public class TheActivity extends Activity {
                 Log.i(TAG, "  putting red switch to right and top-aligned with override switch");
                 redSwitchLayoutParams.addRule(RelativeLayout.BELOW, 0);  // i.e. removeRule, but works with runtime<17
                 redSwitchLayoutParams.addRule(RelativeLayout.ALIGN_RIGHT, 0);  // i.e. removeRule, but works with runtime<17
-                redSwitchLayoutParams.addRule(RelativeLayout.ALIGN_END, 0);  // i.e. removeRule, but works with runtime<17
+                if (Build.VERSION.SDK_INT >= 17) redSwitchLayoutParams.addRule(RelativeLayout.ALIGN_END, 0);  // i.e. removeRule, but works with runtime<17
                 redSwitchLayoutParams.addRule(RelativeLayout.RIGHT_OF, theOverrideSwitch.getId());
-                redSwitchLayoutParams.addRule(RelativeLayout.END_OF, theOverrideSwitch.getId());
+                if (Build.VERSION.SDK_INT >= 17) redSwitchLayoutParams.addRule(RelativeLayout.END_OF, theOverrideSwitch.getId());
                 redSwitchLayoutParams.addRule(RelativeLayout.ALIGN_TOP, theOverrideSwitch.getId());
             }
         }

@@ -75,7 +75,7 @@ public class TheService extends Service {
         return answer;
     }
 
-
+    public static Object theRunningServiceLock = new Object();
     public static TheService theRunningService = null;
     public boolean mHasBeenDestroyed = false;
     // omfg it has to be nonzero
@@ -397,12 +397,14 @@ public class TheService extends Service {
         if (mVerboseLevel >= 1) Log.i(TAG, "                          getApplicationContext().getApplicationInfo().targetSdkVersion = "+getApplicationContext().getApplicationInfo().targetSdkVersion);
         // note that in real apps installed from play store, I think it's always true that runtime version <= targetSdkVersion
 
-        if (theRunningService != null) {
-            // XXX do this via a Notification, I think
-            // XXX have I decided this never happens?  Not sure.
-            throw new AssertionError("TheService.onCreate called when there's already an existing service!");
+        synchronized(theRunningServiceLock) {
+          if (theRunningService != null) {
+              // XXX do this via a Notification, I think
+              // XXX have I decided this never happens?  Not sure.
+              throw new AssertionError("TheService.onCreate called when there's already an existing service!");
+          }
+          TheService.theRunningService = this;
         }
-        TheService.theRunningService = this;
 
         if (false) // set to true to experiment with renewing toasts to show it works.
         {
@@ -1008,7 +1010,9 @@ public class TheService extends Service {
         unregisterReceiver(mBroadcastReceiver);
         mBroadcastReceiver = null;
 
-        theRunningService = null;
+        synchronized(theRunningServiceLock) {
+          theRunningService = null;
+        }
         mHasBeenDestroyed = true;
 
         // Reasons we might be getting stopped while activity is still running:
@@ -1040,8 +1044,10 @@ public class TheService extends Service {
     public static void setOverride(boolean newOverride) {
       // TODO: should this method be responsible for noticing it's the same as previous?
       mStaticOverride = newOverride;
-      if (theRunningService != null) {
-        theRunningService.updateOverrideIfNecessary();
+      synchronized(theRunningServiceLock) {
+        if (theRunningService != null) {
+          theRunningService.updateOverrideIfNecessary();
+        }
       }
     }
 
@@ -1050,42 +1056,44 @@ public class TheService extends Service {
         Log.i(TAG, "                in setRed");
         Log.i(TAG, "                  theRunningService = "+theRunningService);
         mStaticRed = newRed;
-        if (theRunningService != null) {
-            final int oldColor = theRunningService.mOrientationChangerCurrentBackgroundColor;
-            final int newColor = (mStaticRed ? 0x44ff0000 : 0x00000000); // faint translucent red color if mStaticRed
-            theRunningService.mOrientationChangerCurrentBackgroundColor = newColor;
-            if (false) {
-                Log.i(TAG, "                      instantly setting background color to "+String.format("%#x", newColor));
-                theRunningService.mOrientationChanger.setBackgroundColor(theRunningService.mOrientationChangerCurrentBackgroundColor);
-            } else {
-                // Fade it in
-                Log.i(TAG, "                      fading background color to "+String.format("%#x", newColor));
-                final long fadeMillis = 500;
-                final int n = 20; // too small makes it juddery.  too big makes it take a long time.
-                final Handler handler = new Handler();
-                Runnable runnable = new Runnable() {
-                    private int i = 0;
-                    @Override
-                    public void run() {
-                        i++;
-                        double frac = (double)i / (double)n;
-                        int midColor = 0;
-                        for (int i = 0; i < 4; ++i) {
-                            int oldByte = (oldColor >> (i*8)) & 0xff;
-                            int newByte = (newColor >> (i*8)) & 0xff;
-                            int midByte = (int)((1.-frac)*oldByte
-                                                + frac*newByte + .5);
-                            midColor |= midByte << (i*8);
-                        }
-                        theRunningService.mOrientationChanger.setBackgroundColor(midColor);
-                        if (i < n) {
-                            handler.postDelayed(this, fadeMillis / n);
-                        }
-                    }
-                };
-                runnable.run();
-            }
-        }
+        synchronized(theRunningServiceLock) {
+          if (theRunningService != null) {
+              final int oldColor = theRunningService.mOrientationChangerCurrentBackgroundColor;
+              final int newColor = (mStaticRed ? 0x44ff0000 : 0x00000000); // faint translucent red color if mStaticRed
+              theRunningService.mOrientationChangerCurrentBackgroundColor = newColor;
+              if (false) {
+                  Log.i(TAG, "                      instantly setting background color to "+String.format("%#x", newColor));
+                  theRunningService.mOrientationChanger.setBackgroundColor(theRunningService.mOrientationChangerCurrentBackgroundColor);
+              } else {
+                  // Fade it in
+                  Log.i(TAG, "                      fading background color to "+String.format("%#x", newColor));
+                  final long fadeMillis = 500;
+                  final int n = 20; // too small makes it juddery.  too big makes it take a long time.
+                  final Handler handler = new Handler();
+                  Runnable runnable = new Runnable() {
+                      private int i = 0;
+                      @Override
+                      public void run() {
+                          i++;
+                          double frac = (double)i / (double)n;
+                          int midColor = 0;
+                          for (int i = 0; i < 4; ++i) {
+                              int oldByte = (oldColor >> (i*8)) & 0xff;
+                              int newByte = (newColor >> (i*8)) & 0xff;
+                              int midByte = (int)((1.-frac)*oldByte
+                                                  + frac*newByte + .5);
+                              midColor |= midByte << (i*8);
+                          }
+                          theRunningService.mOrientationChanger.setBackgroundColor(midColor);
+                          if (i < n) {
+                              handler.postDelayed(this, fadeMillis / n);
+                          }
+                      }
+                  };
+                  runnable.run();
+              }
+          }
+        }  // synchronized(theRunningServiceLock)
         Log.i(TAG, "                out setRed");
     }  // setRed
 

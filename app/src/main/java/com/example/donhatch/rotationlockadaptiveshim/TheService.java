@@ -81,7 +81,7 @@ public class TheService extends Service {
     // omfg it has to be nonzero
     private final int AN_IDENTIFIER_FOR_THIS_NOTIFICATION_UNIQUE_WITHIN_THIS_APPLICATION = 1;
 
-    int mVerboseLevel = 1; // 0: nothing, 1: major stuff, 2: every accelerometer event (lots)
+    final int mVerboseLevel = 1; // 0: nothing, 1: major stuff, 2: every accelerometer event (lots).  Only final because the linter suggested it; feel free to make non-final if it helps debug.
 
     // These are static to avoid having to think about when the service isn't running.
     public static int mStaticDegrees = -1; // most recent value passed to onOrientationChanged listener of any TheService instance.
@@ -939,7 +939,7 @@ public class TheService extends Service {
                         }
                         builder.setContentText("updated "+(count[0]++));
                         if (false) {
-                            NotificationManager notificationManager = (NotificationManager) getApplicationContext().getSystemService(getApplicationContext().NOTIFICATION_SERVICE);
+                            NotificationManager notificationManager = (NotificationManager) getApplicationContext().getSystemService(android.content.Context.NOTIFICATION_SERVICE);
                             // There seems to be some disagreement over whether the following will
                             // do something unfriendly-- either undo startForeground() (I don't think so)
                             // or make it so stopForeground() no longer removes the notification (yeah I think so).

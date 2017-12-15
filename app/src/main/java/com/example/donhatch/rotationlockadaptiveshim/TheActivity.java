@@ -211,7 +211,8 @@ public class TheActivity extends Activity {
           }};
 
           Paint zeroLinePaint = new Paint(Paint.ANTI_ALIAS_FLAG) {{
-            setARGB(64, 0, 0, 0);  // transparent black
+            setARGB(255, 255, 255, 255);  // opaque white
+            setStrokeWidth(3);
           }};
 
           float centerX = canvas.getWidth() / 2;

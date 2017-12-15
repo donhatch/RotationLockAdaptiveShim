@@ -183,7 +183,7 @@ public class TheService extends Service {
                 mOrientationEventListener.disable();
             } else if (intent.getAction().equals(Intent.ACTION_SCREEN_ON)) {
                 // same thing we do on create (dup code)
-                if (mOrientationEventListener.canDetectOrientation() == true) {
+                if (mOrientationEventListener.canDetectOrientation()) {
                     if (mVerboseLevel >= 1) Log.i(TAG, "          ACTION_SCREEN_ON and can detect orientation, enabling orientation event listener");
                     mOrientationEventListener.enable();
                 } else {
@@ -199,7 +199,7 @@ public class TheService extends Service {
                 CHECK(false);
             }
             if (mVerboseLevel >= 1) Log.i(TAG, "        out onReceive(intent.getAction()="+intent.getAction()+")");
-        };
+        }
     };  // mBroadcastReceiver
 
 
@@ -855,7 +855,7 @@ public class TheService extends Service {
 
 
         // same thing we do on ACTION_SCREEN_ON (dup code)
-        if (mOrientationEventListener.canDetectOrientation() == true) {
+        if (mOrientationEventListener.canDetectOrientation()) {
             if (mVerboseLevel >= 1) Log.i(TAG, "                          can detect orientation, enabling orientation event listener");
             mOrientationEventListener.enable();
         } else {
@@ -924,7 +924,7 @@ public class TheService extends Service {
             if (mVerboseLevel >= 1) Log.i(TAG, "                              returned from startForeground");
             if (false) {
                 if (mVerboseLevel >= 1) Log.i(TAG, "                              calling stopForeground");
-                stopForeground(AN_IDENTIFIER_FOR_THIS_NOTIFICATION_UNIQUE_WITHIN_THIS_APPLICATION);
+                stopForeground(STOP_FOREGROUND_REMOVE);
                 if (mVerboseLevel >= 1) Log.i(TAG, "                              returned from stopForeground");
             }
 
@@ -949,7 +949,7 @@ public class TheService extends Service {
                             // do something unfriendly-- either undo startForeground() (I don't think so)
                             // or make it so stopForeground() no longer removes the notification (yeah I think so).
                             notificationManager.notify(AN_IDENTIFIER_FOR_THIS_NOTIFICATION_UNIQUE_WITHIN_THIS_APPLICATION, builder.build());
-                            //stopForeground(AN_IDENTIFIER_FOR_THIS_NOTIFICATION_UNIQUE_WITHIN_THIS_APPLICATION);
+                            //stopForeground(STOP_FOREGROUND_REMOVE);
                         }
                         if (true) {
                             startForeground(AN_IDENTIFIER_FOR_THIS_NOTIFICATION_UNIQUE_WITHIN_THIS_APPLICATION, notification);

@@ -157,13 +157,13 @@ public class TheActivity extends Activity {
             updatePolledStatusTextView();
             mPollingHandler.postDelayed(this, 1*1000);
             Log.i(TAG, "                out once-per-second poll (this should only happen when ui is visible)");
-        };
+        }
     };
 
     // https://stackoverflow.com/questions/6178896/how-to-draw-a-line-in-imageview-on-android
     // This is actually pretty lame, since, it turns out, onDraw is only called once
     // on startup (and orientation change between portrait and landscape), and subsequently the drawn thing gets rotated.
-    public class MyImageView1 extends ImageView {
+    public class MyImageView1 extends android.support.v7.widget.AppCompatImageView {
         public MyImageView1(Context context) {
             super(context);
             // TODO: Auto-generated constructor stub
@@ -257,7 +257,7 @@ public class TheActivity extends Activity {
           Log.i(TAG, "                out MyImageView1.setRotation(newRotation="+newRotation+")");
         }
     }  // class MyImageView1
-    public class MyImageView2 extends ImageView {
+    public class MyImageView2 extends android.support.v7.widget.AppCompatImageView {
         public MyImageView2(Context context) {
             super(context);
             // TODO: Auto-generated constructor stub

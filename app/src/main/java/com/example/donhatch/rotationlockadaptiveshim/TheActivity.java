@@ -129,7 +129,7 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
-@SuppressWarnings("ConstantIfStatement")
+@SuppressWarnings({"ConstantIfStatement", "PointlessArithmeticExpression", "ConstantConditions"})
 public class TheActivity extends Activity {
 
     private static final String TAG = "RLAS activity";  // was "RotationLockAdaptiveShim activity" but got warnings
@@ -147,7 +147,9 @@ public class TheActivity extends Activity {
     private boolean mPolling = false;  // TODO: make this a shared preference so it will persist?
     private int mMostRecentConfigurationOrientation = -1;  // from most recent onConfigurationChanged, or getResources().getConfiguration().orientation initially
 
-    public static TheActivity theRunningActivity = null; // actually not sure there is guaranteed to be at most one
+    // This is no longer used by the service (good!) so doesn't need to be public.  It's now just used
+    // as a sanity check.
+    private static TheActivity theRunningActivity = null; // actually not sure there is guaranteed to be at most one
 
     private Handler mPollingHandler = new Handler();
     private Runnable mPollingRunnable = new Runnable() {
@@ -302,13 +304,13 @@ public class TheActivity extends Activity {
                 //Log.i(TAG, "                  intent.getDoubleExtra(\"new degrees\") = "+newDegrees);
                 //Log.i(TAG, "                  intent.getDoubleExtra(\"old degrees smoothed\") = "+oldDegreesSmoothed);
                 //Log.i(TAG, "                  intent.getDoubleExtra(\"new degrees smoothed\") = "+newDegreesSmoothed);
-                TextView theAccelerometerOrientationDegreesTextView = (TextView)findViewById(R.id.theAccelerometerOrientationDegreesTextView);
+                TextView theAccelerometerOrientationDegreesTextView = findViewById(R.id.theAccelerometerOrientationDegreesTextView);
                 theAccelerometerOrientationDegreesTextView.setText("  accelerometer degrees (most recent update): "+oldDegrees+" -> "+newDegrees);
 
                 if (true) {
-                    ImageView theDialImageView1 = (ImageView)findViewById(R.id.theDialImageView1);
-                    ImageView theDialImageView = (ImageView)findViewById(R.id.theDialImageView);
-                    ImageView theDialImageView2 = (ImageView)findViewById(R.id.theDialImageView2);
+                    ImageView theDialImageView1 = findViewById(R.id.theDialImageView1);
+                    ImageView theDialImageView = findViewById(R.id.theDialImageView);
+                    ImageView theDialImageView2 = findViewById(R.id.theDialImageView2);
                     if (newDegrees == -1) {
                         theDialImageView2.setVisibility(View.INVISIBLE);
                     } else {
@@ -346,7 +348,7 @@ public class TheActivity extends Activity {
                 Log.i(TAG, "                  intent.getIntExtra(\"old mStaticClosestCompassPoint\") = "+oldClosestCompassPoint);
                 Log.i(TAG, "                  intent.getIntExtra(\"new mStaticClosestCompassPoint\") = "+newClosestCompassPoint);
                 /* (it's commented out in the layout too, made things too crowded)
-                TextView theClosestCompassPointTextView = (TextView)findViewById(R.id.theClosestCompassPointTextView);
+                TextView theClosestCompassPointTextView = findViewById(R.id.theClosestCompassPointTextView);
                 theClosestCompassPointTextView.setText("  TheService.mStaticClosestCompassPoint: "+oldClosestCompassPoint+" -> "+newClosestCompassPoint);
                 */
                 Log.i(TAG, "                out onReceive: "+intent.getAction());
@@ -354,14 +356,14 @@ public class TheActivity extends Activity {
                 Log.i(TAG, "                in onReceive: "+intent.getAction());
                 boolean newStaticPromptFirst = intent.getBooleanExtra("new mStaticPromptFirst", true);
                 Log.i(TAG, "                  setting thePromptFirstSwitch.setChecked("+newStaticPromptFirst+")");
-                Switch thePromptFirstSwitch = (Switch)findViewById(R.id.thePromptFirstSwitch);
+                Switch thePromptFirstSwitch = findViewById(R.id.thePromptFirstSwitch);
                 thePromptFirstSwitch.setChecked(newStaticPromptFirst);
                 Log.i(TAG, "                out onReceive: "+intent.getAction());
             } else if (intent.getAction().equals("service started")) {
                 Log.i(TAG, "                in onReceive: "+intent.getAction());
                 Switch theServiceSwitches[] = {
-                  (Switch)findViewById(R.id.theServiceSwitch),
-                  (Switch)findViewById(R.id.theServiceSwitch2),
+                  findViewById(R.id.theServiceSwitch),
+                  findViewById(R.id.theServiceSwitch2),
                 };
                 for (Switch theServiceSwitch : theServiceSwitches) {
                   theServiceSwitch.setText("Service is on  ");
@@ -376,8 +378,8 @@ public class TheActivity extends Activity {
             } else if (intent.getAction().equals("service destroyed")) {
                 Log.i(TAG, "                in onReceive: "+intent.getAction());
                 Switch theServiceSwitches[] = {
-                  (Switch)findViewById(R.id.theServiceSwitch),
-                  (Switch)findViewById(R.id.theServiceSwitch2),
+                  findViewById(R.id.theServiceSwitch),
+                  findViewById(R.id.theServiceSwitch2),
                 };
                 for (Switch theServiceSwitch : theServiceSwitches) {
                   theServiceSwitch.setText("Service is off ");
@@ -426,7 +428,7 @@ public class TheActivity extends Activity {
             Log.i(TAG, "            out TheActivity mAccelerometerRotationObserver onChange(selfChange="+selfChange+", uri="+uri+")");
         }
     };  // mAccelerometerRotationObserver
-    ContentObserver mUserRotationObserver = new ContentObserver(new Handler()) {
+    private ContentObserver mUserRotationObserver = new ContentObserver(new Handler()) {
         // Per https://developer.android.com/reference/android/database/ContentObserver.html :
         // Delegate to ensure correct operation on older versions of the framework
         // that didn't have the onChange(boolean, Uri) method. (XXX do I need to worry about this? is framework runtime, or my compiletime?)
@@ -467,24 +469,24 @@ public class TheActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        RelativeLayout theRelativeLayout = (RelativeLayout)findViewById(R.id.theRelativeLayout);
+        RelativeLayout theRelativeLayout = findViewById(R.id.theRelativeLayout);
         CHECK(theRelativeLayout != null); // was failing when there was an out of date layout-land/activity_main.xml
         Switch theServiceSwitches[] = {
-          (Switch)findViewById(R.id.theServiceSwitch),
-          (Switch)findViewById(R.id.theServiceSwitch2),
+          findViewById(R.id.theServiceSwitch),
+          findViewById(R.id.theServiceSwitch2),
         };
-        Button theAppSettingsButton = (Button)findViewById(R.id.theAppSettingsButton);
-        Switch theWhackAMoleSwitch = (Switch)findViewById(R.id.theWhackAMoleSwitch);
-        Switch theAutoRotateSwitch = (Switch)findViewById(R.id.theAutoRotateSwitch);
-        Switch thePromptFirstSwitch = (Switch)findViewById(R.id.thePromptFirstSwitch);
-        Switch theOverrideSwitch = (Switch)findViewById(R.id.theOverrideSwitch);
-        Switch theRedSwitch = (Switch)findViewById(R.id.theRedSwitch);
-        ImageView theDialImageView1 = (ImageView)findViewById(R.id.theDialImageView1);
-        ImageView theDialImageView = (ImageView)findViewById(R.id.theDialImageView);
-        ImageView theDialImageView2 = (ImageView)findViewById(R.id.theDialImageView2);
-        Switch theMonitorSwitch = (Switch)findViewById(R.id.theMonitorSwitch);
-        TextView thePolledValuesHeaderTextView = (TextView)findViewById(R.id.thePolledValuesHeaderTextView);
-        TextView thePolledStatusTextView = (TextView)findViewById(R.id.thePolledStatusTextView);
+        Button theAppSettingsButton = findViewById(R.id.theAppSettingsButton);
+        Switch theWhackAMoleSwitch = findViewById(R.id.theWhackAMoleSwitch);
+        Switch theAutoRotateSwitch = findViewById(R.id.theAutoRotateSwitch);
+        Switch thePromptFirstSwitch = findViewById(R.id.thePromptFirstSwitch);
+        Switch theOverrideSwitch = findViewById(R.id.theOverrideSwitch);
+        Switch theRedSwitch = findViewById(R.id.theRedSwitch);
+        ImageView theDialImageView1 = findViewById(R.id.theDialImageView1);
+        ImageView theDialImageView = findViewById(R.id.theDialImageView);
+        ImageView theDialImageView2 = findViewById(R.id.theDialImageView2);
+        Switch theMonitorSwitch = findViewById(R.id.theMonitorSwitch);
+        TextView thePolledValuesHeaderTextView = findViewById(R.id.thePolledValuesHeaderTextView);
+        TextView thePolledStatusTextView = findViewById(R.id.thePolledStatusTextView);
 
         theWhackAMoleSwitch.setChecked(TheService.mStaticWhackAMole);
         theAutoRotateSwitch.setChecked(TheService.mStaticAutoRotate);
@@ -628,8 +630,8 @@ public class TheActivity extends Activity {
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                     Log.i(TAG, "            in theMonitorSwitch onCheckedChanged(isChecked=" + isChecked + ")");
                     mPolling = isChecked;
-                    TextView thePolledValuesHeaderTextView = (TextView)findViewById(R.id.thePolledValuesHeaderTextView);
-                    TextView thePolledStatusTextView = (TextView)findViewById(R.id.thePolledStatusTextView);
+                    TextView thePolledValuesHeaderTextView = findViewById(R.id.thePolledValuesHeaderTextView);
+                    TextView thePolledStatusTextView = findViewById(R.id.thePolledStatusTextView);
                     thePolledValuesHeaderTextView.setEnabled(mPolling);
                     thePolledStatusTextView.setEnabled(mPolling);
                     mPollingHandler.removeCallbacks(mPollingRunnable);  // ok if it wasn't scheduled
@@ -729,7 +731,7 @@ public class TheActivity extends Activity {
     }
 
     private void updateAccelerometerOrientationDegreesTextView() {
-        TextView theAccelerometerOrientationDegreesTextView = (TextView)findViewById(R.id.theAccelerometerOrientationDegreesTextView);
+        TextView theAccelerometerOrientationDegreesTextView = findViewById(R.id.theAccelerometerOrientationDegreesTextView);
 
         // Can I just query the current value of the accelerometer, without registering a changed-listener??
 
@@ -798,7 +800,7 @@ public class TheActivity extends Activity {
     }
 
     private void updateAccelerometerRotationTextView() {
-        TextView theAccelerometerRotationTextView = (TextView)findViewById(R.id.theAccelerometerRotationTextView);
+        TextView theAccelerometerRotationTextView = findViewById(R.id.theAccelerometerRotationTextView);
         try {
             int accelerometerRotation = Settings.System.getInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION);
             theAccelerometerRotationTextView.setText("  Settings.System.ACCELEROMETER_ROTATION: "+accelerometerRotation);
@@ -808,7 +810,7 @@ public class TheActivity extends Activity {
         }
     }
     private void updateUserRotationTextView() {
-        TextView theUserRotationTextView = (TextView)findViewById(R.id.theUserRotationTextView);
+        TextView theUserRotationTextView = findViewById(R.id.theUserRotationTextView);
         try {
             int userRotation = Settings.System.getInt(getContentResolver(), Settings.System.USER_ROTATION);
             theUserRotationTextView.setText("  Settings.System.USER_ROTATION: "+TheService.surfaceRotationConstantToString(userRotation));
@@ -820,13 +822,13 @@ public class TheActivity extends Activity {
 
     // set the text view to mMostRecentConfigurationOrientation.
     private void updateConfigurationOrientationTextView() {
-        TextView theConfigurationOrientationTextView = (TextView)findViewById(R.id.theConfigurationOrientationTextView);
+        TextView theConfigurationOrientationTextView = findViewById(R.id.theConfigurationOrientationTextView);
         // XXX this is a lie the first time-- maybe make that a parameter
         theConfigurationOrientationTextView.setText("  onConfigurationChanged newConfig.orientation = " + TheService.orientationConstantToString(mMostRecentConfigurationOrientation));
     }
 
     private void updatePolledStatusTextView() {
-        TextView thePolledStatusTextView = (TextView)findViewById(R.id.thePolledStatusTextView);
+        TextView thePolledStatusTextView = findViewById(R.id.thePolledStatusTextView);
         int accelerometerRotation = -1;
         boolean gotAccelerometerRotation = false;
         int userRotation = -1;
@@ -852,7 +854,7 @@ public class TheActivity extends Activity {
         message += ("  getWindowManager().getDefaultDisplay().getRotation() = " + TheService.surfaceRotationConstantToString(getWindowManager().getDefaultDisplay().getRotation()));
         thePolledStatusTextView.setText(message);
 
-        TextView thePolledValuesHeader = (TextView)findViewById(R.id.thePolledValuesHeaderTextView);
+        TextView thePolledValuesHeader = findViewById(R.id.thePolledValuesHeaderTextView);
         mNumUpdates++;
         thePolledValuesHeader.setText("Polled values:  ("+mNumUpdates+" update"+(mNumUpdates==1?"":"s")+")");
     }
@@ -862,8 +864,8 @@ public class TheActivity extends Activity {
         Log.i(TAG, "        in onStart");
         super.onStart();
         Switch theServiceSwitches[] = {
-          (Switch)findViewById(R.id.theServiceSwitch),
-          (Switch)findViewById(R.id.theServiceSwitch2),
+          findViewById(R.id.theServiceSwitch),
+          findViewById(R.id.theServiceSwitch2),
         };
         boolean serviceIsRunning = TheService.theRunningService != null;
         Log.i(TAG, "          calling theServiceSwitch.setChecked("+serviceIsRunning+")");
@@ -976,8 +978,8 @@ public class TheActivity extends Activity {
         updateConfigurationOrientationTextView();
 
         {
-            Switch theOverrideSwitch = (Switch)findViewById(R.id.theOverrideSwitch);
-            Switch theRedSwitch = (Switch)findViewById(R.id.theRedSwitch);
+            Switch theOverrideSwitch = findViewById(R.id.theOverrideSwitch);
+            Switch theRedSwitch = findViewById(R.id.theRedSwitch);
             RelativeLayout.LayoutParams redSwitchLayoutParams = ((RelativeLayout.LayoutParams)theRedSwitch.getLayoutParams());
             if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT) {
                 // put red switch below override switch, right-aligned with it

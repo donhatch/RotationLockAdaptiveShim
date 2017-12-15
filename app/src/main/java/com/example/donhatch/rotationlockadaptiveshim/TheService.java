@@ -32,6 +32,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.provider.Settings;
+import android.support.annotation.NonNull;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.view.Gravity;
@@ -44,7 +45,7 @@ import android.view.WindowManager;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
-@SuppressWarnings("ConstantIfStatement")
+@SuppressWarnings({"ConstantIfStatement", "PointlessArithmeticExpression", "ConstantConditions"})
 public class TheService extends Service {
 
     private static final String TAG = "RLAS service";  // was "RotationLockAdaptiveShim service" but got warnings
@@ -529,7 +530,7 @@ public class TheService extends Service {
                     if (mVerboseLevel >= 1) Log.i(TAG, "          (not doing anything)");
                     if (mVerboseLevel == 1) Log.i(TAG, "        out onOrientationChanged(degrees="+degrees+")");
                 } else {
-                    boolean closestCompassPointChanging = false;
+                    boolean closestCompassPointChanging;
                     if (mStaticClosestCompassPoint == -1) {
                         closestCompassPointChanging = true;
                     } else {
@@ -596,7 +597,7 @@ public class TheService extends Service {
                                         // (TODO:  although... could I use a View.OnTouchListener instead?)
                                         final AlertDialog alertDialog = new AlertDialog(TheService.this) {
                                             @Override
-                                            public boolean onTouchEvent(MotionEvent motionEvent) {
+                                            public boolean onTouchEvent(@NonNull MotionEvent motionEvent) {
                                                 if (mVerboseLevel == 1) Log.i(TAG, "            in alertDialog onTouchEvent");
                                                 if (mVerboseLevel == 1) Log.i(TAG, "              motionEvent.getActionMasked()="+motionEventActionMaskedConstantToString(motionEvent.getActionMasked()));
                                                 if (motionEvent.getActionMasked() == MotionEvent.ACTION_OUTSIDE) {
@@ -1036,6 +1037,8 @@ public class TheService extends Service {
         return mStaticRed;
     }
 
+    // Set whether to override apps' preferences.  Can be called by the activity
+    // (but should do it more legitimately via a message or something).
     public static void setOverride(boolean newOverride) {
       // TODO: should this method be responsible for noticing it's the same as previous?
       mStaticOverride = newOverride;

@@ -934,7 +934,7 @@ public class TheService extends Service {
               // and this crash on runtime 27:
               //        android.app.RemoteServiceException: Bad notification for startForeground: java.lang.RuntimeException: invalid channel for service notification: Notification(channel=null pri=0 contentView=null vibrate=null sound=null defaults=0x0 flags=0x40 color=0x00000000 vis=PRIVATE)
               int importance = NotificationManager.IMPORTANCE_LOW;
-              CharSequence channelName = "hello, I am a notification channel name";  // XXX ?
+              CharSequence channelName = "hello, I am a notification channel name";  // XXX yow, this comes up as a "category"... furthermore once I create one, it stays on the machine until I uninstall and reinstall the app.
 	      NotificationChannel notificationChannel = new NotificationChannel(NOTIFICATION_CHANNEL_ID, channelName, importance);
 
               if (false) {
@@ -955,8 +955,8 @@ public class TheService extends Service {
                     //.setSmallIcon(R.drawable.typewriter_el)
                     .setSmallIcon(R.mipmap.typewriter_el)
                     .setContentIntent(pendingIntent)
-                    .setOngoing(false) // irrelevant: apparently sets FLAG_ONGOING_EVENT (in accordance to documented behavior) but not FLAG_NO_CLEAR, despite documented behavior); however, neither has any affect since we're using startForeground which automatically makes the notification ongoing and non-clearable no matter what these flags say..
-                    .setWhen(System.currentTimeMillis()+10*60*1000)   // causes "in 9m" or something to be shown if setShowWhen is true.  60 seconds or less turns into "now". only gets updated very infrequently (once a minute?) so not all that useful.
+                    //.setOngoing(false) // irrelevant: apparently sets FLAG_ONGOING_EVENT (in accordance to documented behavior) but not FLAG_NO_CLEAR, despite documented behavior); however, neither has any affect since we're using startForeground which automatically makes the notification ongoing and non-clearable no matter what these flags say..
+                    .setWhen(System.currentTimeMillis()+20*60*1000)   // causes "in 9m" or something to be shown if setShowWhen is true.  60 seconds or less turns into "now". only gets updated very infrequently (once a minute?) so not all that useful.
                     .setShowWhen(false) // default changed from true to false in (target=)Nougat, so say it explicitly
                     ;
             final Notification notification = builder.build();

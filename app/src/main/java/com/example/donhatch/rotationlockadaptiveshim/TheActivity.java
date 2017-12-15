@@ -1,3 +1,10 @@
+// TODO: wait wtf? starting the service is crashing on api 25? something about illegal notification builder method <init>? wtf? this used to work.
+//     12-15 10:12:25.500: E/AndroidRuntime(6994): FATAL EXCEPTION: main
+//     12-15 10:12:25.500: E/AndroidRuntime(6994): Process: com.example.donhatch.rotationlockadaptiveshim, PID: 6994
+//     12-15 10:12:25.500: E/AndroidRuntime(6994): java.lang.NoSuchMethodError: No direct method <init>(Landroid/content/Context;Ljava/lang/String;)V in class Landroid/app/Notification$Builder; or its super classes (declaration of 'android.app.Notification$Builder' appears in /system/framework/framework.jar)
+//     12-15 10:12:25.500: E/AndroidRuntime(6994):     at com.example.donhatch.rotationlockadaptiveshim.TheService.onStartCommand(TheService.java:952)
+
+// TODO: service icon isn't right, it's solid white (only on recent target and/or runtime I think?) (t27: r25 square, r26 circle, r27 circle)
 // TODO: sort out the notification channel stuff (slowly drag notification to left to see what's going on, it's weird)
 // TODO: make it work properly when activity is destroyed&recreated on orientation change?
 //       - seems to be pretty good now?

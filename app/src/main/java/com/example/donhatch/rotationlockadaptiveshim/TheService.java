@@ -406,6 +406,7 @@ public class TheService extends Service {
         if (mVerboseLevel >= 1) Log.i(TAG, "                        in TheService.onCreate");
         if (mVerboseLevel >= 1) Log.i(TAG, "                          Build.VERSION.SDK_INT = "+Build.VERSION.SDK_INT);  // what's on the current machine at runtime
         if (mVerboseLevel >= 1) Log.i(TAG, "                          Build.VERSION_CODES.O = "+Build.VERSION_CODES.O);
+        if (mVerboseLevel >= 1) Log.i(TAG, "                          Build.VERSION_CODES.O_MR1 = "+Build.VERSION_CODES.O_MR1);
         if (mVerboseLevel >= 1) Log.i(TAG, "                          getApplicationContext().getApplicationInfo().targetSdkVersion = "+getApplicationContext().getApplicationInfo().targetSdkVersion);
         // note that in real apps installed from play store, I think it's always true that runtime version <= targetSdkVersion
 

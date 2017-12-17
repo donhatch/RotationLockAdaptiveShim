@@ -880,7 +880,9 @@ public class TheActivity extends Activity {
         try {
             userRotation = Settings.System.getInt(getContentResolver(), Settings.System.USER_ROTATION);
             gotUserRotation = true;
-        } catch (Settings.SettingNotFoundException e) {}
+        } catch (Settings.SettingNotFoundException e) {
+            // USER_ROTATION missing in emulator 22,23,24, but it's there in 25,26,27
+        }
         String message = "";
         message += ("  getRequestedOrientation() = " + TheService.screenOrientationConstantToString(getRequestedOrientation()));
         message += "\n";

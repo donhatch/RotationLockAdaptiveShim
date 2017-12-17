@@ -882,6 +882,7 @@ public class TheActivity extends Activity {
             gotUserRotation = true;
         } catch (Settings.SettingNotFoundException e) {
             // USER_ROTATION missing in emulator 22,23,24, but it's there in 25,26,27
+            // (although I'm not completely sure of that... it seems once I set it, it stays, even through reboot)
         }
         String message = "";
         message += ("  getRequestedOrientation() = " + TheService.screenOrientationConstantToString(getRequestedOrientation()));

@@ -174,14 +174,14 @@ public class TheActivity extends Activity {
     // https://stackoverflow.com/questions/6178896/how-to-draw-a-line-in-imageview-on-android
     // This is actually pretty lame, since, it turns out, onDraw is only called once
     // on startup (and orientation change between portrait and landscape), and subsequently the drawn thing gets rotated.
-    public class MyImageView1 extends android.support.v7.widget.AppCompatImageView {
-        public MyImageView1(Context context) {
+    public class MyImageView0 extends android.support.v7.widget.AppCompatImageView {
+        public MyImageView0(Context context) {
             super(context);
             // TODO: Auto-generated constructor stub
         }
         @Override
         protected void onDraw(Canvas canvas) {
-          Log.i(TAG, "                in MyImageView1.onDraw");
+          Log.i(TAG, "                in MyImageView0.onDraw");
           Log.i(TAG, "                  canvas.getWidth() = "+canvas.getWidth());
           Log.i(TAG, "                  canvas.getHeight() = "+canvas.getHeight());
           // portrait: 1328x2100
@@ -270,15 +270,15 @@ public class TheActivity extends Activity {
                                 centerX, centerY,
                                 zeroLinePaint);
           }
-          Log.i(TAG, "                out MyImageView1.onDraw");
+          Log.i(TAG, "                out MyImageView0.onDraw");
         }
         @Override
         public void setRotation(float newRotation) {
-          Log.i(TAG, "                in MyImageView1.setRotation(newRotation="+newRotation+")");
+          Log.i(TAG, "                in MyImageView0.setRotation(newRotation="+newRotation+")");
           super.setRotation(newRotation);
-          Log.i(TAG, "                out MyImageView1.setRotation(newRotation="+newRotation+")");
+          Log.i(TAG, "                out MyImageView0.setRotation(newRotation="+newRotation+")");
         }
-    }  // class MyImageView1
+    }  // class MyImageView0
     public class MyImageView2 extends android.support.v7.widget.AppCompatImageView {
         public MyImageView2(Context context) {
             super(context);
@@ -328,7 +328,7 @@ public class TheActivity extends Activity {
                 theAccelerometerOrientationDegreesTextView.setText("  accelerometer degrees (most recent update): "+oldDegrees+" -> "+newDegrees);
 
                 if (true) {
-                    ImageView theDialImageView1 = findViewById(R.id.theDialImageView1);
+                    ImageView theDialImageView0 = findViewById(R.id.theDialImageView0);
                     ImageView theDialImageView = findViewById(R.id.theDialImageView);
                     ImageView theDialImageView2 = findViewById(R.id.theDialImageView2);
                     if (newDegrees == -1) {
@@ -354,7 +354,7 @@ public class TheActivity extends Activity {
                           theDialImageView2.setRotation((float)newDialRotation);
                         } else {
                           // Keep the needle fixed, but rotate the dial
-                          theDialImageView1.setRotation((float)newDialRotation);
+                          theDialImageView0.setRotation((float)newDialRotation);
                           theDialImageView.setRotation((float)newDialRotation);
                         }
                     }
@@ -501,7 +501,7 @@ public class TheActivity extends Activity {
         Switch thePromptFirstSwitch = findViewById(R.id.thePromptFirstSwitch);
         Switch theOverrideSwitch = findViewById(R.id.theOverrideSwitch);
         Switch theRedSwitch = findViewById(R.id.theRedSwitch);
-        ImageView theDialImageView1 = findViewById(R.id.theDialImageView1);
+        ImageView theDialImageView0 = findViewById(R.id.theDialImageView0);
         ImageView theDialImageView = findViewById(R.id.theDialImageView);
         ImageView theDialImageView2 = findViewById(R.id.theDialImageView2);
         Switch theMonitorSwitch = findViewById(R.id.theMonitorSwitch);
@@ -518,22 +518,22 @@ public class TheActivity extends Activity {
         thePolledStatusTextView.setEnabled(mPolling);
 
         if (true) {
-            // Replace theDialImageView1 with a MyImageView1
-            int index = theRelativeLayout.indexOfChild(theDialImageView1);
-            theRelativeLayout.removeView(theDialImageView1);
+            // Replace theDialImageView0 with a MyImageView0
+            int index = theRelativeLayout.indexOfChild(theDialImageView0);
+            theRelativeLayout.removeView(theDialImageView0);
 
-            theDialImageView1 = new MyImageView1(this);
-            theDialImageView1.setImageResource(R.drawable.mygeomatic_rapporteur_5_svg_hi); // for size
-            theDialImageView1.setRotation(90.f);
-            theDialImageView1.setId(R.id.theDialImageView1);
+            theDialImageView0 = new MyImageView0(this);
+            theDialImageView0.setImageResource(R.drawable.mygeomatic_rapporteur_5_svg_hi); // for size
+            theDialImageView0.setRotation(90.f);
+            theDialImageView0.setId(R.id.theDialImageView0);
             RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(
               ViewGroup.LayoutParams.WRAP_CONTENT,
               ViewGroup.LayoutParams.WRAP_CONTENT);
             params.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
-            theRelativeLayout.addView(theDialImageView1, index, params);
+            theRelativeLayout.addView(theDialImageView0, index, params);
         }
         if (true) {
-            // Replace theDialImageView2 with a MyImageView1
+            // Replace theDialImageView2 with a MyImageView0
             int index = theRelativeLayout.indexOfChild(theDialImageView2);
             theRelativeLayout.removeView(theDialImageView2);
 
@@ -550,8 +550,8 @@ public class TheActivity extends Activity {
         if (true) {
             // XXX not sure what I want here
             float scale = .79f;
-            theDialImageView1.setScaleX(scale);
-            theDialImageView1.setScaleY(scale);
+            theDialImageView0.setScaleX(scale);
+            theDialImageView0.setScaleY(scale);
             theDialImageView.setScaleX(scale);
             theDialImageView.setScaleY(scale);
             theDialImageView2.setScaleX(scale);

@@ -174,6 +174,7 @@ public class TheActivity extends Activity {
     // https://stackoverflow.com/questions/6178896/how-to-draw-a-line-in-imageview-on-android
     // This is actually pretty lame, since, it turns out, onDraw is only called once
     // on startup (and orientation change between portrait and landscape), and subsequently the drawn thing gets rotated.
+    // MyImageView0 is the bottom dial image, containing the background colors.
     public class MyImageView0 extends android.support.v7.widget.AppCompatImageView {
         public MyImageView0(Context context) {
             super(context);
@@ -279,6 +280,8 @@ public class TheActivity extends Activity {
           Log.i(TAG, "                out MyImageView0.setRotation(newRotation="+newRotation+")");
         }
     }  // class MyImageView0
+
+    // MyImageView2 is the top dial image, containing just the needle.
     public class MyImageView2 extends android.support.v7.widget.AppCompatImageView {
         public MyImageView2(Context context) {
             super(context);
@@ -336,26 +339,59 @@ public class TheActivity extends Activity {
                     } else {
                         theDialImageView2.setVisibility(View.VISIBLE);
 
-                        //double newDialRotation = 90. - newDegreesSmoothed;  // XXX what was I thinking?  doesn't match behavior
-                        double newDialRotation = 90. - newDegrees;
+                        if (true)
+                        {
+                          // old way-- I just noticed that the value doesn't match the dial unless portrait.  need to think about it.
 
-                        int currentDisplayRotation = getWindowManager().getDefaultDisplay().getRotation();
-                        // sign determined by dog science
-                        switch (currentDisplayRotation) {
-                            case Surface.ROTATION_0: newDialRotation -= 0; break;
-                            case Surface.ROTATION_90: newDialRotation -= 90; break;
-                            case Surface.ROTATION_180: newDialRotation -= 180; break;
-                            case Surface.ROTATION_270: newDialRotation -= 270; break;
-                            default: CHECK(false);
-                        }
+                          //double newDialRotation = 90. - newDegreesSmoothed;  // XXX what was I thinking?  doesn't match behavior
+                          double newDialRotation = 90. - newDegrees;
 
-                        if (false) {
-                          // Rotate the needle (theDialImageView2) to "up"
-                          theDialImageView2.setRotation((float)newDialRotation);
+                          int currentDisplayRotation = getWindowManager().getDefaultDisplay().getRotation();
+                          // sign determined by dog science
+                          switch (currentDisplayRotation) {
+                              case Surface.ROTATION_0: newDialRotation -= 0; break;
+                              case Surface.ROTATION_90: newDialRotation -= 90; break;
+                              case Surface.ROTATION_180: newDialRotation -= 180; break;
+                              case Surface.ROTATION_270: newDialRotation -= 270; break;
+                              default: CHECK(false);
+                          }
+
+                          if (false) {
+                            // Rotate the needle (theDialImageView2) to "up"
+                            theDialImageView2.setRotation((float)newDialRotation);
+                          } else {
+                            // Keep the needle fixed, but rotate the dial
+                            theDialImageView0.setRotation((float)newDialRotation);
+                            theDialImageView.setRotation((float)newDialRotation);
+                          }
                         } else {
-                          // Keep the needle fixed, but rotate the dial
-                          theDialImageView0.setRotation((float)newDialRotation);
-                          theDialImageView.setRotation((float)newDialRotation);
+
+                          // new messing around--- totally doesn't work yet
+
+                          //double newDialRotation = 90. - newDegreesSmoothed;  // XXX what was I thinking?  doesn't match behavior
+                          double newDialBackgroundRotation = 90. - newDegrees;
+                          double newDialRotation = 90. - newDegrees;
+                          double newDialNeedleRotation = 90.;
+
+                          int currentDisplayRotation = getWindowManager().getDefaultDisplay().getRotation();
+                          // sign determined by dog science
+                          switch (currentDisplayRotation) {
+                              case Surface.ROTATION_0: newDialNeedleRotation -= 0; break;
+                              case Surface.ROTATION_90: newDialNeedleRotation -= 90; break;
+                              case Surface.ROTATION_180: newDialNeedleRotation -= 180; break;
+                              case Surface.ROTATION_270: newDialNeedleRotation -= 270; break;
+                              default: CHECK(false);
+                          }
+
+                          if (false) {
+                            // Rotate the needle (theDialImageView2) to "up"
+                            theDialImageView2.setRotation((float)newDialRotation);
+                          } else {
+                            // Keep the needle fixed, but rotate the dial
+                            theDialImageView0.setRotation((float)newDialBackgroundRotation);
+                            theDialImageView.setRotation((float)newDialRotation);
+                            theDialImageView2.setRotation((float)newDialNeedleRotation);
+                          }
                         }
                     }
                 }

@@ -415,6 +415,13 @@ public class TheActivity extends Activity {
                 Switch thePromptFirstSwitch = findViewById(R.id.thePromptFirstSwitch);
                 thePromptFirstSwitch.setChecked(newStaticPromptFirst);
                 Log.i(TAG, "                out onReceive: "+intent.getAction());
+            } else if (intent.getAction().equals("mStaticRotateOnShake changed")) {
+                Log.i(TAG, "                in onReceive: "+intent.getAction());
+                boolean newStaticRotateOnShake = intent.getBooleanExtra("new mStaticRotateOnShake", true);
+                Log.i(TAG, "                  setting theRotateOnShakeSwitch.setChecked("+newStaticRotateOnShake+")");
+                Switch theRotateOnShakeSwitch = findViewById(R.id.theRotateOnShakeSwitch);
+                theRotateOnShakeSwitch.setChecked(newStaticRotateOnShake);
+                Log.i(TAG, "                out onReceive: "+intent.getAction());
             } else if (intent.getAction().equals("service started")) {
                 Log.i(TAG, "                in onReceive: "+intent.getAction());
                 Switch theServiceSwitches[] = {
@@ -531,22 +538,24 @@ public class TheActivity extends Activity {
           findViewById(R.id.theServiceSwitch),
           findViewById(R.id.theServiceSwitch2),
         };
-        Button theAppSettingsButton = findViewById(R.id.theAppSettingsButton);
-        Switch theWhackAMoleSwitch = findViewById(R.id.theWhackAMoleSwitch);
-        Switch theAutoRotateSwitch = findViewById(R.id.theAutoRotateSwitch);
-        Switch thePromptFirstSwitch = findViewById(R.id.thePromptFirstSwitch);
-        Switch theOverrideSwitch = findViewById(R.id.theOverrideSwitch);
-        Switch theRedSwitch = findViewById(R.id.theRedSwitch);
+        final Button theAppSettingsButton = findViewById(R.id.theAppSettingsButton);
+        final Switch theWhackAMoleSwitch = findViewById(R.id.theWhackAMoleSwitch);
+        final Switch theAutoRotateSwitch = findViewById(R.id.theAutoRotateSwitch);
+        final Switch thePromptFirstSwitch = findViewById(R.id.thePromptFirstSwitch);
+        final Switch theRotateOnShakeSwitch = findViewById(R.id.theRotateOnShakeSwitch);
+        final Switch theOverrideSwitch = findViewById(R.id.theOverrideSwitch);
+        final Switch theRedSwitch = findViewById(R.id.theRedSwitch);
         ImageView theDialImageView0 = findViewById(R.id.theDialImageView0);
-        ImageView theDialImageView = findViewById(R.id.theDialImageView);
+        final ImageView theDialImageView = findViewById(R.id.theDialImageView);
         ImageView theDialImageView2 = findViewById(R.id.theDialImageView2);
-        Switch theMonitorSwitch = findViewById(R.id.theMonitorSwitch);
-        TextView thePolledValuesHeaderTextView = findViewById(R.id.thePolledValuesHeaderTextView);
-        TextView thePolledStatusTextView = findViewById(R.id.thePolledStatusTextView);
+        final Switch theMonitorSwitch = findViewById(R.id.theMonitorSwitch);
+        final TextView thePolledValuesHeaderTextView = findViewById(R.id.thePolledValuesHeaderTextView);
+        final TextView thePolledStatusTextView = findViewById(R.id.thePolledStatusTextView);
 
         theWhackAMoleSwitch.setChecked(TheService.mStaticWhackAMole);
         theAutoRotateSwitch.setChecked(TheService.mStaticAutoRotate);
         thePromptFirstSwitch.setChecked(TheService.mStaticPromptFirst);
+        theRotateOnShakeSwitch.setChecked(TheService.mStaticRotateOnShake);
         theOverrideSwitch.setChecked(TheService.mStaticOverride);
         theRedSwitch.setChecked(TheService.getRed());
         theMonitorSwitch.setChecked(mPolling); // before listener installed; otherwise we'd get a callback immediately
@@ -604,7 +613,7 @@ public class TheActivity extends Activity {
 
                         if (Build.VERSION.SDK_INT >= 23) {
                             try {
-                              Settings.System.putInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0);
+                              Settings.System.putInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0);  // whack!
                             } catch (SecurityException e) {
                                 // XXX dup code
                                 Log.i(TAG, "          Oh no, can't set system settings-- were permissions revoked?");
@@ -620,7 +629,7 @@ public class TheActivity extends Activity {
                             // ACTION_MANAGE_WRITE_SETTINGS doesn't exist; I guess the whole dance doesn't exist.
                             // Just make the call and let it throw an exception if it's going to
                             // (but it probably won't because permissions were more relaxed back then I think).
-                            Settings.System.putInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0);
+                            Settings.System.putInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0);  // whack!
                         }
                     }
                     Log.i(TAG, "            out theWhackAMoleSwitch onCheckedChanged(isChecked=" + isChecked + ")");
@@ -647,11 +656,15 @@ public class TheActivity extends Activity {
             theAutoRotateSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                     Log.i(TAG, "            in theAutoRotateSwitch onCheckedChanged(isChecked=" + isChecked + ")");
+                    if (isChecked) {
+                        theRotateOnShakeSwitch.setChecked(false);
+                        TheService.mStaticRotateOnShake = false; // XXX probably not necessary, since the other listener did this
+                    }
                     TheService.mStaticAutoRotate = isChecked;
                     if (isChecked) {
                         // TODO: do this through the service somehow?
                         // TODO: need to catch SecurityException!
-                        Settings.System.putInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0);
+                        Settings.System.putInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0);  // whack!
                         // XXX just nuke everything without thinking too much.  TODO: think about it better
                         TheService.mStaticDegreesIsValid = false;
                         TheService.mStaticClosestCompassPoint = -1;
@@ -668,6 +681,28 @@ public class TheActivity extends Activity {
                     TheService.mStaticPromptFirst = isChecked;
                     // No immediate effect; this setting just modifies the behavior of autorotate
                     Log.i(TAG, "            out thePromptFirstSwitch onCheckedChanged(isChecked=" + isChecked + ")");
+                }
+            });
+        }
+        if (true) {
+            theRotateOnShakeSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                    Log.i(TAG, "            in theRotateOnShakeSwitch onCheckedChanged(isChecked=" + isChecked + ")");
+                    if (isChecked) {
+                      theAutoRotateSwitch.setChecked(false);
+                      TheService.mStaticAutoRotate = false; // XXX probably not necessary, since the other listener did this
+                    }
+                    TheService.mStaticRotateOnShake = isChecked;
+                    if (isChecked) {
+
+                      // DUP CODE ALERT: Similar to what we did above for autorotate switch
+                      Settings.System.putInt(getContentResolver(), Settings.System.ACCELEROMETER_ROTATION, 0);  // whack!
+                      // XXX just nuke everything without thinking too much.  TODO: think about it better
+                      TheService.mStaticDegreesIsValid = false;
+                      TheService.mStaticClosestCompassPoint = -1;
+
+                    }
+                    Log.i(TAG, "            out theRotateOnShakeSwitch onCheckedChanged(isChecked=" + isChecked + ")");
                 }
             });
         }

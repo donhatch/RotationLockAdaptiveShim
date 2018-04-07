@@ -117,10 +117,24 @@
         android:text="  but ask first " />
 
     <Switch
-        android:id="@+id/theOverrideSwitch"
+        android:id="@+id/theRotateOnShakeSwitch"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@+id/theAutoRotateSwitch"
+        android:text="  Rotate on shake down" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/theAutoRotateSwitch"
+        android:layout_toRightOf="@+id/theRotateOnShakeSwitch"
+        android:text="(work in progress)" />
+
+    <Switch
+        android:id="@+id/theOverrideSwitch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/theRotateOnShakeSwitch"
         android:text="  Override home screen's and other apps' prefs " />
 
     <!-- use *both* alignEnd and alignRight, to suppress two kinds of warnings -->

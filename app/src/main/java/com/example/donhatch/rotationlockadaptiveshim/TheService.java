@@ -26,7 +26,10 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
 import android.hardware.SensorManager;
+import android.hardware.SensorEventListener;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
@@ -101,6 +104,8 @@ public class TheService extends Service {
     public static boolean mStaticDegreesIsValid = false;
     public static int mStaticClosestCompassPoint = -1; // means invalid
     private OrientationEventListener mOrientationEventListener;
+    private SensorManager mSensorManager;
+    private SensorEventListener mSensorEventListener;
     private Runnable mCleanupDialog = null;
 
     // http://stackoverflow.com/questions/14587085/how-can-i-globally-force-screen-orientation-in-android/14654302#answer-14862852
@@ -193,14 +198,17 @@ public class TheService extends Service {
             if (intent.getAction().equals(Intent.ACTION_SCREEN_OFF)) {
                 if (mVerboseLevel >= 1) Log.i(TAG, "          ACTION_SCREEN_OFF: disabling orientation event listener");
                 mOrientationEventListener.disable();
+                mSensorManager.unregisterListener(mSensorEventListener);
             } else if (intent.getAction().equals(Intent.ACTION_SCREEN_ON)) {
                 // same thing we do on create (dup code)
                 if (mOrientationEventListener.canDetectOrientation()) {
                     if (mVerboseLevel >= 1) Log.i(TAG, "          ACTION_SCREEN_ON and can detect orientation, enabling orientation event listener");
                     mOrientationEventListener.enable();
+                    mSensorManager.registerListener(mSensorEventListener, mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_NORMAL);
                 } else {
                     if (mVerboseLevel >= 1) Log.i(TAG, "          ACTION_SCREEN_ON but cannot detect orientation, disabling orientation event listener");
                     mOrientationEventListener.disable();
+                    mSensorManager.unregisterListener(mSensorEventListener);
                 }
             } else if (intent.getAction().equals(Intent.ACTION_USER_PRESENT)) {
                 if (mVerboseLevel >= 1) Log.i(TAG, "          ACTION_USER_PRESENT");
@@ -217,6 +225,7 @@ public class TheService extends Service {
 
     public static boolean mStaticWhackAMole = true; // TODO: make this a shared preference? the activity is the one who sets this
     public static boolean mStaticAutoRotate = true; // TODO: make this a shared preference? the activity is the one who sets this
+    public static boolean mStaticRotateOnShake = false; // TODO: make this a shared preference? the activity is the one who sets this
     public static boolean mStaticPromptFirst = true; // TODO: make this a shared preference? the activity is the one who sets this
     public static boolean mStaticOverride = true; // TODO: make this a shared preference? the activity is the one who sets this
 
@@ -316,6 +325,15 @@ public class TheService extends Service {
             default: return "[unknown motionEvent actionMasked constant "+motionEventActionMaskedConstant+"]";
         }
     }  // motionEventActionMaskedConstantToString
+
+    public static String sensorStatusAccuracyConstantToString(int sensorStatusAccuracyConstant) {
+        switch (sensorStatusAccuracyConstant) {
+            case SensorManager.SENSOR_STATUS_ACCURACY_LOW: return "SENSOR_STATUS_ACCURACY_LOW";
+            case SensorManager.SENSOR_STATUS_ACCURACY_MEDIUM: return "SENSOR_STATUS_ACCURACY_MEDIUM";
+            case SensorManager.SENSOR_STATUS_ACCURACY_HIGH: return "SENSOR_STATUS_ACCURACY_HIGH";
+            default: return "[unknown sensor status accuracy constant "+sensorStatusAccuracyConstant+"]";
+        }
+    }  // sensorStatusAccuracyConstantToString
 
     public TheService() {
         if (mVerboseLevel >= 1) Log.i(TAG, "                    in TheService ctor");
@@ -870,13 +888,109 @@ public class TheService extends Service {
         };  // mOrientationEventListener
 
 
+        // And shake detection needs more direct access to a (the?) sensor manager...
+        // https://stackoverflow.com/questions/2317428/android-i-want-to-shake-it#answer-2318356
+        // Wait, what?  That math seems screwy.
+        mSensorManager = (SensorManager)getSystemService(Context.SENSOR_SERVICE);
+        CHECK(mSensorManager == (SensorManager)getSystemService(Context.SENSOR_SERVICE)); // we get the same one each time
+        mSensorEventListener = new SensorEventListener() {
+          private boolean previousIsValid = false; // XXX TODO: need to reset this on reset
+          private float xPrev = 0.f;
+          private float yPrev = 0.f;
+          private float zPrev = 0.f;
+          private float dxFiltered = 0.f;
+          private float dyFiltered = 0.f;
+          private float dzFiltered = 0.f;
+
+          @Override
+          public void onAccuracyChanged(Sensor sensor, int accuracy) {
+            if (mVerboseLevel >= 0) Log.i(TAG, "        in onAccurcyChanged(accuracy="+accuracy+")");
+            if (false) {
+              // Empirically, we get an immediate MEDIUM.  Whatever.
+              showToast(TheService.this, "accelerometer accuracy changed to "+sensorStatusAccuracyConstantToString(accuracy)+", not sure what that means", 2000);
+            }
+            if (mVerboseLevel >= 0) Log.i(TAG, "        out onAccurcyChanged(accuracy="+accuracy+")");
+          }
+          @Override
+          public void onSensorChanged(SensorEvent sensorEvent) {
+            if (mVerboseLevel >= 0) Log.i(TAG, "        in onSensorChanged()");
+
+            float x = sensorEvent.values[0];
+            float y = sensorEvent.values[1];
+            float z = sensorEvent.values[2];
+            float mag = (float)Math.sqrt(x*x + y*y + z*z);
+
+            if (mVerboseLevel >= 0) Log.i(TAG, "          value = "+x+", "+y+", "+z);
+            // WORK IN PROGRESS.  Not sure what to consider a shake, at the moment.
+            if (false) {
+              if (previousIsValid) {
+                float dx = x - xPrev;
+                float dy = y - yPrev;
+                float dz = z - zPrev;
+                if (mVerboseLevel >= 0) Log.i(TAG, "          delta = "+dx+", "+dy+", "+dz);
+                // perform low-cut filter (sort of).  Not sure what value this has.
+                //float memory = 0.9f;
+                float memory = 0.0f;
+                dxFiltered = dxFiltered * memory + dx;
+                dyFiltered = dyFiltered * memory + dy;
+                dzFiltered = dzFiltered * memory + dz;
+
+                float shakeFiltered = (float)Math.sqrt(dxFiltered*dxFiltered + dyFiltered*dyFiltered + dzFiltered*dzFiltered);
+
+                if (false) {
+                  float threshold = 2.f;
+                  if (shakeFiltered >= threshold) {
+                    showToast(TheService.this, "Shake: strength "+shakeFiltered, 500);
+                  }
+                }
+              }
+            }
+
+            if (mStaticRotateOnShake) {
+              // Possible strategy:
+              // Super strong in +-x or +-y is interpreted as a shakedown.  (Shakeups are possible but difficult, so don't worry about them).
+              //float threshold = SensorManager.GRAVITY_EARTH * 2.0f;
+              //float threshold = SensorManager.GRAVITY_EARTH * 1.5f;
+              float threshold = SensorManager.GRAVITY_EARTH * 1.25f;
+              if (mag > threshold) {
+                  int majorAxis = -1;
+                  for (int i = 0; i < 3; ++i) {
+                    if (majorAxis == -1 || Math.abs(sensorEvent.values[i]) > Math.abs(sensorEvent.values[majorAxis])) {
+                      majorAxis = i;
+                    }
+                  }
+                  float majorMag = Math.abs(sensorEvent.values[majorAxis]);
+                  double minorMag = Math.hypot(sensorEvent.values[(majorAxis+1)%3], sensorEvent.values[(majorAxis+2)%3]);
+                  double angleDegrees = Math.atan2(minorMag, majorMag)*180/Math.PI;;
+                  //showToast(TheService.this, "Shakedown: mag "+mag+"\n\nmajorAxis="+majorAxis+"\n\ndegrees "+angleDegrees+"\n\n"+x+" "+y+" "+z, 5000);
+                  if (angleDegrees < 22.5) {
+                    //showToast(TheService.this, "Doing it!", 5000);
+                    doTheAutoRotateThingNow();
+                  }
+              }
+            }
+
+
+            xPrev = x;
+            yPrev = y;
+            zPrev = z;
+            previousIsValid = true;
+
+            if (mVerboseLevel >= 0) Log.i(TAG, "        out onSensorChanged()");
+          }
+        };
+        mSensorManager.registerListener(mSensorEventListener, mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_NORMAL);
+
+
         // same thing we do on ACTION_SCREEN_ON (dup code)
         if (mOrientationEventListener.canDetectOrientation()) {
             if (mVerboseLevel >= 1) Log.i(TAG, "                          can detect orientation, enabling orientation event listener");
             mOrientationEventListener.enable();
+            mSensorManager.registerListener(mSensorEventListener, mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_NORMAL);
         } else {
             if (mVerboseLevel >= 1) Log.i(TAG, "                          cannot detect orientation, disabling orientation event listener");
             mOrientationEventListener.disable();
+            mSensorManager.unregisterListener(mSensorEventListener);
         }
 
         {
@@ -1061,6 +1175,9 @@ public class TheService extends Service {
 
         mOrientationEventListener.disable();
         mOrientationEventListener = null;
+
+        mSensorManager.unregisterListener(mSensorEventListener);
+        mSensorEventListener = null;
 
         unregisterReceiver(mBroadcastReceiver);
         mBroadcastReceiver = null;

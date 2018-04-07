@@ -913,21 +913,21 @@ public class TheService extends Service {
           }
           @Override
           public void onSensorChanged(SensorEvent sensorEvent) {
-            if (mVerboseLevel >= 0) Log.i(TAG, "        in onSensorChanged()");
+            if (mVerboseLevel >= 2) Log.i(TAG, "        in onSensorChanged()");
 
             float x = sensorEvent.values[0];
             float y = sensorEvent.values[1];
             float z = sensorEvent.values[2];
             float mag = (float)Math.sqrt(x*x + y*y + z*z);
 
-            if (mVerboseLevel >= 0) Log.i(TAG, "          value = "+x+", "+y+", "+z);
+            if (mVerboseLevel >= 2) Log.i(TAG, "          value = "+x+", "+y+", "+z);
             // WORK IN PROGRESS.  Not sure what to consider a shake, at the moment.
             if (false) {
               if (previousIsValid) {
                 float dx = x - xPrev;
                 float dy = y - yPrev;
                 float dz = z - zPrev;
-                if (mVerboseLevel >= 0) Log.i(TAG, "          delta = "+dx+", "+dy+", "+dz);
+                if (mVerboseLevel >= 2) Log.i(TAG, "          delta = "+dx+", "+dy+", "+dz);
                 // perform low-cut filter (sort of).  Not sure what value this has.
                 //float memory = 0.9f;
                 float memory = 0.0f;
@@ -976,7 +976,7 @@ public class TheService extends Service {
             zPrev = z;
             previousIsValid = true;
 
-            if (mVerboseLevel >= 0) Log.i(TAG, "        out onSensorChanged()");
+            if (mVerboseLevel >= 2) Log.i(TAG, "        out onSensorChanged()");
           }
         };
         mSensorManager.registerListener(mSensorEventListener, mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_NORMAL);

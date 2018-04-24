@@ -1046,10 +1046,10 @@ public class TheService extends Service {
 
 
 
-	    String NOTIFICATION_CHANNEL_ID = "hello, I am a notification channel id"; // XXX ?
+            String NOTIFICATION_CHANNEL_ID = "hello, I am a notification channel id"; // XXX ?
 
             if (Build.VERSION.SDK_INT >= 26) {  // runtime when channel API introduced
-	      if (mVerboseLevel >= 1) Log.i(TAG, "                              doing the notification channel setup thing because runtime is "+Build.VERSION.SDK_INT+" >= 26");
+              if (mVerboseLevel >= 1) Log.i(TAG, "                              doing the notification channel setup thing because runtime is "+Build.VERSION.SDK_INT+" >= 26");
               // https://stackoverflow.com/questions/45711925/failed-to-post-notification-on-channel-null-target-api-is-26#answer-47135605
               // Set up a notification channel.
               // This is needed to avoid this warning toast on runtime 26:
@@ -1060,7 +1060,7 @@ public class TheService extends Service {
               //        android.app.RemoteServiceException: Bad notification for startForeground: java.lang.RuntimeException: invalid channel for service notification: Notification(channel=null pri=0 contentView=null vibrate=null sound=null defaults=0x0 flags=0x40 color=0x00000000 vis=PRIVATE)
               int importance = NotificationManager.IMPORTANCE_LOW;
               CharSequence channelName = "hello, I am a notification channel name";  // XXX yow, this comes up as a "category"... furthermore once I create one, it stays on the machine until I uninstall and reinstall the app.
-	      NotificationChannel notificationChannel = new NotificationChannel(NOTIFICATION_CHANNEL_ID, channelName, importance);
+              NotificationChannel notificationChannel = new NotificationChannel(NOTIFICATION_CHANNEL_ID, channelName, importance);
 
               if (false) {
                 // Note, the following is all from the example, I haven't looked into whether they have merit or whether there are more appropriate values.
@@ -1070,9 +1070,9 @@ public class TheService extends Service {
                 //notificationChannel.setVibrationPattern(new long[]{100, 200, 300, 400, 500, 400, 300, 200, 400});
               }
 
-	      // XXX why did the other one do it through getApplicationContext()? I'm confused
-	      NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-	      notificationManager.createNotificationChannel(notificationChannel);
+              // XXX why did the other one do it through getApplicationContext()? I'm confused
+              NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+              notificationManager.createNotificationChannel(notificationChannel);
             }
 
             // Use NotificationCompat.Builder instead of Notification.Builder;

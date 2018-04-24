@@ -413,6 +413,13 @@ public class TheActivity extends Activity {
         theClosestCompassPointTextView.setText("  TheService.mStaticClosestCompassPoint: "+oldClosestCompassPoint+" -> "+newClosestCompassPoint);
         */
         Log.i(TAG, "                out onReceive: "+intent.getAction());
+      } else if (intent.getAction().equals("mStaticAutoRotate changed")) {
+        Log.i(TAG, "                in onReceive: "+intent.getAction());
+        boolean newStaticAutoRotate = intent.getBooleanExtra("new mStaticAutoRotate", true);
+        Log.i(TAG, "                  setting theAutoRotate.setChecked("+newStaticAutoRotate+")");
+        Switch theAutoRotateSwitch = findViewById(R.id.theAutoRotateSwitch);
+        theAutoRotateSwitch.setChecked(newStaticAutoRotate);
+        Log.i(TAG, "                out onReceive: "+intent.getAction());
       } else if (intent.getAction().equals("mStaticPromptFirst changed")) {
         Log.i(TAG, "                in onReceive: "+intent.getAction());
         boolean newStaticPromptFirst = intent.getBooleanExtra("new mStaticPromptFirst", true);
@@ -1029,6 +1036,7 @@ public class TheActivity extends Activity {
     // see https://stackoverflow.com/questions/7887169/android-when-to-register-unregister-broadcast-receivers-created-in-an-activity for discussion of whether to do this in onStart/onStop or onPause/onResume . still not entirely clear
     {
       android.support.v4.content.LocalBroadcastManager.getInstance(this).registerReceiver(mBroadcastReceiver, new IntentFilter("degrees changed") {{
+        addAction("mStaticAutoRotate changed");
         addAction("mStaticPromptFirst changed");
         addAction("mStaticClosestCompassPoint changed");
         addAction("service started");

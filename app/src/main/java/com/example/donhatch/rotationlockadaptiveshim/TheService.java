@@ -8,7 +8,6 @@ package com.example.donhatch.rotationlockadaptiveshim;
 //   http://stackoverflow.com/questions/32241079/setting-orientation-globally-using-android-service
 // And an app with source code that does it:  PerApp
 
-import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -633,199 +632,115 @@ public class TheService extends Service {
                     // https://www.codota.com/android/methods/android.app.AlertDialog.Builder/setView
                     // Maybe this has something?  http://iserveandroid.blogspot.com/2011/04/how-to-dismiss-your-non-modal-dialog.html
 
-                    if (mVerboseLevel == 1) Log.i(TAG, "          attempting to pop up an AlertDialog");
+                    if (mVerboseLevel == 1) Log.i(TAG, "          attempting to pop up a Dialog");
 
                     final int threeOrSomething = 3;
-                    Dialog dialog;
                     final CheckBox dontAskAgainCheckBox = new CheckBox(getApplicationContext()) {{
                       setText("Don't ask again");
                     }};
                     final TextView messageTextView = new TextView(getApplicationContext()) {{
                       setText(threeOrSomething+"...");
                     }};
-                    if (true) {  // new way
-                      // What I want is basically an AlertDialog with setView("Don't ask again" checkbox),
-                      // but I want it much tighter packed.
-                      dialog = new Dialog(getApplicationContext()) {
-                        @Override
-                        public boolean onTouchEvent(@NonNull MotionEvent motionEvent) {
-                          if (mVerboseLevel == 1) Log.i(TAG, "            in alertDialog onTouchEvent");
-                          if (mVerboseLevel == 1) Log.i(TAG, "              motionEvent.getActionMasked()="+motionEventActionMaskedConstantToString(motionEvent.getActionMasked()));
-                          if (motionEvent.getActionMasked() == MotionEvent.ACTION_OUTSIDE) {
-                            if (mVerboseLevel == 1) Log.i(TAG, "              touch outside dialog! cancelling");
-                            if (mCleanupDialog != null) {
-                              mCleanupDialog.run();
-                              mCleanupDialog = null;
-                            }
-                          } else {
-                            if (mVerboseLevel == 1) Log.i(TAG, "              touch inside dialog; ignoring");
+                    // What I want is basically an AlertDialog with setView("Don't ask again" checkbox),
+                    // but I want it much tighter packed.
+                    final Dialog dialog = new Dialog(getApplicationContext()) {
+                      @Override
+                      public boolean onTouchEvent(@NonNull MotionEvent motionEvent) {
+                        if (mVerboseLevel == 1) Log.i(TAG, "            in alertDialog onTouchEvent");
+                        if (mVerboseLevel == 1) Log.i(TAG, "              motionEvent.getActionMasked()="+motionEventActionMaskedConstantToString(motionEvent.getActionMasked()));
+                        if (motionEvent.getActionMasked() == MotionEvent.ACTION_OUTSIDE) {
+                          if (mVerboseLevel == 1) Log.i(TAG, "              touch outside dialog! cancelling");
+                          if (mCleanupDialog != null) {
+                            mCleanupDialog.run();
+                            mCleanupDialog = null;
                           }
-                          if (mVerboseLevel == 1) Log.i(TAG, "            out alertDialog onTouchEvent");
-                          // I think returning true is supposed to mean "consume", i.e.
-                          // don't pass the event to subsequent listeners or parent or "next level down",
-                          // but I don't observe it making any difference--
-                          // what we see as ACTION_OUTSIDE has an effect
-                          // on the activity underneath the dialog,
-                          // and touching inside the dialog does *not* affect the activity underneath,
-                          // regardless of whether we return true or false here.
-                          return false;
+                        } else {
+                          if (mVerboseLevel == 1) Log.i(TAG, "              touch inside dialog; ignoring");
                         }
-                      };
-                      final Context c = getApplicationContext();
-                      dialog.setTitle("Rotate the screen?");
-                      dialog.setContentView(new LinearLayout(c) {{
-                        setOrientation(VERTICAL);
-                        addView(new LinearLayout(c) {{
-                          addView(new TextView(c) {{
-                            setText("   ");  // not very principled
-                          }});
-                          addView(messageTextView);
+                        if (mVerboseLevel == 1) Log.i(TAG, "            out alertDialog onTouchEvent");
+                        // I think returning true is supposed to mean "consume", i.e.
+                        // don't pass the event to subsequent listeners or parent or "next level down",
+                        // but I don't observe it making any difference--
+                        // what we see as ACTION_OUTSIDE has an effect
+                        // on the activity underneath the dialog,
+                        // and touching inside the dialog does *not* affect the activity underneath,
+                        // regardless of whether we return true or false here.
+                        return false;
+                      }
+                    };
+                    final Context c = getApplicationContext();
+                    dialog.setTitle("Rotate the screen?");
+                    dialog.setContentView(new LinearLayout(c) {{
+                      setOrientation(VERTICAL);
+                      addView(new LinearLayout(c) {{
+                        addView(new TextView(c) {{
+                          setText("   ");  // not very principled
                         }});
-                        addView(new LinearLayout(c) {{
-                          setOrientation(HORIZONTAL);
-                          addView(dontAskAgainCheckBox);
-                          addView(new TextView(c) {{
-                          }}, new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT) {{
-                            weight = 1.f;
-                          }});
-                          addView(new TextView(c) {{
-                            setText("NO");
-                            setTextColor(0xff0000ff);  // blue
-                            setOnClickListener(new View.OnClickListener() {
-                              @Override
-                              public void onClick(View view) {
-                                if (mVerboseLevel == 1) Log.i(TAG, "            in alertDialog negative button onClick");
-                                if (dontAskAgainCheckBox.isChecked()) {
-                                  mStaticAutoRotate = false;
-                                  Intent intent = new Intent("mStaticAutoRotate changed");
-                                  intent.putExtra("new mStaticAutoRotate", mStaticAutoRotate);
-                                  if (mVerboseLevel == 1) Log.i(TAG, "              sending \"mStaticAutoRotate changed\" broadcast");
-                                  LocalBroadcastManager.getInstance(TheService.this).sendBroadcast(intent);
-                                  if (mVerboseLevel == 1) Log.i(TAG, "              sent \"mStaticAutoRotate changed\" broadcast");
-                                }
-                                // XXX is this evidence for why it's good to always delay?
-                                if (mCleanupDialog != null) {
-                                  mCleanupDialog.run();
-                                  mCleanupDialog = null;
-                                }
-                                if (mVerboseLevel == 1) Log.i(TAG, "            out alertDialog negative button onClick");
+                        addView(messageTextView);
+                      }});
+                      addView(new LinearLayout(c) {{
+                        setOrientation(HORIZONTAL);
+                        addView(dontAskAgainCheckBox);
+                        addView(new TextView(c) {{
+                        }}, new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT) {{
+                          weight = 1.f;
+                        }});
+                        addView(new TextView(c) {{
+                          setText("NO");
+                          setTextColor(0xff0000ff);  // blue
+                          setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                              if (mVerboseLevel == 1) Log.i(TAG, "            in alertDialog negative button onClick");
+                              if (dontAskAgainCheckBox.isChecked()) {
+                                mStaticAutoRotate = false;
+                                Intent intent = new Intent("mStaticAutoRotate changed");
+                                intent.putExtra("new mStaticAutoRotate", mStaticAutoRotate);
+                                if (mVerboseLevel == 1) Log.i(TAG, "              sending \"mStaticAutoRotate changed\" broadcast");
+                                LocalBroadcastManager.getInstance(TheService.this).sendBroadcast(intent);
+                                if (mVerboseLevel == 1) Log.i(TAG, "              sent \"mStaticAutoRotate changed\" broadcast");
                               }
-                            });
-                          }});
-                          addView(new TextView(c) {{
-                          }}, new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT) {{
-                            weight = 1.f;
-                          }});
-                          addView(new TextView(c) {{
-                            setText("YES     ");
-                            setTextColor(0xff0000ff);  // blue
-                            setOnClickListener(new View.OnClickListener() {
-                              @Override
-                              public void onClick(View view) {
-                                if (mVerboseLevel == 1) Log.i(TAG, "            in alertDialog positive button onClick");
+                              // XXX is this evidence for why it's good to always delay?
+                              if (mCleanupDialog != null) {
+                                mCleanupDialog.run();
+                                mCleanupDialog = null;
+                              }
+                              if (mVerboseLevel == 1) Log.i(TAG, "            out alertDialog negative button onClick");
+                            }
+                          });
+                        }});
+                        addView(new TextView(c) {{
+                        }}, new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT) {{
+                          weight = 1.f;
+                        }});
+                        addView(new TextView(c) {{
+                          setText("YES     ");
+                          setTextColor(0xff0000ff);  // blue
+                          setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                              if (mVerboseLevel == 1) Log.i(TAG, "            in alertDialog positive button onClick");
 
-                                if (dontAskAgainCheckBox.isChecked()) {
-                                  mStaticPromptFirst = false;
-                                  Intent intent = new Intent("mStaticPromptFirst changed");
-                                  intent.putExtra("new mStaticPromptFirst", mStaticPromptFirst);
-                                  if (mVerboseLevel == 1) Log.i(TAG, "              sending \"mStaticPromptFirst changed\" broadcast");
-                                  LocalBroadcastManager.getInstance(TheService.this).sendBroadcast(intent);
-                                  if (mVerboseLevel == 1) Log.i(TAG, "              sent \"mStaticPromptFirst changed\" broadcast");
-                                }
-                                // XXX is this evidence for why it's good to always delay?
-                                if (mCleanupDialog != null) {
-                                  mCleanupDialog.run();
-                                  mCleanupDialog = null;
-                                }
-                                doTheAutoRotateThingNow();
-                                if (mVerboseLevel == 1) Log.i(TAG, "            out alertDialog positive button onClick");
+                              if (dontAskAgainCheckBox.isChecked()) {
+                                mStaticPromptFirst = false;
+                                Intent intent = new Intent("mStaticPromptFirst changed");
+                                intent.putExtra("new mStaticPromptFirst", mStaticPromptFirst);
+                                if (mVerboseLevel == 1) Log.i(TAG, "              sending \"mStaticPromptFirst changed\" broadcast");
+                                LocalBroadcastManager.getInstance(TheService.this).sendBroadcast(intent);
+                                if (mVerboseLevel == 1) Log.i(TAG, "              sent \"mStaticPromptFirst changed\" broadcast");
                               }
-                            });
-                          }});
+                              // XXX is this evidence for why it's good to always delay?
+                              if (mCleanupDialog != null) {
+                                mCleanupDialog.run();
+                                mCleanupDialog = null;
+                              }
+                              doTheAutoRotateThingNow();
+                              if (mVerboseLevel == 1) Log.i(TAG, "            out alertDialog positive button onClick");
+                            }
+                          });
                         }});
                       }});
-                    } else {  // old way using AlertDialog
-                      // Use an AlertDialog.
-                      // Don't use an AlertDialog.Builder, since that's incompatible with custom onTouchEvent.
-                      // (Maybe it's possible to use View.OnTouchListener instead?
-                      // But I'm not sure how to call it, since AlertDialog doesn't have a setOnTouchListener.)
-                      final AlertDialog alertDialog = new AlertDialog(TheService.this) {
-                        @Override
-                        public boolean onTouchEvent(@NonNull MotionEvent motionEvent) {
-                          if (mVerboseLevel == 1) Log.i(TAG, "            in alertDialog onTouchEvent");
-                          if (mVerboseLevel == 1) Log.i(TAG, "              motionEvent.getActionMasked()="+motionEventActionMaskedConstantToString(motionEvent.getActionMasked()));
-                          if (motionEvent.getActionMasked() == MotionEvent.ACTION_OUTSIDE) {
-                            if (mVerboseLevel == 1) Log.i(TAG, "              touch outside dialog! cancelling");
-                            if (mCleanupDialog != null) {
-                              mCleanupDialog.run();
-                              mCleanupDialog = null;
-                            }
-                          } else {
-                            if (mVerboseLevel == 1) Log.i(TAG, "              touch inside dialog; ignoring");
-                          }
-                          if (mVerboseLevel == 1) Log.i(TAG, "            out alertDialog onTouchEvent");
-                          // I think returning true is supposed to mean "consume", i.e.
-                          // don't pass the event to subsequent listeners or parent or "next level down",
-                          // but I don't observe it making any difference--
-                          // what we see as ACTION_OUTSIDE has an effect
-                          // on the activity underneath the dialog,
-                          // and touching inside the dialog does *not* affect the activity underneath,
-                          // regardless of whether we return true or false here.
-                          return false;
-                        }
-                      };
-                      alertDialog.setTitle("Rotate the screen?");
-                      alertDialog.setMessage(threeOrSomething+"...");
-
-                      alertDialog.setView(dontAskAgainCheckBox);
-
-                      alertDialog.setButton(AlertDialog.BUTTON_NEGATIVE, "No", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int id) {
-                          if (mVerboseLevel == 1) Log.i(TAG, "            in alertDialog negative button onClick");
-
-                          if (dontAskAgainCheckBox.isChecked()) {
-                            mStaticAutoRotate = false;
-                            Intent intent = new Intent("mStaticAutoRotate changed");
-                            intent.putExtra("new mStaticAutoRotate", mStaticAutoRotate);
-                            if (mVerboseLevel == 1) Log.i(TAG, "              sending \"mStaticAutoRotate changed\" broadcast");
-                            LocalBroadcastManager.getInstance(TheService.this).sendBroadcast(intent);
-                            if (mVerboseLevel == 1) Log.i(TAG, "              sent \"mStaticAutoRotate changed\" broadcast");
-                          }
-                          // XXX is this evidence for why it's good to always delay?
-                          if (mCleanupDialog != null) {
-                            mCleanupDialog.run();
-                            mCleanupDialog = null;
-                          }
-                          if (mVerboseLevel == 1) Log.i(TAG, "            out alertDialog negative button onClick");
-                        }
-                      });
-                      alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, "Yes", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int id) {
-                          if (mVerboseLevel == 1) Log.i(TAG, "            in alertDialog positive button onClick");
-
-                          if (dontAskAgainCheckBox.isChecked()) {
-                            mStaticPromptFirst = false;
-                            Intent intent = new Intent("mStaticPromptFirst changed");
-                            intent.putExtra("new mStaticPromptFirst", mStaticPromptFirst);
-                            if (mVerboseLevel == 1) Log.i(TAG, "              sending \"mStaticPromptFirst changed\" broadcast");
-                            LocalBroadcastManager.getInstance(TheService.this).sendBroadcast(intent);
-                            if (mVerboseLevel == 1) Log.i(TAG, "              sent \"mStaticPromptFirst changed\" broadcast");
-                          }
-                          // XXX is this evidence for why it's good to always delay?
-                          if (mCleanupDialog != null) {
-                            mCleanupDialog.run();
-                            mCleanupDialog = null;
-                          }
-                          doTheAutoRotateThingNow();
-                          if (mVerboseLevel == 1) Log.i(TAG, "            out alertDialog positive button onClick");
-                        }
-                      });
-                      dialog = alertDialog;
-                    }
-
-                    final Dialog finalDialog = dialog;
+                    }});
 
                     Window alertDialogWindow = dialog.getWindow();
 
@@ -871,7 +786,7 @@ public class TheService extends Service {
                       @Override
                       public void run() {
                         if (mVerboseLevel == 1) Log.i(TAG, "            in run: prompt expired; canceling alert dialog");
-                        finalDialog.cancel();
+                        dialog.cancel();
                         mCleanupDialog = null;
                         if (mVerboseLevel == 1) Log.i(TAG, "            out run: prompt expired; cancelled alert dialog");
                       }
@@ -895,7 +810,7 @@ public class TheService extends Service {
                       @Override
                       public void run() {
                         if (mVerboseLevel == 1) Log.i(TAG, "            cleaning up previous dialog");
-                        finalDialog.cancel();
+                        dialog.cancel();
                         handler.removeCallbacks(runnable); // ok if it wasn't scheduled
                         if (mVerboseLevel == 1) Log.i(TAG, "            cleaned up previous dialog");
                       }
@@ -908,12 +823,12 @@ public class TheService extends Service {
                     //   "1..." 2 seconds from now.
                     for (int i = threeOrSomething-1; i >= 1; --i) {
                       final int iFinal = i;
-                      new Handler().postDelayed(new Runnable() { @Override public void run() { if (finalDialog instanceof AlertDialog) ((AlertDialog)finalDialog).setMessage(iFinal+"..."); else messageTextView.setText(iFinal+"..."); } }, (threeOrSomething-iFinal)*1000);
+                      new Handler().postDelayed(new Runnable() { @Override public void run() { messageTextView.setText(iFinal+"..."); } }, (threeOrSomething-iFinal)*1000);
                     }
                     // And a final one to clear the message, in case the callback that removes the dialog gets removed.
-                    handler.postDelayed(new Runnable() { @Override public void run() { if (finalDialog instanceof AlertDialog) ((AlertDialog)finalDialog).setMessage(""); else messageTextView.setText(""); } }, threeOrSomething*1000);
+                    handler.postDelayed(new Runnable() { @Override public void run() { messageTextView.setText(""); } }, threeOrSomething*1000);
 
-                    if (mVerboseLevel == 1) Log.i(TAG, "          attempted to pop up an AlertDialog");
+                    if (mVerboseLevel == 1) Log.i(TAG, "          attempted to pop up a Dialog");
                   }
                   if (false) {
                     if (mVerboseLevel == 1) Log.i(TAG, "          attempting to pop up a semitransparent icon!");

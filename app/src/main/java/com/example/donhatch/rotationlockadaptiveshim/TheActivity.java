@@ -1,3 +1,8 @@
+// To build and run:
+/*
+./gradlew assembleDebug && adb install -r app/build/outputs/apk/debug/app-debug.apk && adb shell am start -n com.example.donhatch.rotationlockadaptiveshim/com.example.donhatch.rotationlockadaptiveshim.TheActivity -a android.intent.action.MAIN -c android.intent.category.LAUNCHER
+*/
+
 // TODO: service icon isn't right, it's solid white (only on recent target and/or runtime I think?) (t27: r25 square, r26 circle, r27 circle)
 // TODO: sort out the notification channel stuff (slowly drag notification to left to see what's going on, it's weird)
 // TODO: make it work properly when activity is destroyed&recreated on orientation change?

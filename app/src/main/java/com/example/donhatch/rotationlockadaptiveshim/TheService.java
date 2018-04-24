@@ -658,7 +658,8 @@ public class TheService extends Service {
                                             }
                                         };
                                         alertDialog.setTitle("Rotate the screen?");
-                                        alertDialog.setMessage("3...");
+                                        final int threeOrSomething = 3;
+                                        alertDialog.setMessage(threeOrSomething+"...");
                                         alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "Yes and don't ask again", new DialogInterface.OnClickListener() {
                                             @Override
                                             public void onClick(DialogInterface dialog, int id) {
@@ -740,7 +741,7 @@ public class TheService extends Service {
                                             // TODO: also fails if I try to pop up the dialog, on targetSdkLevel>=26.  ah, it's because TYPE_SYSTEM_ALERT is deprecated for non-system apps, use TYPE_APPLICATION_OVERLAY instead?
                                             CHECK(false);
                                         }
-                                        // Make it expire in 3 seconds.
+                                        // Make it expire in 3 (or something) seconds.
                                         final Handler handler = new Handler();
                                         final Runnable runnable = new Runnable() {
                                             @Override
@@ -751,7 +752,7 @@ public class TheService extends Service {
                                                 if (mVerboseLevel == 1) Log.i(TAG, "            out run: prompt expired; cancelled alert dialog");
                                             }
                                         };
-                                        handler.postDelayed(runnable, 3*1000);
+                                        handler.postDelayed(runnable, threeOrSomething*1000);
 
                                         CHECK(mCleanupDialog == null);
                                         mCleanupDialog = new Runnable() {

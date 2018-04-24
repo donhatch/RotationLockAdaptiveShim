@@ -1183,9 +1183,9 @@ public class TheActivity extends Activity {
                         // and see this: https://android.jlelse.eu/customizing-switch-using-xml-ca0d37204a86
                         // note, that file contains:
                         /*
-	                  <color name="colorPrimary">#3F51B5</color>    63,81,181
-	                  <color name="colorPrimaryDark">#303F9F</color> 48,63,159
-	                  <color name="colorAccent">#FF4081</color>     255,64,129
+                          <color name="colorPrimary">#3F51B5</color>    63,81,181
+                          <color name="colorPrimaryDark">#303F9F</color> 48,63,159
+                          <color name="colorAccent">#FF4081</color>     255,64,129
                         */
 
         // 0,0,0       -> 185,185,185

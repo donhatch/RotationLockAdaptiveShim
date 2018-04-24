@@ -767,8 +767,13 @@ public class TheService extends Service {
 
                                         // Hacky countdown in the dialog.
                                         // These don't get cleaned up by mCleanupDialog, but it doesn't matter; they don't hurt anything.
-                                        new Handler().postDelayed(new Runnable() { @Override public void run() { alertDialog.setMessage("2..."); } }, 1*1000);
-                                        new Handler().postDelayed(new Runnable() { @Override public void run() { alertDialog.setMessage("1..."); } }, 2*1000);
+                                        // E.g. if threeOrSomething is 3, then:
+                                        //   "2..." 1 second from now,
+                                        //   "1..." 2 seconds from now.
+                                        for (int i = threeOrSomething-1; i >= 1; --i) {
+                                          final int iFinal = i;
+                                          new Handler().postDelayed(new Runnable() { @Override public void run() { alertDialog.setMessage(iFinal+"..."); } }, (threeOrSomething-iFinal)*1000);
+                                        }
 
                                         if (mVerboseLevel == 1) Log.i(TAG, "          attempted to pop up an AlertDialog");
                                     }

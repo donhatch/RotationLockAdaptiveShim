@@ -1046,13 +1046,13 @@ public class TheActivity extends Activity {
 
     {
       android.net.Uri uri = Settings.System.getUriFor(Settings.System.ACCELEROMETER_ROTATION);
-      Log.i(TAG, "      uri = "+uri);
+      Log.i(TAG, "              uri = "+uri);
       getContentResolver().registerContentObserver(uri, false, mAccelerometerRotationObserver);
     }
 
     {
       android.net.Uri uri = Settings.System.getUriFor(Settings.System.USER_ROTATION);
-      Log.i(TAG, "      uri = "+uri);
+      Log.i(TAG, "              uri = "+uri);
       getContentResolver().registerContentObserver(uri, false, mUserRotationObserver);
     }
 

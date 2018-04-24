@@ -963,79 +963,79 @@ public class TheService extends Service {
 
       @Override
       public void onAccuracyChanged(Sensor sensor, int accuracy) {
-      if (mVerboseLevel >= 0) Log.i(TAG, "        in onAccurcyChanged(accuracy="+accuracy+")");
-      if (false) {
-        // Empirically, we get an immediate MEDIUM.  Whatever.
-        showToast(TheService.this, "accelerometer accuracy changed to "+sensorStatusAccuracyConstantToString(accuracy)+", not sure what that means", 2000);
-      }
-      if (mVerboseLevel >= 0) Log.i(TAG, "        out onAccurcyChanged(accuracy="+accuracy+")");
+        if (mVerboseLevel >= 0) Log.i(TAG, "        in onAccuracyChanged(accuracy="+accuracy+")");
+        if (false) {
+          // Empirically, we get an immediate MEDIUM.  Whatever.
+          showToast(TheService.this, "accelerometer accuracy changed to "+sensorStatusAccuracyConstantToString(accuracy)+", not sure what that means", 2000);
+        }
+        if (mVerboseLevel >= 0) Log.i(TAG, "        out onAccuracyChanged(accuracy="+accuracy+")");
       }
       @Override
       public void onSensorChanged(SensorEvent sensorEvent) {
-      if (mVerboseLevel >= 2) Log.i(TAG, "        in onSensorChanged()");
+        if (mVerboseLevel >= 2) Log.i(TAG, "        in onSensorChanged()");
 
-      float x = sensorEvent.values[0];
-      float y = sensorEvent.values[1];
-      float z = sensorEvent.values[2];
-      float mag = (float)Math.sqrt(x*x + y*y + z*z);
+        float x = sensorEvent.values[0];
+        float y = sensorEvent.values[1];
+        float z = sensorEvent.values[2];
+        float mag = (float)Math.sqrt(x*x + y*y + z*z);
 
-      if (mVerboseLevel >= 2) Log.i(TAG, "          value = "+x+", "+y+", "+z);
-      // WORK IN PROGRESS.  Not sure what to consider a shake, at the moment.
-      if (false) {
-        if (previousIsValid) {
-        float dx = x - xPrev;
-        float dy = y - yPrev;
-        float dz = z - zPrev;
-        if (mVerboseLevel >= 2) Log.i(TAG, "          delta = "+dx+", "+dy+", "+dz);
-        // perform low-cut filter (sort of).  Not sure what value this has.
-        //float memory = 0.9f;
-        float memory = 0.0f;
-        dxFiltered = dxFiltered * memory + dx;
-        dyFiltered = dyFiltered * memory + dy;
-        dzFiltered = dzFiltered * memory + dz;
-
-        float shakeFiltered = (float)Math.sqrt(dxFiltered*dxFiltered + dyFiltered*dyFiltered + dzFiltered*dzFiltered);
-
+        if (mVerboseLevel >= 2) Log.i(TAG, "          value = "+x+", "+y+", "+z);
+        // WORK IN PROGRESS.  Not sure what to consider a shake, at the moment.
         if (false) {
-          float threshold = 2.f;
-          if (shakeFiltered >= threshold) {
-          showToast(TheService.this, "Shake: strength "+shakeFiltered, 500);
+          if (previousIsValid) {
+          float dx = x - xPrev;
+          float dy = y - yPrev;
+          float dz = z - zPrev;
+          if (mVerboseLevel >= 2) Log.i(TAG, "          delta = "+dx+", "+dy+", "+dz);
+          // perform low-cut filter (sort of).  Not sure what value this has.
+          //float memory = 0.9f;
+          float memory = 0.0f;
+          dxFiltered = dxFiltered * memory + dx;
+          dyFiltered = dyFiltered * memory + dy;
+          dzFiltered = dzFiltered * memory + dz;
+
+          float shakeFiltered = (float)Math.sqrt(dxFiltered*dxFiltered + dyFiltered*dyFiltered + dzFiltered*dzFiltered);
+
+          if (false) {
+            float threshold = 2.f;
+            if (shakeFiltered >= threshold) {
+            showToast(TheService.this, "Shake: strength "+shakeFiltered, 500);
+            }
+          }
           }
         }
+
+        if (mStaticRotateOnShake) {
+          // Possible strategy:
+          // Super strong in +-x or +-y is interpreted as a shakedown.  (Shakeups are possible but difficult, so don't worry about them).
+          //float threshold = SensorManager.GRAVITY_EARTH * 2.0f;
+          //float threshold = SensorManager.GRAVITY_EARTH * 1.5f;
+          float threshold = SensorManager.GRAVITY_EARTH * 1.25f;
+          if (mag > threshold) {
+            int majorAxis = -1;
+            for (int i = 0; i < 3; ++i) {
+            if (majorAxis == -1 || Math.abs(sensorEvent.values[i]) > Math.abs(sensorEvent.values[majorAxis])) {
+              majorAxis = i;
+            }
+            }
+            float majorMag = Math.abs(sensorEvent.values[majorAxis]);
+            double minorMag = Math.hypot(sensorEvent.values[(majorAxis+1)%3], sensorEvent.values[(majorAxis+2)%3]);
+            double angleDegrees = Math.atan2(minorMag, majorMag)*180/Math.PI;;
+            //showToast(TheService.this, "Shakedown: mag "+mag+"\n\nmajorAxis="+majorAxis+"\n\ndegrees "+angleDegrees+"\n\n"+x+" "+y+" "+z, 5000);
+            if (angleDegrees < 22.5) {
+            //showToast(TheService.this, "Doing it!", 5000);
+            doTheAutoRotateThingNow();
+            }
+          }
         }
-      }
-
-      if (mStaticRotateOnShake) {
-        // Possible strategy:
-        // Super strong in +-x or +-y is interpreted as a shakedown.  (Shakeups are possible but difficult, so don't worry about them).
-        //float threshold = SensorManager.GRAVITY_EARTH * 2.0f;
-        //float threshold = SensorManager.GRAVITY_EARTH * 1.5f;
-        float threshold = SensorManager.GRAVITY_EARTH * 1.25f;
-        if (mag > threshold) {
-          int majorAxis = -1;
-          for (int i = 0; i < 3; ++i) {
-          if (majorAxis == -1 || Math.abs(sensorEvent.values[i]) > Math.abs(sensorEvent.values[majorAxis])) {
-            majorAxis = i;
-          }
-          }
-          float majorMag = Math.abs(sensorEvent.values[majorAxis]);
-          double minorMag = Math.hypot(sensorEvent.values[(majorAxis+1)%3], sensorEvent.values[(majorAxis+2)%3]);
-          double angleDegrees = Math.atan2(minorMag, majorMag)*180/Math.PI;;
-          //showToast(TheService.this, "Shakedown: mag "+mag+"\n\nmajorAxis="+majorAxis+"\n\ndegrees "+angleDegrees+"\n\n"+x+" "+y+" "+z, 5000);
-          if (angleDegrees < 22.5) {
-          //showToast(TheService.this, "Doing it!", 5000);
-          doTheAutoRotateThingNow();
-          }
-        }
-      }
 
 
-      xPrev = x;
-      yPrev = y;
-      zPrev = z;
-      previousIsValid = true;
+        xPrev = x;
+        yPrev = y;
+        zPrev = z;
+        previousIsValid = true;
 
-      if (mVerboseLevel >= 2) Log.i(TAG, "        out onSensorChanged()");
+        if (mVerboseLevel >= 2) Log.i(TAG, "        out onSensorChanged()");
       }
     };
     mSensorManager.registerListener(mSensorEventListener, mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_NORMAL);
@@ -1077,7 +1077,7 @@ public class TheService extends Service {
     if (mVerboseLevel >= 1) Log.i(TAG, "                            in TheService.onStartCommand(startIntent, flags="+flags+", startId="+startId+")");
     if (mVerboseLevel >= 1) Log.i(TAG, "                              startIntent = "+startIntent);
 
-    if (true)  // XXX this stopped working after I upgraded to android 8.1.0 ??? have to set it to false
+    if (true)  // XXX this stopped working after I upgraded to android 8.1.0 ??? have to set it to false  (well then why is it still true?  need to revisit this)
     {
       // Use startForeground() to "put the service in a foreground state,
       // where the system considers it to be something the user is actively aware of
@@ -1217,6 +1217,7 @@ public class TheService extends Service {
   @Override
   public void onDestroy() {
     if (mVerboseLevel >= 1) Log.i(TAG, "                        in TheService.onDestroy");
+
     // TODO: cancel previous toast if any
     showToast(this, "Service Destroyed", 2000);
 
@@ -1362,7 +1363,7 @@ public class TheService extends Service {
       newScreenOrientationConstant = mOrientationLayout.screenOrientation;  // so that this doesn't cause us to change anything
       }
 
-      if (mVerboseLevel >= 1) Log.i(TAG, "              attempting to force orientation to "+screenOrientationConstantToString(newScreenOrientationConstant));
+      if (mVerboseLevel >= 1) Log.i(TAG, "                  attempting to force orientation to "+screenOrientationConstantToString(newScreenOrientationConstant));
       if ((mOrientationChanger.getVisibility() != View.VISIBLE)
        || mOrientationLayout.screenOrientation != newScreenOrientationConstant
        || mOrientationChangerCurrentBackgroundColor != (mStaticRed ? 0x44ff0000 : 0x00000000)) {
@@ -1375,7 +1376,7 @@ public class TheService extends Service {
         if (mVerboseLevel >= 1) Log.i(TAG, "                  (no need)");
       }
     } else {
-      if (mVerboseLevel >= 1) Log.i(TAG, "              attempting to unforce orientation");
+      if (mVerboseLevel >= 1) Log.i(TAG, "                  attempting to unforce orientation");
       if (mOrientationChanger.getVisibility() != View.GONE) {
         mOrientationChanger.setVisibility(View.GONE);
         mOrientationLayout.screenOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;

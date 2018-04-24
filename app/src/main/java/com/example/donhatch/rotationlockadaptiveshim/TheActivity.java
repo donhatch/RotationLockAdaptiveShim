@@ -739,6 +739,12 @@ public class TheActivity extends Activity {
     if (true) {
       // Interesting, if we declare that we *don't* handle config changes,
       // then we get a checked-changed after onStart returns and before onResume is called, causing us to get back to the right state! Cool!
+
+      // UPDATE 2018/04/23: no, not cool. when turning on the service, it saves the state
+      // while the checkbox was still off!  argh!
+      // Actually it saves it while *one* of the two service checkboxes was off.
+      // So for now, we require handling config changes.
+
       theMonitorSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
         public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
           Log.i(TAG, "            in theMonitorSwitch onCheckedChanged(isChecked=" + isChecked + ")");
@@ -1097,6 +1103,10 @@ public class TheActivity extends Activity {
   protected void onSaveInstanceState(Bundle outState) {
     Log.i(TAG, "          in onSaveInstanceState");  // shoehorned this in so indent is intermediate
     super.onSaveInstanceState(outState);
+    Switch theServiceSwitch = findViewById(R.id.theServiceSwitch);
+    Switch theServiceSwitch2 = findViewById(R.id.theServiceSwitch2);
+    Log.i(TAG, "            theServiceSwitch.isChecked() = "+theServiceSwitch.isChecked());
+    Log.i(TAG, "            theServiceSwitch2.isChecked() = "+theServiceSwitch2.isChecked());
     Log.i(TAG, "          out onSaveInstanceState");  // shoehorned this in so indent is intermediate
   }
 

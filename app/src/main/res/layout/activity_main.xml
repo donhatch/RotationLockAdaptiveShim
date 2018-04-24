@@ -59,6 +59,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:layout_alignParentTop="true" >
+        <!-- two of them, to make sure we have the 2-way data binding right. set visibility true on both of them to test -->
         <Switch
             android:id="@+id/theServiceSwitch"
             android:layout_width="wrap_content"

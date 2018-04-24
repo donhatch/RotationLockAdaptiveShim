@@ -12,7 +12,6 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
-        <!--
         <activity android:name=".TheActivity"
                   android:configChanges="keyboardHidden|orientation|screenSize"
             >
@@ -21,8 +20,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        -->
 
+        <!-- NOTE, currently it doesn't work unless we handle config changes!  Due to the two service switches being out of sync during save configuration, and then restored which destroys service as it's starting.  Something like that. -->
+        <!--
         <activity android:name=".TheActivity"
             >
             <intent-filter>
@@ -30,6 +30,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        -->
 
         <service android:name=".TheService">
         </service>

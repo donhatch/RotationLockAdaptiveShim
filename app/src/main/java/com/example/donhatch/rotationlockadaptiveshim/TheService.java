@@ -641,6 +641,10 @@ public class TheService extends Service {
                     final TextView messageTextView = new TextView(getApplicationContext()) {{
                       setText(threeOrSomething+"...");
                     }};
+
+                    final Handler[] handlerHolder = new Handler[1];
+                    final Runnable[] runnableHolder = new Runnable[1];
+
                     // What I want is basically an AlertDialog with setView("Don't ask again" checkbox),
                     // but I want it much tighter packed.
                     final Dialog dialog = new Dialog(getApplicationContext()) {
@@ -649,13 +653,18 @@ public class TheService extends Service {
                         if (mVerboseLevel == 1) Log.i(TAG, "            in alertDialog onTouchEvent");
                         if (mVerboseLevel == 1) Log.i(TAG, "              motionEvent.getActionMasked()="+motionEventActionMaskedConstantToString(motionEvent.getActionMasked()));
                         if (motionEvent.getActionMasked() == MotionEvent.ACTION_OUTSIDE) {
-                          if (mVerboseLevel == 1) Log.i(TAG, "              touch outside dialog! cancelling");
+                          if (mVerboseLevel == 1) Log.i(TAG, "              touch outside dialog! cancelling and letting it pass through");
                           if (mCleanupDialog != null) {
                             mCleanupDialog.run();
                             mCleanupDialog = null;
                           }
                         } else {
-                          if (mVerboseLevel == 1) Log.i(TAG, "              touch inside dialog; ignoring");
+                          // Treat
+                          if (mVerboseLevel == 1) Log.i(TAG, "            touch inside dialog: cancelling expiration");
+                          handlerHolder[0].removeCallbacks(runnableHolder[0]);
+                          if (mVerboseLevel == 1) Log.i(TAG, "            touch inside dialog: cancelled expiration");
+                          if (mVerboseLevel == 1) Log.i(TAG, "          out alertDialog onTouchEvent");
+                          return true;
                         }
                         if (mVerboseLevel == 1) Log.i(TAG, "            out alertDialog onTouchEvent");
                         // I think returning true is supposed to mean "consume", i.e.
@@ -792,6 +801,10 @@ public class TheService extends Service {
                       }
                     };
                     handler.postDelayed(runnable, threeOrSomething*1000);
+
+                    // For the dialog method that needs to be able to cancel it...
+                    handlerHolder[0] = handler;
+                    runnableHolder[0] = runnable;
 
                     dontAskAgainCheckBox.setOnCheckedChangeListener(new CheckBox.OnCheckedChangeListener() {
                       @Override

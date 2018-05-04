@@ -775,8 +775,8 @@ public class TheService extends Service {
                                   new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT) {{
                                     weight = 1.f;  // stretch
                                   }});
-                          addView(new TextView(c) {{ setText("       "); }});  // line up with title
                         }
+                        addView(new TextView(c) {{ setText("       "); }});  // line up with title
                         addView(NOtextView);
                         addView(new TextView(c),
                                 new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT) {{
@@ -1361,7 +1361,6 @@ public class TheService extends Service {
     }
   }
 
-  // TODO: animate the red!   (TODO: what was I talking about?)
   public static void setRed(boolean newRed) {
     Log.i(TAG, "                in setRed");
     mStaticRed = newRed;

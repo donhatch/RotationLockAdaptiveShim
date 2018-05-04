@@ -26,6 +26,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
+import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -636,6 +637,7 @@ public class TheService extends Service {
 
                     final Context c = getApplicationContext();
                     final int threeOrSomething = 3;
+                    //final int threeOrSomething = 3000;
                     final CheckBox dontAskAgainCheckBox = new CheckBox(c) {{
                       setText("Don't ask again");
                       setPadding(10,10, 10,10);  // touchable
@@ -647,10 +649,15 @@ public class TheService extends Service {
                     final TextView messageTextView = new TextView(c) {{
                       setText(threeOrSomething+"...");
                     }};
+                    final boolean[] isEscalatedHolder = new boolean[1];
                     final TextView NOtextView = new TextView(c) {{
                       setText("NO");
                       setTextColor(0xff0000ff);  // blue
                       setPadding(10,10, 10,10);  // touchable
+                      setTextSize(16);  // 14 seems to be the default, although getTextSize returns 49
+                      setTypeface(null, Typeface.BOLD);
+                      isEscalatedHolder[0] = true;
+
                       setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
@@ -741,6 +748,10 @@ public class TheService extends Service {
                           // Treat
                           if (mVerboseLevel == 1) Log.i(TAG, "            touch inside dialog: cancelling expiration");
                           handlerHolder[0].removeCallbacks(runnableHolder[0]);
+                          // And de-escalate the appearance of NOtextView
+                          NOtextView.setTextSize(14);  // 14 seems to be the default, although getTextSize returns 49
+                          NOtextView.setTypeface(null, Typeface.NORMAL);
+                          isEscalatedHolder[0] = false;
                           if (mVerboseLevel == 1) Log.i(TAG, "            touch inside dialog: cancelled expiration");
                           if (mVerboseLevel == 1) Log.i(TAG, "          out alertDialog onTouchEvent");
                           return true;
@@ -857,6 +868,10 @@ public class TheService extends Service {
                           // Or maybe it should-- think about it.
                           if (mVerboseLevel == 1) Log.i(TAG, "            in onCheckedChanged: canceling expiration");
                           handler.removeCallbacks(runnable);
+                          // And de-escalate the appearance of NOtextView...
+                          NOtextView.setTextSize(14);  // 14 seems to be the default, although getTextSize returns 49
+                          NOtextView.setTypeface(null, Typeface.NORMAL);
+                          isEscalatedHolder[0] = false;
                           if (mVerboseLevel == 1) Log.i(TAG, "            out onCheckedChanged: cancelled expiration");
                         }
                       };
@@ -878,11 +893,17 @@ public class TheService extends Service {
                     // Hacky countdown in the dialog.
                     // These don't get cleaned up by mCleanupDialog, but it doesn't matter; they don't hurt anything.
                     // E.g. if threeOrSomething is 3, then:
+                    //   "3..." is the initial text,
                     //   "2..." 1 second from now,
                     //   "1..." 2 seconds from now.
                     for (int i = threeOrSomething-1; i >= 1; --i) {
                       final int iFinal = i;
-                      new Handler().postDelayed(new Runnable() { @Override public void run() { messageTextView.setText(iFinal+"..."); } }, (threeOrSomething-iFinal)*1000);
+                      new Handler().postDelayed(new Runnable() { @Override public void run() {
+                        messageTextView.setText(iFinal+"...");
+                        if (isEscalatedHolder[0]) {
+                          NOtextView.setTextSize(16 + (threeOrSomething-iFinal)*1);  // CBB: this makes the other items on row creep
+                        }
+                      } }, (threeOrSomething-iFinal)*1000);
                     }
                     // And a final one to clear the message, in case the callback that removes the dialog gets removed.
                     handler.postDelayed(new Runnable() { @Override public void run() { messageTextView.setText(""); } }, threeOrSomething*1000);

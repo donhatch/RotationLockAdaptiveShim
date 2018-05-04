@@ -537,6 +537,22 @@ public class TheActivity extends Activity {
     Log.i(TAG, "out TheActivity ctor");
   }
 
+  private void setToggleStatesToServiceValues() {
+    // TODO: member vars, I think
+    final Switch theWhackAMoleSwitch = findViewById(R.id.theWhackAMoleSwitch);
+    final Switch theAutoRotateSwitch = findViewById(R.id.theAutoRotateSwitch);
+    final Switch thePromptFirstSwitch = findViewById(R.id.thePromptFirstSwitch);
+    final Switch theRotateOnShakeSwitch = findViewById(R.id.theRotateOnShakeSwitch);
+    final Switch theOverrideSwitch = findViewById(R.id.theOverrideSwitch);
+    final Switch theRedSwitch = findViewById(R.id.theRedSwitch);
+    theWhackAMoleSwitch.setChecked(TheService.mStaticWhackAMole);
+    theAutoRotateSwitch.setChecked(TheService.mStaticAutoRotate);
+    thePromptFirstSwitch.setChecked(TheService.mStaticPromptFirst);
+    theRotateOnShakeSwitch.setChecked(TheService.mStaticRotateOnShake);
+    theOverrideSwitch.setChecked(TheService.mStaticOverride);
+    theRedSwitch.setChecked(TheService.getRed());
+  }
+
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     Log.i(TAG, "    in onCreate");
@@ -550,6 +566,7 @@ public class TheActivity extends Activity {
       findViewById(R.id.theServiceSwitch),
       findViewById(R.id.theServiceSwitch2),
     };
+    // TODO: member vars, I think
     final Button theAppSettingsButton = findViewById(R.id.theAppSettingsButton);
     final Switch theWhackAMoleSwitch = findViewById(R.id.theWhackAMoleSwitch);
     final Switch theAutoRotateSwitch = findViewById(R.id.theAutoRotateSwitch);
@@ -564,12 +581,9 @@ public class TheActivity extends Activity {
     final TextView thePolledValuesHeaderTextView = findViewById(R.id.thePolledValuesHeaderTextView);
     final TextView thePolledStatusTextView = findViewById(R.id.thePolledStatusTextView);
 
-    theWhackAMoleSwitch.setChecked(TheService.mStaticWhackAMole);
-    theAutoRotateSwitch.setChecked(TheService.mStaticAutoRotate);
-    thePromptFirstSwitch.setChecked(TheService.mStaticPromptFirst);
-    theRotateOnShakeSwitch.setChecked(TheService.mStaticRotateOnShake);
-    theOverrideSwitch.setChecked(TheService.mStaticOverride);
-    theRedSwitch.setChecked(TheService.getRed());
+    // CBB: is this necessary here?  We're going to do it again on resume.  The question is whether we care about the ui values between now and then
+    setToggleStatesToServiceValues();
+
     theMonitorSwitch.setChecked(mPolling); // before listener installed; otherwise we'd get a callback immediately
     thePolledValuesHeaderTextView.setEnabled(mPolling);
     thePolledStatusTextView.setEnabled(mPolling);
@@ -1049,6 +1063,10 @@ public class TheActivity extends Activity {
         addAction("service destroyed");
       }});
     }
+
+    // Update toggle states, *after* we registered the broadcast receiver.
+    // (Might still be a race here, I'm not sure... do we need to send a round trip token or something?)
+    setToggleStatesToServiceValues();
 
     {
       android.net.Uri uri = Settings.System.getUriFor(Settings.System.ACCELEROMETER_ROTATION);

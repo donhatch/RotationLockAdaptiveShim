@@ -634,12 +634,91 @@ public class TheService extends Service {
 
                     if (mVerboseLevel == 1) Log.i(TAG, "          attempting to pop up a Dialog");
 
+                    final Context c = getApplicationContext();
                     final int threeOrSomething = 3;
-                    final CheckBox dontAskAgainCheckBox = new CheckBox(getApplicationContext()) {{
+                    final CheckBox dontAskAgainCheckBox = new CheckBox(c) {{
                       setText("Don't ask again");
+                      setPadding(10,10, 10,10);  // touchable
                     }};
-                    final TextView messageTextView = new TextView(getApplicationContext()) {{
+                    final CheckBox andLockCheckBox = new CheckBox(c) {{
+                      setText("and lock");
+                      setPadding(10,10, 10,10);  // touchable
+                    }};
+                    final TextView messageTextView = new TextView(c) {{
                       setText(threeOrSomething+"...");
+                    }};
+                    final TextView NOtextView = new TextView(c) {{
+                      setText("NO");
+                      setTextColor(0xff0000ff);  // blue
+                      setPadding(10,10, 10,10);  // touchable
+                      setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                          if (mVerboseLevel == 1) Log.i(TAG, "            in alertDialog negative button onClick");
+
+                          // DUP CODE ALERT
+                          if (andLockCheckBox.isChecked()) {
+                            mStaticAutoRotate = false;
+                            Intent intent = new Intent("mStaticAutoRotate changed");
+                            intent.putExtra("new mStaticAutoRotate", mStaticAutoRotate);
+                            if (mVerboseLevel == 1) Log.i(TAG, "              sending \"mStaticAutoRotate changed\" broadcast");
+                            LocalBroadcastManager.getInstance(TheService.this).sendBroadcast(intent);
+                            if (mVerboseLevel == 1) Log.i(TAG, "              sent \"mStaticAutoRotate changed\" broadcast");
+                          } else if (dontAskAgainCheckBox.isChecked()) {
+                            mStaticAutoRotate = false;
+                            Intent intent = new Intent("mStaticAutoRotate changed");
+                            intent.putExtra("new mStaticAutoRotate", mStaticAutoRotate);
+                            if (mVerboseLevel == 1) Log.i(TAG, "              sending \"mStaticAutoRotate changed\" broadcast");
+                            LocalBroadcastManager.getInstance(TheService.this).sendBroadcast(intent);
+                            if (mVerboseLevel == 1) Log.i(TAG, "              sent \"mStaticAutoRotate changed\" broadcast");
+                          }
+                          // XXX is this evidence for why it's good to always delay?
+                          if (mCleanupDialog != null) {
+                            mCleanupDialog.run();
+                            mCleanupDialog = null;
+                          }
+                          // END DUP CODE ALERT
+
+                          if (mVerboseLevel == 1) Log.i(TAG, "            out alertDialog negative button onClick");
+                        }
+                      });
+                    }};
+                    final TextView YEStextView = new TextView(c) {{
+                      setText("YES");
+                      setTextColor(0xff0000ff);  // blue
+                      setPadding(10,10, 10,10);  // touchable
+                      setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                          if (mVerboseLevel == 1) Log.i(TAG, "            in alertDialog positive button onClick");
+
+                          // DUP CODE ALERT
+                          if (andLockCheckBox.isChecked()) {
+                            mStaticAutoRotate = false;
+                            Intent intent = new Intent("mStaticAutoRotate changed");
+                            intent.putExtra("new mStaticAutoRotate", mStaticAutoRotate);
+                            if (mVerboseLevel == 1) Log.i(TAG, "              sending \"mStaticAutoRotate changed\" broadcast");
+                            LocalBroadcastManager.getInstance(TheService.this).sendBroadcast(intent);
+                            if (mVerboseLevel == 1) Log.i(TAG, "              sent \"mStaticAutoRotate changed\" broadcast");
+                          } else if (dontAskAgainCheckBox.isChecked()) {
+                            mStaticPromptFirst = false;
+                            Intent intent = new Intent("mStaticPromptFirst changed");
+                            intent.putExtra("new mStaticPromptFirst", mStaticPromptFirst);
+                            if (mVerboseLevel == 1) Log.i(TAG, "              sending \"mStaticPromptFirst changed\" broadcast");
+                            LocalBroadcastManager.getInstance(TheService.this).sendBroadcast(intent);
+                            if (mVerboseLevel == 1) Log.i(TAG, "              sent \"mStaticPromptFirst changed\" broadcast");
+                          }
+                          // XXX is this evidence for why it's good to always delay?
+                          if (mCleanupDialog != null) {
+                            mCleanupDialog.run();
+                            mCleanupDialog = null;
+                          }
+                          // END DUP CODE ALERT
+
+                          doTheAutoRotateThingNow();
+                          if (mVerboseLevel == 1) Log.i(TAG, "            out alertDialog positive button onClick");
+                        }
+                      });
                     }};
 
                     final Handler[] handlerHolder = new Handler[1];
@@ -647,7 +726,7 @@ public class TheService extends Service {
 
                     // What I want is basically an AlertDialog with setView("Don't ask again" checkbox),
                     // but I want it much tighter packed.
-                    final Dialog dialog = new Dialog(getApplicationContext()) {
+                    final Dialog dialog = new Dialog(c) {
                       @Override
                       public boolean onTouchEvent(@NonNull MotionEvent motionEvent) {
                         if (mVerboseLevel == 1) Log.i(TAG, "            in alertDialog onTouchEvent");
@@ -677,77 +756,39 @@ public class TheService extends Service {
                         return false;
                       }
                     };
-                    final Context c = getApplicationContext();
                     dialog.setTitle("Rotate the screen?");
                     dialog.setContentView(new LinearLayout(c) {{
                       setOrientation(VERTICAL);
                       addView(new LinearLayout(c) {{
+                        // Some horizontal space before messageTextView.  Not very principled,
+                        // but better than hard-coding it into the message every time we set the message.
                         addView(new TextView(c) {{
-                          setText("   ");  // not very principled
+                          setText("   ");
                         }});
                         addView(messageTextView);
                       }});
                       addView(new LinearLayout(c) {{
                         setOrientation(HORIZONTAL);
-                        addView(dontAskAgainCheckBox);
-                        addView(new TextView(c) {{
-                        }}, new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT) {{
-                          weight = 1.f;
-                        }});
-                        addView(new TextView(c) {{
-                          setText("NO");
-                          setTextColor(0xff0000ff);  // blue
-                          setOnClickListener(new View.OnClickListener() {
-                            @Override
-                            public void onClick(View view) {
-                              if (mVerboseLevel == 1) Log.i(TAG, "            in alertDialog negative button onClick");
-                              if (dontAskAgainCheckBox.isChecked()) {
-                                mStaticAutoRotate = false;
-                                Intent intent = new Intent("mStaticAutoRotate changed");
-                                intent.putExtra("new mStaticAutoRotate", mStaticAutoRotate);
-                                if (mVerboseLevel == 1) Log.i(TAG, "              sending \"mStaticAutoRotate changed\" broadcast");
-                                LocalBroadcastManager.getInstance(TheService.this).sendBroadcast(intent);
-                                if (mVerboseLevel == 1) Log.i(TAG, "              sent \"mStaticAutoRotate changed\" broadcast");
-                              }
-                              // XXX is this evidence for why it's good to always delay?
-                              if (mCleanupDialog != null) {
-                                mCleanupDialog.run();
-                                mCleanupDialog = null;
-                              }
-                              if (mVerboseLevel == 1) Log.i(TAG, "            out alertDialog negative button onClick");
-                            }
-                          });
-                        }});
-                        addView(new TextView(c) {{
-                        }}, new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT) {{
-                          weight = 1.f;
-                        }});
-                        addView(new TextView(c) {{
-                          setText("YES     ");
-                          setTextColor(0xff0000ff);  // blue
-                          setOnClickListener(new View.OnClickListener() {
-                            @Override
-                            public void onClick(View view) {
-                              if (mVerboseLevel == 1) Log.i(TAG, "            in alertDialog positive button onClick");
-
-                              if (dontAskAgainCheckBox.isChecked()) {
-                                mStaticPromptFirst = false;
-                                Intent intent = new Intent("mStaticPromptFirst changed");
-                                intent.putExtra("new mStaticPromptFirst", mStaticPromptFirst);
-                                if (mVerboseLevel == 1) Log.i(TAG, "              sending \"mStaticPromptFirst changed\" broadcast");
-                                LocalBroadcastManager.getInstance(TheService.this).sendBroadcast(intent);
-                                if (mVerboseLevel == 1) Log.i(TAG, "              sent \"mStaticPromptFirst changed\" broadcast");
-                              }
-                              // XXX is this evidence for why it's good to always delay?
-                              if (mCleanupDialog != null) {
-                                mCleanupDialog.run();
-                                mCleanupDialog = null;
-                              }
-                              doTheAutoRotateThingNow();
-                              if (mVerboseLevel == 1) Log.i(TAG, "            out alertDialog positive button onClick");
-                            }
-                          });
-                        }});
+                        if (false) {  // not sure how to logically integrate this with the other controls, so leaving it out for now
+                          addView(dontAskAgainCheckBox);
+                          addView(new TextView(c),
+                                  new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT) {{
+                                    weight = 1.f;  // stretch
+                                  }});
+                          addView(new TextView(c) {{ setText("       "); }});  // line up with title
+                        }
+                        addView(NOtextView);
+                        addView(new TextView(c),
+                                new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT) {{
+                                  weight = 1.f;  // stretch
+                                }});
+                        addView(YEStextView);
+                        addView(new TextView(c),
+                                new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT) {{
+                                  weight = 1.f;  // stretch
+                                }});
+                        addView(andLockCheckBox);
+                        addView(new TextView(c) {{ setText("       "); }});
                       }});
                     }});
 
@@ -806,17 +847,22 @@ public class TheService extends Service {
                     handlerHolder[0] = handler;
                     runnableHolder[0] = runnable;
 
-                    dontAskAgainCheckBox.setOnCheckedChangeListener(new CheckBox.OnCheckedChangeListener() {
-                      @Override
-                      public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                        // User is messing with the dialog.
-                        // Kill the countdown, so that the dialog won't disappear til ey hit Yes or No.
-                        // CBB: dialog still disappears when user rotates back to previous orientation-- it shouldn't!
-                        if (mVerboseLevel == 1) Log.i(TAG, "            in onCheckedChanged: canceling expiration");
-                        handler.removeCallbacks(runnable);
-                        if (mVerboseLevel == 1) Log.i(TAG, "            out onCheckedChanged: cancelled expiration");
-                      }
-                    });
+                    {
+                      CheckBox.OnCheckedChangeListener userIsMessingWithDialogListener = new CheckBox.OnCheckedChangeListener() {
+                        @Override
+                        public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                          // User is messing with the dialog.
+                          // Kill the countdown, so that the dialog won't disappear til ey hit Yes or No.
+                          // CBB: dialog still disappears when user rotates back to previous orientation-- it shouldn't!
+                          // Or maybe it should-- think about it.
+                          if (mVerboseLevel == 1) Log.i(TAG, "            in onCheckedChanged: canceling expiration");
+                          handler.removeCallbacks(runnable);
+                          if (mVerboseLevel == 1) Log.i(TAG, "            out onCheckedChanged: cancelled expiration");
+                        }
+                      };
+                      dontAskAgainCheckBox.setOnCheckedChangeListener(userIsMessingWithDialogListener);
+                      andLockCheckBox.setOnCheckedChangeListener(userIsMessingWithDialogListener);
+                    }
 
                     CHECK(mCleanupDialog == null);
                     mCleanupDialog = new Runnable() {
